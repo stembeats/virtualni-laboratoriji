@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorij 2 – Nadstrujna zaštita</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap">
+<style>
+[hidden]{display:none!important}
+[hidden]{display:none!important}
+.vals .miss b{font-family:var(--f-body);font-size:.8em;font-weight:400;opacity:.75}
+/* Layout: radni stol. Lijevo shema objekta s točkama za mjerne kabele, desno instrument i kontrolna lista; zapisnik kao kartice po krugu. */
+:root{
+  --bg:#EEF2EC; --surface:#FFFFFF; --surface2:#E3EADD; --ink:#1B2A2F; --ink2:#506058; --line:#C6D1C0;
+  --accent:#3D8A1B; --accent-ink:#FFFFFF; --accent-soft:#DCEEC8;
+  --warn:#8A5A00; --warn-bg:#FFF0C7; --bad:#B42318; --bad-bg:#FCE3DF; --good:#25702A; --good-bg:#DDF0DB;
+  --lcd-bg:#CDE2B0; --lcd-ink:#18240F; --lead1:#D6382B; --lead2:#1B2A2F;
+  --f-body:"Trebuchet MS","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-lcd:"Share Tech Mono","Consolas","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11191C; --surface:#1A2529; --surface2:#243137; --ink:#E7EFE8; --ink2:#A6B5AC; --line:#34454C;
+    --accent:#8CC63F; --accent-ink:#11191C; --accent-soft:#273B22;
+    --warn:#F2C14E; --warn-bg:#3A2F10; --bad:#FF8F80; --bad-bg:#40201C; --good:#86D487; --good-bg:#1D3A21;
+    --lcd-bg:#B9D29C; --lcd-ink:#15200E; --lead1:#FF6B5B; --lead2:#E7EFE8; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11191C; --surface:#1A2529; --surface2:#243137; --ink:#E7EFE8; --ink2:#A6B5AC; --line:#34454C;
+  --accent:#8CC63F; --accent-ink:#11191C; --accent-soft:#273B22;
+  --warn:#F2C14E; --warn-bg:#3A2F10; --bad:#FF8F80; --bad-bg:#40201C; --good:#86D487; --good-bg:#1D3A21;
+  --lcd-bg:#B9D29C; --lcd-ink:#15200E; --lead1:#FF6B5B; --lead2:#E7EFE8; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;margin:0;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:clamp(1.35rem,3.4vw,1.9rem);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-size:1.15rem;margin:0 0 8px;text-wrap:balance}
+h3{font-size:1rem;margin:0}
+p{margin:0}
+a{color:var(--accent)}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;border-bottom:3px solid var(--accent);padding-bottom:12px}
+.top .sub{color:var(--ink2);font-size:.9rem;margin-top:4px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 16px;border-radius:6px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.lab{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.lab{grid-template-columns:minmax(0,1fr)}}
+.picker{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer;position:relative}
+.pill.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.pill .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-left:6px}
+.plate{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.92rem;color:var(--ink2);margin:10px 0}
+.plate b{color:var(--ink)}
+.schema{width:100%;height:auto;display:block;touch-action:manipulation}
+.schema text{font-family:var(--f-body);fill:var(--ink)}
+.s-stroke{stroke:var(--ink);fill:none;stroke-width:2.2}
+.s-box{fill:var(--surface2);stroke:var(--ink);stroke-width:2}
+.s-lbl{font-size:13px;fill:var(--ink2)}
+.s-ter{fill:var(--surface);stroke:var(--ink);stroke-width:2.4}
+.term{cursor:pointer}
+.term:hover .s-ter,.term:focus-visible .s-ter{stroke:var(--accent);stroke-width:4}
+.term .hit{fill:transparent}
+.term.sel1 .s-ter{fill:var(--lead1);stroke:var(--lead1)}
+.term.sel2 .s-ter{fill:var(--lead2);stroke:var(--lead2)}
+.term text{font-weight:700;font-size:14px}
+.lead{fill:none;stroke-width:4;stroke-linecap:round}
+.lead1{stroke:var(--lead1)} .lead2{stroke:var(--lead2)}
+.jack{fill:var(--surface);stroke-width:4}
+.lamp-off{opacity:.3}
+.volt-badge{font-size:12px;font-weight:700}
+.side{display:flex;flex-direction:column;gap:14px}
+.seg{display:flex;gap:0;border:2px solid var(--ink);border-radius:6px;overflow:hidden;align-self:flex-start}
+.seg button{font:inherit;font-weight:700;border:0;background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button+button{border-left:2px solid var(--ink)}
+.checks{display:flex;flex-direction:column;gap:6px;background:var(--surface2);border-radius:6px;padding:10px 12px}
+.checks label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:.95rem}
+.checks input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+.inst{background:var(--surface2);border:2px solid var(--ink);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.inst-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:700;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em}
+.lcd{background:var(--lcd-bg);color:var(--lcd-ink);border-radius:6px;border:2px solid var(--ink);padding:10px 14px;font-family:var(--f-lcd);position:relative;min-height:104px;display:flex;flex-direction:column;justify-content:center}
+.lcd .val{font-size:clamp(2.2rem,8vw,3.2rem);line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lcd .unit{font-size:1.4rem;margin-left:8px}
+.lcd .sub{font-size:.95rem;margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.buzz{position:absolute;top:8px;right:12px;font-family:var(--f-body);font-size:.8rem;font-weight:700;opacity:.25}
+.buzz.on{opacity:1;animation:blink .5s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.buzz.on{animation:none}}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:inherit;font-weight:700;border:2px solid var(--ink);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:6px;cursor:pointer}
+.btn:hover{background:var(--accent-soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.testbtn{flex:1;min-width:140px;font-size:1.05rem}
+.testbtn.run{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.vsel{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vsel button{font:inherit;font-weight:700;border:2px solid var(--ink);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer;font-family:var(--f-lcd);font-size:1.05rem}
+.vsel button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.warnbar{background:var(--bad);color:var(--surface);font-weight:700;border-radius:6px;padding:8px 12px;text-align:center}
+.msg{border-radius:6px;padding:10px 12px;font-size:.95rem;min-height:44px;border:1px solid var(--line);background:var(--surface)}
+.msg.good{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+.msg.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.msg.bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.hint{font-size:.88rem;color:var(--ink2)}
+.doc{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.doc ol,.doc ul{margin:6px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+th{background:var(--surface2)}
+.zhead{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:700;color:var(--ink2)}
+.field input,.field select{font:inherit;font-weight:400;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.card{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface);display:flex;flex-direction:column;gap:10px;min-width:0}
+.card header{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.card .meta{font-size:.85rem;color:var(--ink2)}
+.vals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.vals div{background:var(--surface2);border-radius:6px;padding:6px 8px;font-size:.88rem;min-width:0}
+.vals b{display:block;font-family:var(--f-lcd);font-size:1.15rem;font-variant-numeric:tabular-nums;font-weight:400}
+.vals .miss b{color:var(--ink2)}
+.res{display:flex;flex-direction:column;gap:2px;font-size:.88rem}
+.res .ok{color:var(--good)} .res .no{color:var(--bad)}
+.score{font-weight:700}
+.sticky-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+/* --- zajednički dodaci za sve laboratorije --- */
+:root{--live:#D6382B;--dead:#6B7C85;--earth:#2E9E3A;--copper:#B87333;--ceramic:#D8CFC0;--steel:#8895A0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--live:#FF6B5B;--dead:#8A9BA4;--earth:#6CD16F;--ceramic:#CFC6B5}}
+:root[data-theme="dark"]{--live:#FF6B5B;--dead:#8A9BA4;--earth:#6CD16F;--ceramic:#CFC6B5}
+.pill.done::after{content:"✓";margin-left:6px;color:var(--accent);font-weight:900}
+.pill.on.done::after{color:var(--accent-soft)}
+.taskcard{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface2);display:flex;flex-direction:column;gap:8px}
+.taskcard h3{font-size:1.02rem}
+.badge{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:999px;border:1.5px solid var(--ink2);color:var(--ink2);white-space:nowrap}
+.badge.on{border-color:var(--live);color:var(--live)}
+.badge.off{border-color:var(--earth);color:var(--earth)}
+.badge.bad{border-color:var(--bad);color:var(--bad)}
+.log{max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:.86rem;display:flex;flex-direction:column}
+.log div{padding:4px 8px;border-bottom:1px solid var(--line)}
+.log .t{font-family:var(--f-lcd);color:var(--ink2);margin-right:8px}
+.log .event{background:var(--bad-bg);color:var(--bad);font-weight:700}
+.log .block{background:var(--warn-bg);color:var(--warn)}
+.log .verify{color:var(--good)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.86rem;color:var(--ink2);margin-top:8px}
+.legend i{display:inline-block;width:22px;height:6px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.scorebox{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;background:var(--surface2);border-radius:8px;padding:10px 14px}
+.scorebox b{font-size:1.4rem}
+.items{display:flex;flex-direction:column;gap:2px;font-size:.9rem}
+.items .ok{color:var(--good)} .items .no{color:var(--bad)}
+.qrow{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:10px}
+.qrow .qq{font-weight:700}
+.qrow select,.qrow input{font:inherit;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+.toggle{display:flex;gap:10px;align-items:center;font-size:.92rem}
+.toggle input{width:20px;height:20px;accent-color:var(--accent)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem}
+.kv dt{color:var(--ink2)} .kv dd{margin:0;font-weight:700}
+.devrow{display:grid;grid-template-columns:minmax(0,1.3fr) auto auto auto;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.devrow:first-child{border-top:0}
+.devrow .nm{font-size:.92rem;min-width:0}
+.devrow .nm small{display:block;color:var(--ink2);font-size:.78rem}
+.btn.sm{padding:6px 10px;font-size:.9rem}
+.relay{background:#16201c;color:#9be37a;border:2px solid var(--ink);border-radius:8px;padding:10px 12px;font-family:var(--f-lcd);display:flex;flex-direction:column;gap:6px}
+.relay .lc{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:1.05rem}
+.leds{display:flex;gap:12px;flex-wrap:wrap;font-family:var(--f-body);font-size:.75rem;color:#d4e8cf}
+.leds span{display:inline-flex;align-items:center;gap:5px}
+.leds i{width:11px;height:11px;border-radius:50%;background:#2b3a33;display:inline-block;box-shadow:inset 0 0 0 1px #000}
+.leds i.g{background:#3fe05a;box-shadow:0 0 6px #3fe05a}
+.leds i.r{background:#ff4a3a;box-shadow:0 0 8px #ff4a3a}
+.leds i.a{background:#ffb02e;box-shadow:0 0 8px #ffb02e}
+.flash{animation:flashbg .8s ease-out 1}
+@keyframes flashbg{0%{box-shadow:0 0 0 6px var(--bad)}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion: reduce){.flash{animation:none}}
+
+/* --- crtež: tokeni materijala (svijetla i tamna tema) --- */
+:root{--cav:#D5DEDC;--steel1:#CBD4D8;--steel2:#98A6AD;--cu1:#F2B781;--cu2:#B66A33;--ep1:#EDE2CE;--ep2:#C6B598;--glass:#A9CDDD;--rubber:#5A676E;--flow:#FFF3C4;--ctc:#5877A0;--panel:#EFF3F1}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--cav:#1A252A;--steel1:#53636B;--steel2:#34424A;--cu1:#E2A875;--cu2:#9E5A2B;--ep1:#BDAF96;--ep2:#8B7E67;--glass:#5E8396;--rubber:#5B676E;--ctc:#7392B8;--panel:#2A383E}}
+:root[data-theme="dark"]{--cav:#1A252A;--steel1:#53636B;--steel2:#34424A;--cu1:#E2A875;--cu2:#9E5A2B;--ep1:#BDAF96;--ep2:#8B7E67;--glass:#5E8396;--rubber:#5B676E;--ctc:#7392B8;--panel:#2A383E}
+.cellwrap{overflow-x:auto;border-radius:8px;background:var(--cav)}
+.cellsvg{display:block;width:100%;min-width:620px;height:auto}
+.cellsvg text,.benchsvg text{font-family:var(--f-body);fill:var(--ink)}
+.t13{font-size:13px;font-weight:700}.t12{font-size:12px;fill:var(--ink2)!important}.t11{font-size:11px;fill:var(--ink2)!important}
+.cu{fill:url(#gCu);stroke:var(--dead);stroke-width:3}
+.rub{fill:var(--rubber);stroke:var(--dead);stroke-width:3}
+.cu.pL,.rub.pL{stroke:var(--live)}.cu.pD,.rub.pD{stroke:var(--dead)}.cu.pE,.rub.pE{stroke:var(--earth)}
+.cu.pL{filter:drop-shadow(0 0 2px var(--live))}
+.ep{fill:url(#gEp);stroke:var(--ink2);stroke-width:1.5}
+.steel{fill:url(#gSteel);stroke:var(--ink2);stroke-width:1.5}
+.glass{fill:var(--glass);stroke:var(--ink2);stroke-width:1.5;opacity:.85}
+.flow{stroke:var(--flow);stroke-width:3;stroke-dasharray:4 10;stroke-linecap:round;fill:none;animation:flowdash .55s linear infinite}
+@keyframes flowdash{to{stroke-dashoffset:-14}}
+@media (prefers-reduced-motion: reduce){.flow{animation:none}}
+.arcO{fill:none;stroke:#FF9A2E;stroke-width:9;stroke-linejoin:round;stroke-linecap:round;opacity:.55}
+.arcI{fill:none;stroke:#FFFFFF;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.lampv{stroke:var(--ink);stroke-width:1.5}
+.sign{fill:#F2C21B;stroke:#222;stroke-width:1.5}
+.mim{stroke-width:5;stroke-linecap:round;fill:none}
+.mim.pL{stroke:var(--live)}.mim.pD{stroke:var(--dead)}.mim.pE{stroke:var(--earth)}
+.hot{cursor:pointer}
+.hot:hover .hl{stroke:var(--accent);stroke-width:3}
+.benchwrap{border-radius:8px;overflow:hidden;background:var(--cav)}
+.benchsvg{display:block;width:100%;height:auto}
+.mat td,.mat th{text-align:center;font-size:.88rem;padding:6px 6px}
+.mat td:first-child,.mat th:first-child{text-align:left}
+.mat .y{color:var(--good);font-weight:700}.mat .n{color:var(--bad);font-weight:700}.mat .u{color:var(--ink2)}
+.tasknav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.goal{display:flex;flex-direction:column;gap:3px;font-size:.92rem;margin-top:6px}
+.goal .g{display:flex;gap:8px}.goal .g i{font-style:normal;font-weight:900;width:1.1em;color:var(--ink2)}.goal .g.ok i{color:var(--good)}
+.warnbar.soft{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+.sub2{font-size:.85rem;color:var(--ink2)}
+.gh{font-weight:700;background:var(--surface2);padding:4px 8px;border-radius:4px;margin-top:8px}
+.arow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+@media (max-width:640px){.arow{grid-template-columns:minmax(0,1fr)}}
+.arow select,.arow input{font:inherit;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0;width:100%}
+.arow .rs{font-size:.84rem;min-width:1.4em}
+.arow .rs.ok{color:var(--good);font-weight:700}.arow .rs.no{color:var(--bad)}
+.simv{font-weight:700}
+
+/* ---- laboratorij 2 ---- */
+.nl{fill:none;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.nl.pL{stroke:var(--live);filter:drop-shadow(0 0 2px var(--live))}.nl.pD{stroke:var(--dead)}
+.kvg{display:flex;flex-direction:column;gap:6px}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.srow label{font-size:.92rem}
+.sin{display:flex;align-items:center;gap:6px}
+.sin input{font:inherit;font-family:var(--f-lcd);width:5.6em;text-align:right;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:6px 8px}
+.sin input:disabled{opacity:.65;background:var(--surface2)}
+.sin span{min-width:1.4em;font-size:.88rem;color:var(--ink2)}
+.leds i.a{background:#ffb02e;box-shadow:0 0 6px #ffb02e}.leds i.r{background:#ff4a3a;box-shadow:0 0 6px #ff4a3a}
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.c11{font-size:15px;fill:var(--ink2)!important}.c12{font-size:16px;font-weight:700;fill:var(--ink2)!important}
+
+</style>
+<style>.backlink{display:block;width:fit-content;margin:0 0 12px;padding:6px 12px;border:1px solid #C6D1C0;border-radius:6px;background:#fff;color:#3D8A1B!important;font:600 13px "Trebuchet MS",sans-serif;letter-spacing:.4px;text-transform:uppercase;text-decoration:none}</style></head>
+<body>
+<div class="wrap"><a class="backlink" href="index.html">← Popis vježbi</a>
+  <header class="top">
+    <div>
+      <h1>Virtualni laboratorij 2: nadstrujna zaštita i selektivnost</h1>
+      <p class="sub">Transformatorska i rasklopna postrojenja · zaštita u SN postrojenju · relej, prekidač, strujni transformator</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Dijelovi stranice">
+      <button class="tab" role="tab" id="tab-upute" aria-selected="true" data-tab="upute">Upute</button>
+      <button class="tab" role="tab" id="tab-sim" aria-selected="false" data-tab="sim">Zaštita</button>
+      <button class="tab" role="tab" id="tab-zap" aria-selected="false" data-tab="zap">Zapisnik</button>
+    </div>
+  </header>
+
+  <!-- UPUTE -->
+  <section id="sec-upute">
+    <div class="doc">
+      <div class="panel">
+        <h2>Kako radiš</h2>
+        <ol>
+          <li>Kartica <b>Zaštita</b>: podesi releje RB i RA, pa pokreni pokuse (normalni pogon, preopterećenje, uklop transformatora, kvar F1 i kvar F2).</li>
+          <li>Promatraj mrežu, vrijeme, prekidače i dijagram vrijeme–struja. Ispravi podešenje dok svi pokusi ne prođu.</li>
+          <li>Kartica <b>Zapisnik</b>: upiši konačno podešenje, očitanja i odgovore, pritisni <b>Provjeri zapisnik</b>, spremi ga i predaj na Loomenu.</li>
+        </ol>
+        <p class="hint" style="margin-top:8px">Konačno podešenje mora vrijediti u svim pokusima. Kad promijeniš podešenje, pokuse ponovi.</p>
+      </div>
+      <div class="panel">
+        <h2>Mreža u pokusu</h2>
+        <dl class="kv">
+          <dt>Izvor</dt><dd>TS 110/10 kV, prekidač Q_A</dd>
+          <dt>Vod 10 kV</dt><dd>napaja i druge TS (104 A)</dd>
+          <dt>Naša TS</dt><dd>prekidač Q_B, kabel, transformator 630 kVA</dd>
+          <dt>Nazivna struja</dt><dd>In = 36,4 A (na 10 kV)</dd>
+          <dt>Napon kratkog spoja</dt><dd>uk = 4 %</dd>
+          <dt>Strujni transformatori</dt><dd>CT_B 50/5 A, CT_A 200/5 A</dd>
+          <dt>Vrijeme isklopa prekidača</dt><dd>0,08 s</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <h2>Nadstrujni relej</h2>
+        <ul>
+          <li><b>I&gt;</b> je proradna struja osnovnog stupnja. Iznad nje relej mjeri vrijeme <b>t&gt;</b>, pa isklapa. Štiti od preopterećenja i manjih kvarova.</li>
+          <li><b>I&gt;&gt;</b> je proradna struja brzog stupnja. Iznad nje relej isklapa nakon kratkog vremena <b>t&gt;&gt;</b>. Štiti od kratkog spoja.</li>
+          <li>Relej mjeri struju preko strujnog transformatora (npr. 50/5 A) i daje nalog prekidaču. <b>Struju prekida prekidač</b>, ne relej.</li>
+          <li>Relej se vraća u početno stanje ako struja padne prije isteka vremena.</li>
+          <li><b>Pravilo:</b> I&gt; ide iznad najveće dopuštene pogonske struje (110 % In), a ispod preopterećenja koje treba isključiti (150 % In). I&gt;&gt; ide iznad uklopne struje transformatora (360 A), a ispod struje kvara koji mora brzo isključiti.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Što pokusi pokazuju</h2>
+        <div class="tblwrap"><table>
+          <tr><th>Pokus</th><th>Struja u RB</th><th>Cilj</th></tr>
+          <tr><td>Normalni pogon (110 %)</td><td>40 A</td><td>nema isklapanja</td></tr>
+          <tr><td>Preopterećenje (150 %)</td><td>54,6 A</td><td>isklapa samo Q_B</td></tr>
+          <tr><td>Uklop transformatora</td><td>360 A, 0,1 s</td><td>nema isklapanja</td></tr>
+          <tr><td>Kvar F1 (kabel)</td><td>8000 A</td><td>isklapa samo Q_B</td></tr>
+          <tr><td>Kvar F2 (NN strana)</td><td>910 A</td><td>isklapa samo Q_B</td></tr>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>Vremensko stupnjevanje</h2>
+        <p>Releji u nizu moraju isklopiti <b>samo onaj prekidač koji je najbliži kvaru</b>. Zato je nadređeni relej (RA) sporiji od podređenog (RB) za vremenski stupanj Δt. U praksi je Δt oko 0,3 s. Nadređeni relej tada je pričuvna zaštita: djeluje samo ako RB zakaže.</p>
+        <p class="hint" style="margin-top:8px">RA ima unaprijed zadane struje I&gt; = 170 A i I&gt;&gt; = 1200 A. Ti podesiš samo njegova vremena.</p>
+      </div>
+      <div class="panel">
+        <h2>Bodovanje</h2>
+        <p>Zapisnik nosi <b>40 bodova</b>. Svaka točna stavka nosi 1 bod.</p>
+        <div class="tblwrap" style="margin-top:8px"><table>
+          <tr><th>Bodovi</th><th>Ocjena</th></tr>
+          <tr><td>34 – 40</td><td>odličan (5)</td></tr>
+          <tr><td>27 – 33</td><td>vrlo dobar (4)</td></tr>
+          <tr><td>20 – 26</td><td>dobar (3)</td></tr>
+          <tr><td>1 – 19</td><td>dovoljan (2)</td></tr>
+        </table></div>
+        <p class="hint" style="margin-top:8px">Virtualni model je pojednostavljen. U stvarnom postrojenju podešenja računa i potvrđuje osposobljeni projektant zaštite.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIMULACIJA -->
+  <section id="sec-sim" hidden>
+    <div class="stack">
+      <div class="panel">
+        <h2>Mreža, releji i prekidači</h2>
+        <div class="cellwrap"><svg id="net" class="cellsvg" viewBox="0 0 900 340" role="img" aria-label="Jednopolna shema mreže s prekidačima Q_A i Q_B, relejima i transformatorom" style="min-width:760px"></svg></div>
+        <div class="msg" id="msg" role="status" style="margin-top:10px">Podesi releje i pokreni pokus.</div>
+      </div>
+      <div class="lab">
+        <div class="stack">
+          <div class="panel">
+            <h2>Dijagram vrijeme–struja</h2>
+            <div class="cellwrap"><svg id="chart" class="cellsvg" viewBox="0 0 900 300" role="img" aria-label="Vremensko strujna karakteristika releja RA i RB" style="min-width:640px"></svg></div>
+            <div class="legend">
+              <span><i style="background:var(--good)"></i>RB (podređeni)</span>
+              <span><i style="background:var(--ctc)"></i>RA (nadređeni)</span>
+              <span><i style="background:var(--live)"></i>struja u odabranom pokusu</span>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Rezultati pokusa</h2>
+            <div class="tblwrap"><table class="mat" id="res-tbl"></table></div>
+            <p class="hint" style="margin-top:8px" id="res-note"></p>
+          </div>
+          <div class="panel">
+            <h2>Dnevnik događaja</h2>
+            <div class="log" id="p-log" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="side">
+          <div class="panel">
+            <h2>Pokusi</h2>
+            <div class="row" id="scn-btns"></div>
+            <div class="row" style="margin-top:10px">
+              <button class="btn primary" type="button" id="b-all">Pokreni sve pokuse</button>
+              <button class="btn" type="button" id="b-reset">Vrati u pogon</button>
+            </div>
+            <label class="toggle" style="margin-top:10px"><input type="checkbox" id="b-fast"><span>Brzo (bez čekanja)</span></label>
+          </div>
+          <div class="panel">
+            <h2>Podešenje releja</h2>
+            <div class="relay" id="rb-lcd" style="margin-bottom:10px">
+              <div class="lc"><span>RB · Q_B · CT 50/5</span><span id="rb-i">I = 36,4 A</span></div>
+              <div class="lc" style="font-size:.9rem"><span id="rb-s">sek. 3,64 A</span><span id="rb-st">mirovanje</span></div>
+              <div class="leds"><span><i id="rb-l1"></i>START</span><span><i id="rb-l2"></i>ISKLOP</span><span><i id="rb-l3"></i>Q_B</span></div>
+            </div>
+            <div class="kvg" id="rb-set"></div>
+            <div class="relay" style="margin:14px 0 10px">
+              <div class="lc"><span>RA · Q_A · CT 200/5</span><span id="ra-i">I = 140 A</span></div>
+              <div class="lc" style="font-size:.9rem"><span id="ra-s">sek. 3,50 A</span><span id="ra-st">mirovanje</span></div>
+              <div class="leds"><span><i id="ra-l1"></i>START</span><span><i id="ra-l2"></i>ISKLOP</span><span><i id="ra-l3"></i>Q_A</span></div>
+            </div>
+            <div class="kvg" id="ra-set"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZAPISNIK -->
+  <section id="sec-zap" hidden>
+    <div class="panel">
+      <h2>Zapisnik: podešenje nadstrujne zaštite</h2>
+      <div class="zhead">
+        <label class="field">Ime i prezime<input type="text" id="z-name" autocomplete="off"></label>
+        <label class="field">Razred<input type="text" id="z-cls" autocomplete="off"></label>
+        <label class="field">Datum<input type="text" id="z-date" autocomplete="off" placeholder="dd.mm.gggg."></label>
+      </div>
+      <div class="sticky-actions">
+        <button class="btn primary" type="button" id="z-check">Provjeri zapisnik</button>
+        <button class="btn primary" type="button" id="z-save" hidden>Spremi zapisnik (.txt)</button>
+        <button class="btn" type="button" id="z-copy">Kopiraj zapisnik</button>
+        <button class="btn" type="button" id="z-reset">Obriši sve unose</button>
+      </div>
+      <div class="scorebox" id="z-box" style="margin-top:10px" hidden></div>
+      <p class="hint" id="z-note" style="margin-top:8px">Zapisnik se sprema u ovom pregledniku. Za predaju kopiraj tekst i zalijepi ga u dokument ili poruku nastavniku.</p>
+      <div id="z-parts" style="margin-top:12px"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+var STANDALONE = true;
+var EXAM = (location.hash==="#ispit");
+var KEY="virtualni-laboratorij-2-nadstrujna-zastita-v1";
+function $(s,r){return (r||document).querySelector(s);}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));}
+function fmt(v,d){return v.toFixed(d).replace(".",",");}
+function num(s){var n=parseFloat(String(s).replace(",",".").trim());return isNaN(n)?null:n;}
+function rnd(a,b){return a+Math.random()*(b-a);}
+var RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- model mreže ---------- */
+var IN=36.4, IOTHER=104, I1A=170, I2A=1200, TBRK=0.08, TOVER=0.05, DT_MIN=0.3;
+var CTB=10, CTA=40;   /* 50/5 i 200/5 */
+var SCN={
+ norm:{n:"Normalni pogon 110 %",IB:40.0,kind:"nofault",hold:3.0,expect:"none",d:"Opterećenje transformatora 110 % nazivnog (40 A)."},
+ over:{n:"Preopterećenje 150 %",IB:54.6,kind:"over",hold:1.2,expect:"B",d:"Preopterećenje 150 % nazivnog (54,6 A)."},
+ inr:{n:"Uklop transformatora",IB:360,dur:0.1,kind:"inrush",hold:0.8,expect:"none",d:"Uklopna struja 360 A traje 0,1 s, pa pada na 36,4 A."},
+ f1:{n:"Kvar F1: kabel",IB:8000,kind:"fault",hold:0.8,expect:"B",d:"Kratki spoj na kabelu iza Q_B, struja 8000 A.",loc:"f1"},
+ f2:{n:"Kvar F2: NN strana",IB:910,kind:"fault",hold:0.8,expect:"B",d:"Trofazni kratki spoj na NN stezaljkama transformatora, 910 A na strani 10 kV (In / uk).",loc:"f2"}
+};
+var ORDER=["norm","over","inr","f1","f2"];
+var DEF={I1B:36,t1B:0.30,I2B:300,t2B:0.20,t1A:0.30,t2A:0.20};
+var RNG={I1B:[20,100,1],t1B:[0.05,1.0,0.05],I2B:[100,1500,10],t2B:[0,0.5,0.05],t1A:[0.2,2.0,0.05],t2A:[0.1,1.0,0.05]};
+
+var store={name:"",cls:"",date:"",ans:{},set:null,res:{},flags:{}};
+try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&typeof p==="object"){store.name=p.name||"";store.cls=p.cls||"";store.date=p.date||"";store.ans=p.ans||{};store.set=p.set||null;store.res=p.res||{};store.flags=p.flags||{};}}}catch(e){}
+if(!store.set)store.set=JSON.parse(JSON.stringify(DEF));
+function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+function sig(){var s=store.set;return [s.I1B,s.t1B,s.I2B,s.t2B,s.t1A,s.t2A].join("|");}
+
+function T(I,i1,t1,i2,t2){if(I>=i2)return t2;if(I>=i1)return t1;return Infinity;}
+function evalScn(id,s){
+  var sc=SCN[id],IB=sc.IB,IA=IB+IOTHER;
+  var TB=T(IB,s.I1B,s.t1B,s.I2B,s.t2B),TA=T(IA,I1A,s.t1A,I2A,s.t2A);
+  var stB=IB>=s.I2B?"I>>":(IB>=s.I1B?"I>":"-"),stA=IA>=I2A?"I>>":(IA>=I1A?"I>":"-");
+  if(sc.dur){if(!(TB<sc.dur-1e-9))TB=Infinity;if(!(TA<sc.dur-1e-9))TA=Infinity;}
+  var tripB=false,tripA=false,tB=null,tA=null;
+  if(isFinite(TB)||isFinite(TA)){
+    if(TB<=TA){tripB=true;tB=TB;if(TA<TB+TBRK+TOVER){tripA=true;tA=TA;}}
+    else{tripA=true;tA=TA;if(TB<TA+TBRK+TOVER){tripB=true;tB=TB;}}
+  }
+  var ok,txt;
+  if(sc.expect==="none"){
+    ok=!tripB&&!tripA;
+    txt=ok?(id==="norm"?"Nema isklapanja pri dopuštenom opterećenju 110 %. Ispravno.":"Uklopna struja nije isklopila relej. Ispravno."):
+      (id==="norm"?"Relej je isklopio pri dopuštenom opterećenju od 40 A. Proradna struja I> je preniska.":"Relej je isklopio pri uklopu transformatora. Brzi stupanj I>> mora biti iznad uklopne struje od 360 A.");
+  }else if(id==="over"){
+    ok=tripB&&!tripA;
+    txt=ok?"Preopterećenje je isključeno nakon t> = "+fmt(tB,2)+" s. Q_A nije isklopio. Ispravno.":
+      (!tripB&&!tripA?"Preopterećenje nije isključeno. Proradna struja I> je previsoka.":"Isklopio je i nadređeni Q_A. Nema selektivnosti.");
+  }else{
+    if(!tripB&&!tripA){ok=false;txt="Kvar nije isključen. Struja kvara ne prelazi nijednu proradnu struju.";}
+    else if(tripB&&!tripA){ok=true;txt="Kvar je isključio samo Q_B za "+fmt(tB+TBRK,2)+" s (stupanj "+stB+"). Selektivno.";}
+    else if(tripA&&!tripB){ok=false;txt="Prvi je isklopio nadređeni Q_A, pa ostaju bez napona i druge TS. Nema selektivnosti.";}
+    else{ok=false;txt="Isklopila su oba prekidača, pa ostaju bez napona i druge TS. Vrijeme RA nije dovoljno dulje od RB.";}
+  }
+  return {id:id,IB:IB,IA:IA,TB:TB,TA:TA,tripB:tripB,tripA:tripA,tB:tB,tA:tA,stB:stB,stA:stA,ok:ok,txt:txt,fault:sc.kind==="fault"};
+}
+function recordRes(r){
+  store.res[r.id]={sig:sig(),ok:r.ok,tripB:r.tripB,tripA:r.tripA,tB:r.tB,tA:r.tA,stB:r.stB,txt:r.txt};
+  store.flags[r.id]=true;
+  if(r.fault&&r.tripA)store.flags.demo=true;
+  save();
+}
+
+/* ---------- tabovi ---------- */
+var TABS=["upute","sim","zap"],curTab="upute";
+function showTab(t){
+  curTab=t;
+  TABS.forEach(function(n){$("#sec-"+n).hidden=(n!==t);$("#tab-"+n).setAttribute("aria-selected",n===t?"true":"false");});
+  if(t==="zap")renderZap();
+  if(t==="sim"){drawChart();netUpdate(performance.now());}
+}
+$$(".tab").forEach(function(b){b.addEventListener("click",function(){showTab(b.getAttribute("data-tab"));});});
+
+/* ---------- postavke releja ---------- */
+var SETROWS={
+ B:[["I1B","I> proradna struja","A"],["t1B","t> vrijeme","s"],["I2B","I>> proradna struja","A"],["t2B","t>> vrijeme","s"]],
+ A:[["I1A","I> proradna struja (zadano)","A"],["t1A","t> vrijeme","s"],["I2A","I>> proradna struja (zadano)","A"],["t2A","t>> vrijeme","s"]]
+};
+function dispV(k){return (k[0]==="t")?fmt(store.set[k],2):String(store.set[k]);}
+function buildSettings(){
+  ["B","A"].forEach(function(r){
+    var h="";
+    SETROWS[r].forEach(function(x){
+      var k=x[0],fixed=(k==="I1A"||k==="I2A");
+      h+='<div class="srow"><label for="s-'+k+'">'+x[1]+'</label><div class="sin"><input type="text" id="s-'+k+'" '+(fixed?'disabled value="'+(k==="I1A"?I1A:I2A)+'"':'inputmode="decimal" value="'+dispV(k)+'"')+'><span>'+x[2]+'</span></div></div>';
+    });
+    $("#"+(r==="B"?"rb":"ra")+"-set").innerHTML=h;
+  });
+  ["I1B","t1B","I2B","t2B","t1A","t2A"].forEach(function(k){
+    $("#s-"+k).addEventListener("change",function(e){
+      var v=num(e.target.value),g=RNG[k];
+      if(v===null)v=store.set[k];
+      v=Math.max(g[0],Math.min(g[1],v));v=Math.round(v/g[2])*g[2];v=Math.round(v*100)/100;
+      store.set[k]=v;e.target.value=dispV(k);save();onSetChange();
+    });
+  });
+}
+function onSetChange(){
+  drawChart();renderRes();
+  if(!RUN){var ok=store.set.I2B<store.set.I1B;if(ok)say("Pažnja: I>> releja RB treba biti veća od I>.","warn");}
+}
+
+/* ---------- mrežni crtež ---------- */
+var NDEFS='<defs>'+
+ '<linearGradient id="nCu" x1="0" x2="1"><stop offset="0" style="stop-color:var(--cu1)"/><stop offset=".5" style="stop-color:var(--cu2)"/><stop offset="1" style="stop-color:var(--cu1)"/></linearGradient>'+
+ '<linearGradient id="nEp" x1="0" x2="1"><stop offset="0" style="stop-color:var(--ep1)"/><stop offset=".55" style="stop-color:var(--ep2)"/><stop offset="1" style="stop-color:var(--ep1)"/></linearGradient>'+
+ '<linearGradient id="nSt" x1="0" x2="1"><stop offset="0" style="stop-color:var(--steel1)"/><stop offset="1" style="stop-color:var(--steel2)"/></linearGradient>'+
+ '<radialGradient id="nFl"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".35" stop-color="#FFD27A" stop-opacity=".9"/><stop offset="1" stop-color="#FF7A00" stop-opacity="0"/></radialGradient>'+
+ '</defs>';
+var YL=150;
+function brk(id,x,label){
+  return '<g id="'+id+'"><rect x="'+(x-20)+'" y="'+(YL-30)+'" width="40" height="60" rx="8" fill="url(#nEp)" stroke="var(--ink2)" stroke-width="1.5"/>'+
+   '<rect x="'+(x-14)+'" y="'+(YL-22)+'" width="28" height="44" rx="4" class="glass"/>'+
+   '<rect x="'+(x-3)+'" y="'+(YL-22)+'" width="6" height="'+(0)+'" fill="url(#nCu)"/>'+
+   '<g id="'+id+'-bl"><rect x="'+(x-3)+'" y="'+(YL-20)+'" width="6" height="40" rx="2" fill="url(#nCu)" stroke="var(--ink2)"/></g>'+
+   '<text x="'+x+'" y="'+(YL-38)+'" text-anchor="middle" class="t13">'+label+'</text></g>';
+}
+function ctRing(id,x){return '<g id="'+id+'"><ellipse cx="'+x+'" cy="'+YL+'" rx="10" ry="22" fill="none" stroke="var(--ctc)" stroke-width="6"/></g>';}
+function relayBox(id,x,name,dash){
+  var s='<g id="'+id+'"><rect x="'+(x-38)+'" y="238" width="76" height="52" rx="6" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+
+   '<text x="'+x+'" y="258" text-anchor="middle" class="t13">'+name+'</text><text x="'+x+'" y="274" text-anchor="middle" class="t11">50 / 51</text>'+
+   '<circle id="'+id+'-s" cx="'+(x-18)+'" cy="283" r="4.5" fill="#5a6870" stroke="#000"/><circle id="'+id+'-t" cx="'+(x+18)+'" cy="283" r="4.5" fill="#5a6870" stroke="#000"/></g>';
+  return s;
+}
+function buildNet(){
+  var s=NDEFS;
+  s+='<rect x="0" y="0" width="900" height="340" fill="var(--cav)"/>';
+  /* vodovi */
+  s+='<polyline id="n-src" class="nl pL" points="96,150 180,150"/>';
+  s+='<polyline id="n-vod" class="nl pL" points="220,150 480,150"/>';
+  s+='<polyline id="n-br" class="nl pL" points="370,150 370,215"/>';
+  s+='<polyline id="n-bus" class="nl pL" points="480,128 480,172" style="stroke-width:7"/>';
+  s+='<polyline id="n-bus2" class="nl pL" points="480,150 520,150"/>';
+  s+='<polyline id="n-cab" class="nl pL" points="560,150 706,150"/>';
+  s+='<polyline id="n-nn" class="nl pL" points="790,150 850,150"/>';
+  s+='<polyline id="n-nnb" class="nl pL" points="850,125 850,175" style="stroke-width:7"/>';
+  s+='<line id="fl-all" class="flow" x1="96" y1="150" x2="706" y2="150" visibility="hidden"/>';
+  /* izvor */
+  s+='<g><circle cx="48" cy="142" r="20" fill="none" stroke="var(--ink)" stroke-width="3"/><circle cx="72" cy="142" r="20" fill="none" stroke="var(--ink)" stroke-width="3"/>';
+  s+='<text x="60" y="112" text-anchor="middle" class="t13">TS 110/10 kV</text><text x="60" y="190" text-anchor="middle" class="t11">izvor</text></g>';
+  s+=brk("qa",200,"Q_A")+ctRing("cta",250);
+  s+='<text x="250" y="112" text-anchor="middle" class="t11">CT_A 200/5</text>';
+  s+='<text x="320" y="138" text-anchor="middle" class="t12">vod 10 kV</text>';
+  /* druge TS */
+  s+='<g><rect x="330" y="215" width="80" height="44" rx="3" fill="url(#nSt)" stroke="var(--ink2)"/><polygon points="324,215 370,190 416,215" fill="url(#nEp)" stroke="var(--ink2)"/><rect x="360" y="232" width="20" height="27" fill="var(--ink2)"/></g>';
+  s+='<text x="370" y="278" text-anchor="middle" class="t11">ostale TS (104 A)</text>';
+  s+='<text x="480" y="112" text-anchor="middle" class="t12">sabirnice 10 kV</text>';
+  s+=brk("qb",540,"Q_B")+ctRing("ctb",590);
+  s+='<text x="590" y="112" text-anchor="middle" class="t11">CT_B 50/5</text>';
+  s+='<text x="640" y="138" text-anchor="middle" class="t12">kabel 10 kV</text>';
+  /* transformator */
+  s+='<g><rect x="706" y="116" width="84" height="76" rx="8" fill="url(#nSt)" stroke="var(--ink2)" stroke-width="2"/>';
+  for(var i=0;i<5;i++)s+='<rect x="'+(790+i*5)+'" y="124" width="3" height="60" fill="var(--steel2)" stroke="var(--ink2)" stroke-width=".5"/>';
+  [724,748,772].forEach(function(x){s+='<rect x="'+(x-5)+'" y="94" width="10" height="22" rx="3" fill="url(#nEp)" stroke="var(--ink2)"/><rect x="'+(x-8)+'" y="104" width="16" height="4" rx="2" fill="url(#nEp)" stroke="var(--ink2)"/>';});
+  s+='<circle cx="738" cy="154" r="17" fill="none" stroke="var(--ink)" stroke-width="2.5"/><circle cx="758" cy="154" r="17" fill="none" stroke="var(--ink)" stroke-width="2.5"/>';
+  s+='<text x="748" y="210" text-anchor="middle" class="t13">630 kVA</text><text x="748" y="226" text-anchor="middle" class="t11">10/0,4 kV, uk 4 %</text></g>';
+  s+='<text x="850" y="110" text-anchor="middle" class="t12">NN 0,4 kV</text>';
+  s+='<polyline points="850,175 850,215" class="nl pL" id="n-cons" style="stroke-width:3"/><text x="850" y="238" text-anchor="middle" class="t11">potrošači</text>';
+  /* kvarovi */
+  s+='<text x="660" y="172" text-anchor="middle" class="t13" style="fill:var(--live)!important">F1</text>';
+  s+='<text x="822" y="172" text-anchor="middle" class="t13" style="fill:var(--live)!important">F2</text>';
+  s+='<g id="f1" visibility="hidden"><circle cx="660" cy="150" r="30" fill="url(#nFl)"/><polygon points="664,128 650,152 659,152 654,172 672,146 662,146" fill="#FFE04A" stroke="#7a4b00" stroke-width="1.5"/></g>';
+  s+='<g id="f2" visibility="hidden"><circle cx="822" cy="150" r="30" fill="url(#nFl)"/><polygon points="826,128 812,152 821,152 816,172 834,146 824,146" fill="#FFE04A" stroke="#7a4b00" stroke-width="1.5"/></g>';
+  /* releji */
+  s+=relayBox("ra",250,"RA");s+=relayBox("rb",590,"RB");
+  s+='<polyline points="250,172 250,238" fill="none" stroke="var(--ctc)" stroke-width="2" stroke-dasharray="5 4"/>';
+  s+='<polyline points="590,172 590,238" fill="none" stroke="var(--ctc)" stroke-width="2" stroke-dasharray="5 4"/>';
+  s+='<polyline id="tr-a" points="212,264 200,264 200,182" fill="none" stroke="var(--dead)" stroke-width="2.5" stroke-dasharray="5 4"/>';
+  s+='<polyline id="tr-b" points="552,264 540,264 540,182" fill="none" stroke="var(--dead)" stroke-width="2.5" stroke-dasharray="5 4"/>';
+  s+='<text x="150" y="310" class="t11">––– nalog za isklop</text><text x="320" y="310" class="t11" style="fill:var(--ctc)!important">––– mjerenje preko CT</text>';
+  /* očitanja */
+  s+='<text id="t-ia" x="250" y="60" text-anchor="middle" class="t13">IA = 140 A</text>';
+  s+='<text id="t-ib" x="590" y="60" text-anchor="middle" class="t13">IB = 36,4 A</text>';
+  s+='<text id="t-clock" x="450" y="30" text-anchor="middle" style="font-family:var(--f-lcd);font-size:22px">t = 0,00 s</text>';
+  $("#net").innerHTML=s;
+}
+/* stanje crteža */
+var ST={qa:1,qb:1};   /* 1 = uklopljen */
+var VIEW={ia:IN+IOTHER,ib:IN,clock:null,startA:0,startB:0,tripA:0,tripB:0,f:null};
+function setPot(id,live){var el=$("#"+id);if(!el)return;el.classList.remove("pL","pD");el.classList.add(live?"pL":"pD");}
+function netUpdate(now){
+  var qaC=ST.qa,qbC=ST.qb,vodL=qaC,cabL=qaC&&qbC;
+  setPot("n-src",true);setPot("n-vod",vodL);setPot("n-br",vodL);setPot("n-bus",vodL);setPot("n-bus2",vodL);
+  setPot("n-cab",cabL);setPot("n-nn",cabL);setPot("n-nnb",cabL);setPot("n-cons",cabL);
+  ["qa","qb"].forEach(function(q){
+    var bl=$("#"+q+"-bl");
+    bl.setAttribute("transform","rotate("+(ST[q]?0:-32)+" "+(q==="qa"?200:540)+" "+(YL+20)+")");
+  });
+  $("#tr-a").setAttribute("stroke",VIEW.tripA?"var(--live)":"var(--dead)");
+  $("#tr-b").setAttribute("stroke",VIEW.tripB?"var(--live)":"var(--dead)");
+  $("#ra-s").setAttribute("fill",VIEW.startA?"#ffb02e":"#5a6870");$("#ra-t").setAttribute("fill",VIEW.tripA?"#ff4a3a":"#5a6870");
+  $("#rb-s").setAttribute("fill",VIEW.startB?"#ffb02e":"#5a6870");$("#rb-t").setAttribute("fill",VIEW.tripB?"#ff4a3a":"#5a6870");
+  var flow=cabL&&!VIEW.f&&VIEW.ib>0;
+  var fl=$("#fl-all");fl.setAttribute("visibility",(vodL&&VIEW.ia>0)?"visible":"hidden");
+  fl.setAttribute("x2",cabL&&VIEW.ib>0?706:(vodL?480:180));fl.setAttribute("x1",96);
+  var fl1=$("#f1"),fl2=$("#f2"),fl_on=VIEW.f;
+  var flick=(fl_on&&(RM||Math.sin(now/45)>-0.2))?"visible":"hidden";
+  fl1.setAttribute("visibility",fl_on==="f1"?flick:"hidden");fl2.setAttribute("visibility",fl_on==="f2"?flick:"hidden");
+  $("#t-ia").textContent="IA = "+(VIEW.ia>=1000?fmt(VIEW.ia/1000,2)+" kA":fmt(VIEW.ia,VIEW.ia<100?1:0)+" A");
+  $("#t-ib").textContent="IB = "+(VIEW.ib>=1000?fmt(VIEW.ib/1000,2)+" kA":fmt(VIEW.ib,VIEW.ib<100?1:0)+" A");
+  $("#t-clock").textContent="t = "+fmt(VIEW.clock||0,2)+" s";
+  /* releji: LCD */
+  $("#rb-i").textContent="I = "+fmt(VIEW.ib,VIEW.ib<100?1:0)+" A";$("#rb-s").textContent="sek. "+fmt(VIEW.ib/CTB,2)+" A";
+  $("#ra-i").textContent="I = "+fmt(VIEW.ia,VIEW.ia<100?1:0)+" A";$("#ra-s").textContent="sek. "+fmt(VIEW.ia/CTA,2)+" A";
+  $("#rb-l1").className=VIEW.startB?"a":"";$("#rb-l2").className=VIEW.tripB?"r":"";$("#rb-l3").className=ST.qb?"g":"";
+  $("#ra-l1").className=VIEW.startA?"a":"";$("#ra-l2").className=VIEW.tripA?"r":"";$("#ra-l3").className=ST.qa?"g":"";
+  $("#rb-st").textContent=VIEW.tripB?"ISKLOP":VIEW.startB?"START":"mirovanje";
+  $("#ra-st").textContent=VIEW.tripA?"ISKLOP":VIEW.startA?"START":"mirovanje";
+}
+function idle(){
+  ST.qa=1;ST.qb=1;VIEW.ia=IN+IOTHER;VIEW.ib=IN;VIEW.clock=null;VIEW.startA=VIEW.startB=VIEW.tripA=VIEW.tripB=0;VIEW.f=null;
+  netUpdate(performance.now());
+}
+
+/* ---------- dijagram vrijeme-struja ---------- */
+var CH={l:64,r:880,t:16,b:262,i0:10,i1:20000,t0:0.01,t1:10};
+function cx(I){return CH.l+(Math.log10(Math.max(CH.i0,Math.min(CH.i1,I)))-Math.log10(CH.i0))/(Math.log10(CH.i1)-Math.log10(CH.i0))*(CH.r-CH.l);}
+function cy(t){t=Math.max(CH.t0,Math.min(CH.t1,t));return CH.b-(Math.log10(t)-Math.log10(CH.t0))/(Math.log10(CH.t1)-Math.log10(CH.t0))*(CH.b-CH.t);}
+function stair(i1,t1,i2,t2){
+  var tt2=Math.max(t2,CH.t0);
+  return "M"+cx(i1)+","+cy(CH.t1)+" V"+cy(t1)+" H"+cx(i2)+" V"+cy(tt2)+" H"+cx(CH.i1);
+}
+var curScn="f1";
+function drawChart(){
+  var s=store.set,h='<rect x="0" y="0" width="900" height="300" fill="var(--panel)"/>';
+  [10,100,1000,10000].forEach(function(I){h+='<line x1="'+cx(I)+'" y1="'+CH.t+'" x2="'+cx(I)+'" y2="'+CH.b+'" stroke="var(--line)" stroke-width="1"/><text x="'+cx(I)+'" y="'+(CH.b+18)+'" text-anchor="middle" class="c11">'+(I>=1000?(I/1000)+" kA":I+" A")+'</text>';});
+  [0.01,0.1,1,10].forEach(function(t){h+='<line x1="'+CH.l+'" y1="'+cy(t)+'" x2="'+CH.r+'" y2="'+cy(t)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(CH.l-6)+'" y="'+(cy(t)+4)+'" text-anchor="end" class="c11">'+String(t).replace(".",",")+' s</text>';});
+  [20,50,200,500,2000,5000].forEach(function(I){h+='<line x1="'+cx(I)+'" y1="'+CH.t+'" x2="'+cx(I)+'" y2="'+CH.b+'" stroke="var(--line)" stroke-width=".5" stroke-dasharray="2 4"/>';});
+  h+='<rect x="'+CH.l+'" y="'+CH.t+'" width="'+(CH.r-CH.l)+'" height="'+(CH.b-CH.t)+'" fill="none" stroke="var(--ink2)"/>';
+  h+='<path d="'+stair(I1A,s.t1A,I2A,s.t2A)+'" fill="none" stroke="var(--ctc)" stroke-width="4" stroke-linejoin="round"/>';
+  h+='<path d="'+stair(s.I1B,s.t1B,Math.max(s.I2B,s.I1B),s.t2B)+'" fill="none" stroke="var(--good)" stroke-width="4" stroke-linejoin="round"/>';
+  var sc=SCN[curScn];
+  if(sc){
+    h+='<line x1="'+cx(sc.IB)+'" y1="'+CH.t+'" x2="'+cx(sc.IB)+'" y2="'+CH.b+'" stroke="var(--live)" stroke-width="2.5" stroke-dasharray="7 5"/>';
+    var lx=cx(sc.IB),la=lx>600;h+='<text x="'+(la?lx-5:lx+5)+'" y="'+(CH.t+14)+'" text-anchor="'+(la?'end':'start')+'" class="c11" style="fill:var(--live)!important">'+sc.n+': IB = '+fmt(sc.IB,sc.IB<100?1:0)+' A</text>';
+    var ia=sc.IB+IOTHER;
+    h+='<line x1="'+cx(ia)+'" y1="'+CH.t+'" x2="'+cx(ia)+'" y2="'+CH.b+'" stroke="var(--live)" stroke-width="1.5" stroke-dasharray="3 5" opacity=".7"/>';
+  }
+  h+='<text x="'+((CH.l+CH.r)/2)+'" y="294" text-anchor="middle" class="c12">struja u primaru (A), logaritamska skala</text>';
+  h+='<text x="14" y="140" transform="rotate(-90 14 140)" text-anchor="middle" class="c12">vrijeme (s)</text>';
+  $("#chart").innerHTML=h;
+}
+
+/* ---------- animirani pokus ---------- */
+var RUN=null;
+function say(t,k){var m=$("#msg");m.textContent=t;m.className="msg"+(k?" "+k:"");}
+var logT0=0;
+function logAdd(t,kind,ts){
+  var el=$("#p-log"),d=document.createElement("div");d.className=kind||"";
+  d.innerHTML='<span class="t">'+(ts==null?"":fmt(ts,2)+" s")+'</span>'+t;el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function setBtns(dis){$$("#scn-btns .btn, #b-all").forEach(function(b){b.disabled=dis;});}
+function buildScn(){
+  var h="";
+  ORDER.forEach(function(id){h+='<button class="btn sm" type="button" data-scn="'+id+'">'+SCN[id].n+'</button>';});
+  $("#scn-btns").innerHTML=h;
+  $$("#scn-btns [data-scn]").forEach(function(b){b.addEventListener("click",function(){runScn(b.getAttribute("data-scn"));});});
+}
+function runScn(id){
+  if(RUN)return;
+  curScn=id;drawChart();idle();$("#p-log").innerHTML="";
+  var res=evalScn(id,store.set);
+  if($("#b-fast").checked){finishRun(res,true);return;}
+  RUN={id:id,res:res,t0:performance.now(),ev:{}};
+  var sc=SCN[id];
+  RUN.end=Math.max((res.tripB?res.tB+TBRK:0),(res.tripA?res.tA+TBRK:0),sc.dur||0)+(res.tripA||res.tripB?0.7:(sc.hold||1));
+  if(!res.tripA&&!res.tripB)RUN.end=sc.hold;
+  logAdd(sc.d,"",0);say("Pokus: "+sc.n+"…");setBtns(true);
+  if(sc.kind==="fault")logAdd("Nastao je kvar "+(sc.loc==="f1"?"F1 na kabelu":"F2 na NN strani")+".","event",0);
+  loop();
+}
+function finishRun(res,quick){
+  recordRes(res);
+  if(quick){
+    logAdd(res.txt,res.ok?"verify":"event");
+    ST.qa=res.tripA?0:1;ST.qb=res.tripB?0:1;VIEW.f=null;VIEW.clock=null;
+    VIEW.ia=(res.tripA?0:(res.tripB?IOTHER:IN+IOTHER));VIEW.ib=res.tripB||res.tripA?0:IN;
+    VIEW.tripA=res.tripA?1:0;VIEW.tripB=res.tripB?1:0;netUpdate(performance.now());
+  }
+  say(res.txt,res.ok?"good":"bad");
+  RUN=null;setBtns(false);renderRes();renderTasks();
+}
+function loop(){
+  requestAnimationFrame(function f(now){
+    if(!RUN)return;
+    var t=(now-RUN.t0)/1000,r=RUN.res,sc=SCN[RUN.id],ev=RUN.ev;
+    VIEW.clock=Math.min(t,RUN.end);
+    var tripBat=r.tripB?r.tB+TBRK:Infinity,tripAat=r.tripA?r.tA+TBRK:Infinity;
+    var openB=t>=tripBat,openA=t>=tripAat;
+    ST.qb=openB?0:1;ST.qa=openA?0:1;
+    /* struje */
+    var ibNow=sc.dur?(t<sc.dur?sc.IB:IN):sc.IB;
+    var cleared=(openA||openB)&&sc.kind==="fault";
+    var faultOn=(sc.kind==="fault")&&!cleared;
+    VIEW.f=faultOn?sc.loc:null;
+    var ib=ibNow;if(openB||openA)ib=0;
+    var ia=ibNow+IOTHER;if(openB&&!openA)ia=IOTHER;if(openA)ia=0;
+    if(cleared&&!openA)ia=IOTHER;
+    VIEW.ib=ib;VIEW.ia=ia;
+    /* START i ISKLOP */
+    var tbStart=isFinite(r.TB)||(sc.dur&&false);
+    var startB=(sc.dur?(t<sc.dur&&ibNow>=store.set.I1B):(isFinite(T(sc.IB,store.set.I1B,1,store.set.I2B,1))&&!openB));
+    var startA=(sc.dur?(t<sc.dur&&ibNow+IOTHER>=I1A):(isFinite(T(sc.IB+IOTHER,I1A,1,I2A,1))&&!openA));
+    VIEW.startB=startB&&!VIEW.tripB?1:0;VIEW.startA=startA&&!VIEW.tripA?1:0;
+    if(r.tripB&&t>=r.tB){if(!ev.tb){ev.tb=1;logAdd("RB: "+r.stB+" je proradio, nalog za isklop Q_B","event",r.tB);}VIEW.tripB=1;}
+    if(r.tripA&&t>=r.tA){if(!ev.ta){ev.ta=1;logAdd("RA: proradio, nalog za isklop Q_A","event",r.tA);}VIEW.tripA=1;}
+    if(openB&&!ev.ob){ev.ob=1;logAdd("Q_B isklopljen","",tripBat);}
+    if(openA&&!ev.oa){ev.oa=1;logAdd("Q_A isklopljen: "+(r.tripB?"oba prekidača su isklopila":"ostale TS ostaju bez napona"),"event",tripAat);}
+    if(sc.dur&&t>=sc.dur&&!ev.inr){ev.inr=1;logAdd("Uklopna struja je pala na pogonsku. Releji se vraćaju u mirovanje.","verify",sc.dur);}
+    netUpdate(now);
+    if(t>=RUN.end){VIEW.clock=RUN.end;netUpdate(now);logAdd(r.txt,r.ok?"verify":"event",null);finishRun(r,false);return;}
+    requestAnimationFrame(f);
+  });
+}
+$("#b-reset").addEventListener("click",function(){if(RUN)return;idle();say("Prekidači su uklopljeni, sustav je u normalnom pogonu.");});
+$("#b-all").addEventListener("click",function(){
+  if(RUN)return;var okAll=true;
+  ORDER.forEach(function(id){var r=evalScn(id,store.set);recordRes(r);if(!r.ok)okAll=false;});
+  idle();renderRes();renderTasks();
+  say(okAll?"Svih pet pokusa je prošlo s ovim podešenjem.":"Neki pokusi nisu prošli. Pogledaj tablicu rezultata i ispravi podešenje.",okAll?"good":"warn");
+  logAdd("Pokrenuti su svi pokusi s podešenjem I>B "+store.set.I1B+" A, t>B "+fmt(store.set.t1B,2)+" s, I>>B "+store.set.I2B+" A, t>>B "+fmt(store.set.t2B,2)+" s.","");
+});
+
+/* ---------- rezultati i zadaci ---------- */
+function renderRes(){
+  var h='<tr><th>Pokus</th><th>Q_B</th><th>Q_A</th><th>Ocjena</th></tr>',cs=sig(),anyStale=false;
+  ORDER.forEach(function(id){
+    var r=store.res[id];
+    if(!r){h+='<tr><td>'+SCN[id].n+'</td><td class="u">–</td><td class="u">–</td><td class="u">nije pokrenut</td></tr>';return;}
+    var stale=r.sig!==cs;if(stale)anyStale=true;
+    h+='<tr><td>'+SCN[id].n+'</td><td>'+(r.tripB?"isklop "+fmt(r.tB+TBRK,2)+" s":"ne")+'</td><td>'+(r.tripA?"isklop "+fmt(r.tA+TBRK,2)+" s":"ne")+'</td><td class="'+(stale?"u":r.ok?"y":"n")+'">'+(stale?"zastarjelo":r.ok?"ispravno":"neispravno")+'</td></tr>';
+  });
+  $("#res-tbl").innerHTML=h;
+  $("#res-note").textContent=anyStale?"Rezultati označeni kao zastarjeli odnose se na ranije podešenje. Ponovi pokuse.":"";
+}
+function resOk(id){var r=store.res[id];return !!(r&&r.sig===sig()&&r.ok);}
+function renderTasks(){}   /* kvačice se prikazuju u tablici rezultata */
+
+/* ---------- start ---------- */
+buildNet();buildSettings();buildScn();drawChart();renderRes();idle();
+
+/* =====================================================================
+   ZAPISNIK
+   ===================================================================== */
+var DN=[["","— odaberi —"],["DA","DA"],["NE","NE"]];
+function O(arr){return [["","— odaberi —"]].concat(arr);}
+var PARTS=[
+ {n:"Dio 1: Osnove i proračun",max:8,note:"Izračunaj iz podataka u karticama Upute i Zaštita. In = S / (√3 · U)."},
+ {n:"Dio 2: Podešenje releja i pokusi",max:12,note:"Upiši konačno podešenje koje si ostavio u kartici Zaštita. Stavke s pokusima ocjenjuju se prema rezultatima tvoga podešenja."},
+ {n:"Dio 3: Očitanja i analiza",max:10,note:"Očitanja se uspoređuju s rezultatima pokusa s konačnim podešenjem. Prvo pokreni pokuse."},
+ {n:"Dio 4: Selektivnost i zaključci",max:10,note:"Za pokazni pokus namjerno podesi RA na isto vrijeme kao RB, pa pokreni kvar F1."}
+];
+var ITEMS=[];
+function add(o){o.id=o.id||("i"+ITEMS.length);ITEMS.push(o);}
+function resFresh(id){var r=store.res[id];return (r&&r.sig===sig())?r:null;}
+
+/* Dio 1 */
+add({part:0,g:"Proračun",id:"p_in",l:"Nazivna struja transformatora 630 kVA na 10 kV (A)",type:"num",c:36.4,tol:0.5,h:"In = 630 000 / (1,732 · 10 000) = 36,4 A."});
+add({part:0,g:"Proračun",id:"p_f2",l:"Struja trofaznog kratkog spoja na NN strani, preračunata na 10 kV (A)",type:"num",c:910,tol:10,h:"I = In / uk = 36,4 A / 0,04 = 910 A."});
+add({part:0,g:"Proračun",id:"p_sb",l:"Struja u releju RB pri nazivnoj struji, CT 50/5 (A)",type:"num",c:3.64,tol:0.05,h:"I sek = 36,4 A / 10 = 3,64 A."});
+add({part:0,g:"Proračun",id:"p_sa",l:"Struja u releju RA kad vodom teče 140,4 A, CT 200/5 (A)",type:"num",c:3.51,tol:0.05,h:"Omjer je 200/5 = 40, pa je 140,4 A / 40 = 3,51 A."});
+add({part:0,g:"Pitanja",id:"p_q1",l:"Što prekida struju kvara?",type:"sel",opts:O([["a","Zaštitni relej"],["b","Prekidač, po nalogu releja"],["c","Strujni transformator"],["d","Rastavljač"]]),c:"b",h:"Relej samo mjeri i daje nalog, a struju prekida prekidač."});
+add({part:0,g:"Pitanja",id:"p_q2",l:"Čemu služi brzi stupanj I>>?",type:"sel",opts:O([["a","Zaštiti od preopterećenja"],["b","Brzo isključuje kratke spojeve"],["c","Mjeri napon na sabirnicama"],["d","Ograničava uklopnu struju"]]),c:"b",h:"I>> reagira na velike struje kratkog spoja i isklapa nakon kratkog vremena."});
+add({part:0,g:"Pitanja",id:"p_q3",l:"Čemu služi strujni transformator uz relej?",type:"sel",opts:O([["a","Povećava struju radi točnijeg mjerenja"],["b","Smanjuje struju na sigurnu vrijednost i odvaja relej od visokog napona"],["c","Napaja prekidač"],["d","Ograničava struju kratkog spoja"]]),c:"b",h:"Relej na sekundaru dobiva malu struju (npr. 5 A), odvojenu od 10 kV."});
+add({part:0,g:"Pitanja",id:"p_q4",l:"Smije li sekundar strujnog transformatora biti otvoren dok teče primarna struja?",type:"sel",opts:DN,c:"NE",h:"Na otvorenom sekundaru nastaje opasno visok napon. Sekundar se kratko spaja."});
+
+/* Dio 2: podešenje */
+function Tb(I){var s=store.set;return T(I,s.I1B,s.t1B,s.I2B,s.t2B);}
+function setItem(key,label,unit,crit,hint){
+  add({part:1,g:"Konačno podešenje",id:"s_"+key,l:label,type:"set",key:key,crit:crit,h:hint,unit:unit});
+}
+setItem("I1B","RB: proradna struja I>","A",function(v){return v>40&&v<=54.6;},"I> mora biti iznad 110 % In (40 A), a ispod 150 % In (54,6 A).");
+setItem("t1B","RB: vrijeme t>","s",function(v){return v>=0.1;},"t> ne smije biti kraće od trajanja uklopne struje (0,1 s).");
+setItem("I2B","RB: proradna struja I>>","A",function(v){return v>360&&v<=910;},"I>> mora biti iznad uklopne struje (360 A), a ispod struje kvara F2 (910 A).");
+setItem("t2B","RB: vrijeme t>>","s",function(v){return v<=0.2;},"Brzi stupanj mora biti kratak, najviše 0,2 s.");
+setItem("t1A","RA: vrijeme t>","s",function(v){var tb=Tb(910);return isFinite(tb)&&v>=tb+DT_MIN-1e-6;},"RA mora biti sporiji od RB za najmanje 0,3 s pri struji kvara F2 (910 A).");
+setItem("t2A","RA: vrijeme t>>","s",function(v){var tb=Tb(8000);return isFinite(tb)&&v>=tb+DT_MIN-1e-6;},"RA mora biti sporiji od RB za najmanje 0,3 s pri struji kvara F1 (8000 A).");
+function sc(id,l,h){add({part:1,g:"Pokusi s konačnim podešenjem",id:"x_"+id,l:l,type:"sim",f:function(){return resOk(id);},h:h});}
+sc("norm","Normalni pogon 110 %: nema isklapanja","Pokreni pokus. I> mora biti iznad 40 A.");
+sc("over","Preopterećenje 150 %: isklapa samo Q_B","I> mora biti ispod 54,6 A, a Q_A ne smije isklopiti.");
+sc("inr","Uklop transformatora: nema isklapanja","I>> iznad 360 A i t> ne kraće od 0,1 s.");
+sc("f1","Kvar F1: isklapa samo Q_B","Vrijeme t>> releja RA mora biti dulje od t>> releja RB za najmanje 0,3 s.");
+sc("f2","Kvar F2: isklapa samo Q_B","Pri 910 A RA mjeri vrijeme t>. Ono mora biti dulje od vremena RB za najmanje 0,3 s.");
+add({part:1,g:"Pokusi s konačnim podešenjem",id:"x_all",l:"Svih pet pokusa prolazi s istim podešenjem",type:"sim",f:function(){return ORDER.every(resOk);},h:"Podešenje mora vrijediti u svim pokusima odjednom."});
+
+/* Dio 3: očitanja */
+function readItem(id,l,h){
+  add({part:2,g:"Očitanja iz pokusa",id:"r_"+id,l:l,type:"num",tol:0.02,
+   gate:function(){var r=resFresh(id);return r?null:"Prvo pokreni taj pokus s konačnim podešenjem.";},
+   exp:function(){var r=resFresh(id);return (r&&r.tripB)?r.tB+TBRK:null;},h:h});
+}
+readItem("f1","Kvar F1: vrijeme isklopa prekidača Q_B (s)","Vrijeme je t>> releja RB plus 0,08 s vlastitog vremena prekidača.");
+readItem("f2","Kvar F2: vrijeme isklopa prekidača Q_B (s)","Očitaj u tablici rezultata pokusa. Uključuje 0,08 s prekidača.");
+readItem("over","Preopterećenje: vrijeme isklopa prekidača Q_B (s)","Vrijeme je t> releja RB plus 0,08 s.");
+add({part:2,g:"Očitanja iz pokusa",id:"r_st",l:"Pri kvaru F1 proradio je stupanj releja RB",type:"sel",opts:O([["a","I> (osnovni stupanj)"],["b","I>> (brzi stupanj)"],["c","nijedan"]]),c:"b",gate:function(){return resFresh("f1")?null:"Prvo pokreni pokus F1 s konačnim podešenjem.";},h:"8000 A je iznad I>> pa djeluje brzi stupanj."});
+add({part:2,g:"Struje u RA",id:"r_ia1",l:"Kvar F1: struja koju mjeri RA (A)",type:"num",c:8104,tol:10,h:"IA = 8000 A + 104 A ostalih TS = 8104 A."});
+add({part:2,g:"Struje u RA",id:"r_ia2",l:"Kvar F2: struja koju mjeri RA (A)",type:"num",c:1014,tol:10,h:"IA = 910 A + 104 A ostalih TS = 1014 A."});
+add({part:2,g:"Analiza",id:"r_q1",l:"Zašto pri preopterećenju 150 % ne reagira RA?",type:"sel",opts:O([["a","RA je pokvaren"],["b","Struja u RA (158,6 A) manja je od njegove I> = 170 A"],["c","Q_A je rastavljač"],["d","RA reagira samo na napon"]]),c:"b",h:"IA = 54,6 + 104 = 158,6 A, a RA proradi tek od 170 A."});
+add({part:2,g:"Analiza",id:"r_q2",l:"Koji relej služi kao pričuvna zaštita?",type:"sel",opts:O([["a","RA, nadređeni relej"],["b","RB, podređeni relej"],["c","Nijedan"],["d","Oba isto"]]),c:"a",h:"RA djeluje samo ako RB ili Q_B zakaže."});
+add({part:2,g:"Analiza",id:"r_q3",l:"Koji uvjet mora vrijediti za vrijeme nadređenog releja?",type:"sel",opts:O([["a","Isto kao podređenog"],["b","Kraće od podređenog"],["c","Dulje od podređenog za vremenski stupanj Δt (oko 0,3 s)"],["d","Nije važno"]]),c:"c",h:"Vremensko stupnjevanje daje podređenom releju vrijeme da isklopi prvi."});
+add({part:2,g:"Analiza",id:"r_q4",l:"Zašto uklopna struja ne smije isključiti transformator?",type:"sel",opts:O([["a","Zato što je opasna"],["b","Zato što je kratkotrajna i nije kvar"],["c","Zato što je manja od nazivne struje"],["d","Zato što ju prekidač ne može prekinuti"]]),c:"b",h:"Uklopna struja traje oko 0,1 s i brzo pada na pogonsku."});
+
+/* Dio 4: selektivnost */
+add({part:3,g:"Pokazni pokus",id:"n_demo",l:"Izveden je pokus u kojem je pri kvaru isklopio i Q_A",type:"sim",f:function(){return !!store.flags.demo;},h:"Postavi t>>A jednako ili blizu t>>B (razlika manja od 0,13 s) i pokreni kvar F1."});
+add({part:4-1,g:"Pokazni pokus",id:"n_q1",l:"Koji je prekidač neželjeno isklopio?",type:"sel",opts:O([["a","Samo Q_B"],["b","Q_A, nadređeni prekidač"],["c","Nijedan"],["d","Prekidač na NN strani"]]),c:"b",gate:function(){return store.flags.demo?null:"Prvo izvedi pokazni pokus.";},h:"Nadređeni Q_A isključuje napajanje cijelog voda."});
+add({part:3,g:"Pokazni pokus",id:"n_q2",l:"Posljedica neselektivnog isklopa",type:"sel",opts:O([["a","Bez napona ostaju i druge TS na vodu"],["b","Ništa, kvar je otklonjen"],["c","Transformator se hladi"],["d","Samo naša TS ostaje bez napona"]]),c:"a",gate:function(){return store.flags.demo?null:"Prvo izvedi pokazni pokus.";},h:"Q_A napaja i ostale TS (104 A)."});
+add({part:3,g:"Pokazni pokus",id:"n_q3",l:"Uzrok neselektivnosti",type:"sel",opts:O([["a","Prevelika struja kvara"],["b","Vrijeme RA nije dovoljno dulje od vremena RB"],["c","Prekidač Q_B je preslab"],["d","Strujni transformator je pokvaren"]]),c:"b",gate:function(){return store.flags.demo?null:"Prvo izvedi pokazni pokus.";},h:"Oba releja su proradila gotovo istodobno."});
+add({part:3,g:"Zaključci",id:"n_q9",l:"Što radi relej ako struja padne ispod I> prije isteka vremena t>?",type:"sel",opts:O([["a","Svejedno isklopi"],["b","Vrati se u mirovanje bez isklopa"],["c","Zapamti vrijeme i isklopi kasnije"],["d","Pokvari se"]]),c:"b",h:"Zato uklopna struja od 0,1 s ne isklapa relej s vremenom većim od 0,1 s."});
+add({part:3,g:"Zaključci",id:"n_q4",l:"Tipičan vremenski stupanj Δt između dva releja",type:"sel",opts:O([["a","oko 0,01 s"],["b","oko 0,3 s"],["c","oko 10 s"],["d","0 s"]]),c:"b",h:"Obuhvaća vrijeme isklopa prekidača, tolerancije releja i rezervu."});
+add({part:3,g:"Zaključci",id:"n_q5",l:"Tko u stvarnosti računa i potvrđuje podešenja zaštite?",type:"sel",opts:O([["a","Bilo tko pri montaži"],["b","Osposobljeni projektant zaštite, uz odobrenje operatora mreže"],["c","Proizvođač prekidača"],["d","Nitko, podešenja su tvornička"]]),c:"b",h:"Podešenja se izračunavaju iz podataka mreže i usklađuju s operatorom."});
+add({part:3,g:"Zaključci",id:"n_q6",l:"Smije li se podešenje zaštite mijenjati bez odobrenja radi lakšeg rada?",type:"sel",opts:DN,c:"NE",h:"Pogrešno podešenje ugrožava ljude i opremu."});
+add({part:3,g:"Zaključci",id:"n_q7",l:"Što treba učiniti nakon svake promjene podešenja?",type:"sel",opts:O([["a","Ništa"],["b","Ponoviti ispitivanje i provjeriti selektivnost"],["c","Zamijeniti prekidač"],["d","Isklopiti napajanje trajno"]]),c:"b",h:"Podešenje se potvrđuje ispitivanjem u svim pokusima."});
+add({part:3,g:"Zaključci",id:"n_q8",l:"Je li nakon isklopa zbog kvara potrebno utvrditi uzrok prije ponovnog uklopa?",type:"sel",opts:DN,c:"DA",h:"Ponovni uklop na kvar ponavlja štetu i opasnost."});
+
+function itemOk(it){
+  var v=store.ans[it.id];
+  if(it.type==="sim")return {ok:!!it.f(),hint:it.h};
+  if(it.gate){var g=it.gate();if(g)return {ok:false,hint:g};}
+  if(it.type==="set"){
+    var n=num(v);if(n===null)return {ok:false,hint:it.h};
+    if(Math.abs(n-store.set[it.key])>1e-6)return {ok:false,hint:"Upisana vrijednost mora biti ista kao u releju u kartici Zaštita."};
+    return {ok:!!it.crit(n),hint:it.h};
+  }
+  if(it.type==="num"){
+    var m=num(v);if(m===null)return {ok:false,hint:it.h};
+    var c=it.exp?it.exp():it.c;
+    if(c===null||c===undefined)return {ok:false,hint:"U tom pokusu prekidač nije isklopio."};
+    return {ok:Math.abs(m-c)<=it.tol,hint:it.h};
+  }
+  return {ok:v===it.c,hint:it.h};
+}
+function grade(p){if(p>=34)return[5,"odličan"];if(p>=27)return[4,"vrlo dobar"];if(p>=20)return[3,"dobar"];if(p>=1)return[2,"dovoljan"];return[1,"nedovoljan"];}
+var checked=false;
+function renderZap(){
+  $("#z-name").value=store.name;$("#z-cls").value=store.cls;$("#z-date").value=store.date;
+  var host=$("#z-parts");host.innerHTML="";
+  PARTS.forEach(function(pt,pi){
+    var card=document.createElement("div");card.className="taskcard";card.style.marginBottom="12px";
+    var h='<h3>'+pt.n+' <span class="badge">'+pt.max+' b</span></h3>'+(pt.note?'<p class="sub2">'+pt.note+'</p>':'');
+    var grp="";
+    ITEMS.forEach(function(it){
+      if(it.part!==pi)return;
+      if(it.g&&it.g!==grp){grp=it.g;h+='<div class="gh">'+grp+'</div>';}
+      h+='<div class="arow" data-id="'+it.id+'"><label for="f-'+it.id+'">'+it.l+'</label>';
+      if(it.type==="sim"){
+        var ok=!!it.f();h+='<div class="simv" id="f-'+it.id+'">'+(ok?"da":"ne")+' <span class="sub2">(iz simulacije)</span></div>';
+      }else if(it.type==="num"||it.type==="set"){
+        h+='<input type="text" inputmode="decimal" id="f-'+it.id+'" value="'+(store.ans[it.id]||"")+'" placeholder="'+(it.unit?"upiši ("+it.unit+")":"upiši broj")+'">';
+      }else{
+        h+='<select id="f-'+it.id+'">';
+        it.opts.forEach(function(o){h+='<option value="'+o[0]+'"'+(store.ans[it.id]===o[0]?" selected":"")+'>'+o[1]+'</option>';});
+        h+='</select>';
+      }
+      h+='<span class="rs" id="rs-'+it.id+'"></span></div>';
+    });
+    card.innerHTML=h;host.appendChild(card);
+  });
+  $$("#z-parts select,#z-parts input").forEach(function(el){
+    var fn=function(){var id=el.id.replace(/^f-/,"");store.ans[id]=el.value;save();if(checked)runCheck();updFill();};
+    el.addEventListener("input",fn);el.addEventListener("change",fn);
+  });
+  updFill();if(checked&&!EXAM)runCheck();
+}
+function filled(){return ITEMS.filter(function(it){return it.type==="sim"?!!it.f():!!(store.ans[it.id]&&String(store.ans[it.id]).trim());}).length;}
+function updFill(){
+  if(EXAM){var b=$("#z-box");b.hidden=false;b.innerHTML='<span>Ispunjeno: <b>'+filled()+'</b> od '+ITEMS.length+' stavki</span><span class="sub2">Ocjenjivanje obavlja nastavnik.</span>';}
+}
+function runCheck(){
+  checked=true;var pts=0,per=[0,0,0,0];
+  ITEMS.forEach(function(it){
+    var r=itemOk(it),el=$("#rs-"+it.id),row=$('.arow[data-id="'+it.id+'"]');
+    if(!el)return;
+    if(r.ok){pts++;per[it.part]++;el.className="rs ok";el.textContent="✓";el.title="";}
+    else{el.className="rs no";el.textContent="✗";el.title=r.hint||"";}
+    var old=row.querySelector(".hh");if(old)old.remove();
+    if(!r.ok&&r.hint){var d=document.createElement("div");d.className="hint hh";d.style.gridColumn="1 / -1";d.textContent=r.hint;row.appendChild(d);}
+  });
+  var g=grade(pts),b=$("#z-box");b.hidden=false;
+  b.innerHTML='<span>Bodovi: <b>'+pts+' / '+ITEMS.length+'</b></span><span>Ocjena: <b>'+g[0]+'</b> ('+g[1]+')</span><span class="sub2">dio 1: '+per[0]+'/8 · dio 2: '+per[1]+'/12 · dio 3: '+per[2]+'/10 · dio 4: '+per[3]+'/10</span>';
+  return pts;
+}
+["name","cls","date"].forEach(function(k){$("#z-"+k).addEventListener("input",function(e){store[k]=e.target.value;save();});});
+if(EXAM){$("#z-check").hidden=true;$("#z-note").textContent="Način provjere znanja: ocjenjivanje obavlja nastavnik. Na kraju sata spremi zapisnik i predaj ga na Loomenu.";}
+$("#z-check").addEventListener("click",function(){runCheck();});
+function optText(it,v){for(var i=0;i<it.opts.length;i++)if(it.opts[i][0]===v)return it.opts[i][1];return "";}
+function zText(){
+  var s=store.set,t=["ZAPISNIK: NADSTRUJNA ZAŠTITA I SELEKTIVNOST (laboratorij 2)","Ime i prezime: "+store.name,"Razred: "+store.cls,"Datum: "+store.date,""];
+  PARTS.forEach(function(pt,pi){
+    t.push(pt.n.toUpperCase());var grp="";
+    ITEMS.forEach(function(it){
+      if(it.part!==pi)return;
+      if(it.g&&it.g!==grp){grp=it.g;t.push("  ["+grp+"]");}
+      var v=store.ans[it.id];
+      if(it.type==="sim")t.push("  "+it.l+": "+(it.f()?"DA":"NE")+" (iz simulacije)");
+      else if(it.type==="num"||it.type==="set")t.push("  "+it.l+": "+(v?v+(it.unit?" "+it.unit:""):"-"));
+      else t.push("  "+it.l+": "+(v?optText(it,v):"-"));
+    });
+    t.push("");
+  });
+  t.push("PODACI IZ SIMULACIJE");
+  t.push("  Podešenje RB: I> "+s.I1B+" A, t> "+fmt(s.t1B,2)+" s, I>> "+s.I2B+" A, t>> "+fmt(s.t2B,2)+" s");
+  t.push("  Podešenje RA: I> "+I1A+" A, t> "+fmt(s.t1A,2)+" s, I>> "+I2A+" A, t>> "+fmt(s.t2A,2)+" s");
+  ORDER.forEach(function(id){
+    var r=store.res[id];
+    if(!r){t.push("  "+SCN[id].n+": nije pokrenut");return;}
+    t.push("  "+SCN[id].n+": Q_B "+(r.tripB?"isklop "+fmt(r.tB+TBRK,2)+" s":"ne")+", Q_A "+(r.tripA?"isklop "+fmt(r.tA+TBRK,2)+" s":"ne")+", "+(r.ok?"ispravno":"neispravno")+(r.sig!==sig()?" (ranije podešenje)":""));
+  });
+  t.push("  Pokazan neselektivni isklop: "+(store.flags.demo?"DA":"NE"));
+  return t.join("\n");
+}
+function zsay(t){$("#z-note").textContent=t;}
+$("#z-copy").addEventListener("click",function(){
+  var txt=zText(),done=function(ok){if(ok)zsay("Zapisnik je kopiran. Zalijepi ga u dokument.");else fallbackCopy(txt);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){done(true);},function(){fallbackCopy(txt);});}else fallbackCopy(txt);
+});
+function fallbackCopy(txt){
+  var ta=$("#z-fallback");
+  if(!ta){ta=document.createElement("textarea");ta.id="z-fallback";ta.rows=12;ta.style.cssText="width:100%;margin-top:12px;font-family:var(--f-lcd);background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:6px;padding:8px";$("#z-note").insertAdjacentElement("afterend",ta);}
+  ta.value=txt;ta.focus();ta.select();zsay("Označi tekst u polju ispod i kopiraj ga (Ctrl+C).");
+}
+if(STANDALONE){
+  $("#z-save").hidden=false;
+  zsay("Na kraju sata pritisni Spremi zapisnik. Datoteka se preuzme na računalo, a zatim je predaj na Loomenu. Unosi se čuvaju i u ovom pregledniku.");
+}
+function saveName(){
+  var n=(store.name||"ucenik").replace(/đ/g,"d").replace(/Đ/g,"D").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+  var dt=(store.date||"").replace(/[^0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  return "Zapisnik_L2_"+(n||"ucenik")+(dt?"_"+dt:"")+".txt";
+}
+$("#z-save").addEventListener("click",function(){
+  if(!store.name.trim()){zsay("Prvo upiši ime i prezime na vrhu zapisnika.");$("#z-name").focus();return;}
+  try{
+    var blob=new Blob(["﻿"+zText().replace(/\n/g,"\r\n")],{type:"text/plain;charset=utf-8"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=saveName();
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    zsay("Zapisnik je spremljen kao "+saveName()+" (mapa Preuzimanja). Predaj ga na Loomenu.");
+  }catch(e){fallbackCopy(zText());}
+});
+var armed=false,armT=null;
+$("#z-reset").addEventListener("click",function(){
+  var b=$("#z-reset");
+  if(!armed){armed=true;b.textContent="Potvrdi brisanje";b.classList.add("danger");armT=setTimeout(function(){armed=false;b.textContent="Obriši sve unose";b.classList.remove("danger");},4000);return;}
+  clearTimeout(armT);armed=false;b.textContent="Obriši sve unose";b.classList.remove("danger");
+  store.ans={};store.res={};store.flags={};store.set=JSON.parse(JSON.stringify(DEF));save();checked=false;$("#z-box").hidden=true;
+  buildSettings();drawChart();renderRes();idle();$("#p-log").innerHTML="";say("Podešenje i svi unosi vraćeni su na početno.");
+  renderZap();zsay("Svi unosi i rezultati pokusa su obrisani.");
+});
+
+/* ---------- start ---------- */
+showTab("upute");
+window.__lab={ITEMS:ITEMS,store:store,evalScn:evalScn,grade:grade,runCheck:runCheck,itemOk:itemOk,sig:sig};
+})();
+
+</script>
+</body>
+</html>
