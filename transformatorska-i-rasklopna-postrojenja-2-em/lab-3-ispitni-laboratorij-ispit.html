@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Virtualni ispitni laboratorij</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap">
+<style>
+[hidden]{display:none!important}
+.vals .miss b{font-family:var(--f-body);font-size:.8em;font-weight:400;opacity:.75}
+/* Layout: radni stol. Lijevo shema objekta s točkama za mjerne kabele, desno instrument i kontrolna lista; zapisnik kao kartice po krugu. */
+:root{
+  --bg:#EEF2EC; --surface:#FFFFFF; --surface2:#E3EADD; --ink:#1B2A2F; --ink2:#506058; --line:#C6D1C0;
+  --accent:#3D8A1B; --accent-ink:#FFFFFF; --accent-soft:#DCEEC8;
+  --warn:#8A5A00; --warn-bg:#FFF0C7; --bad:#B42318; --bad-bg:#FCE3DF; --good:#25702A; --good-bg:#DDF0DB;
+  --lcd-bg:#CDE2B0; --lcd-ink:#18240F; --lead1:#D6382B; --lead2:#1B2A2F;
+  --f-body:"Trebuchet MS","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-lcd:"Share Tech Mono","Consolas","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11191C; --surface:#1A2529; --surface2:#243137; --ink:#E7EFE8; --ink2:#A6B5AC; --line:#34454C;
+    --accent:#8CC63F; --accent-ink:#11191C; --accent-soft:#273B22;
+    --warn:#F2C14E; --warn-bg:#3A2F10; --bad:#FF8F80; --bad-bg:#40201C; --good:#86D487; --good-bg:#1D3A21;
+    --lcd-bg:#B9D29C; --lcd-ink:#15200E; --lead1:#FF6B5B; --lead2:#E7EFE8; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11191C; --surface:#1A2529; --surface2:#243137; --ink:#E7EFE8; --ink2:#A6B5AC; --line:#34454C;
+  --accent:#8CC63F; --accent-ink:#11191C; --accent-soft:#273B22;
+  --warn:#F2C14E; --warn-bg:#3A2F10; --bad:#FF8F80; --bad-bg:#40201C; --good:#86D487; --good-bg:#1D3A21;
+  --lcd-bg:#B9D29C; --lcd-ink:#15200E; --lead1:#FF6B5B; --lead2:#E7EFE8; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;margin:0;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:clamp(1.35rem,3.4vw,1.9rem);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-size:1.15rem;margin:0 0 8px;text-wrap:balance}
+h3{font-size:1rem;margin:0}
+p{margin:0}
+a{color:var(--accent)}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;border-bottom:3px solid var(--accent);padding-bottom:12px}
+.top .sub{color:var(--ink2);font-size:.9rem;margin-top:4px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 16px;border-radius:6px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.lab{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.lab{grid-template-columns:minmax(0,1fr)}}
+.picker{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer;position:relative}
+.pill.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.pill .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-left:6px}
+.plate{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.92rem;color:var(--ink2);margin:10px 0}
+.plate b{color:var(--ink)}
+.schema{width:100%;height:auto;display:block;touch-action:manipulation}
+.schema text{font-family:var(--f-body);fill:var(--ink)}
+.s-stroke{stroke:var(--ink);fill:none;stroke-width:2.2}
+.s-box{fill:var(--surface2);stroke:var(--ink);stroke-width:2}
+.s-lbl{font-size:13px;fill:var(--ink2)}
+.s-ter{fill:var(--surface);stroke:var(--ink);stroke-width:2.4}
+.term{cursor:pointer}
+.term:hover .s-ter,.term:focus-visible .s-ter{stroke:var(--accent);stroke-width:4}
+.term .hit{fill:transparent}
+.term.sel1 .s-ter{fill:var(--lead1);stroke:var(--lead1)}
+.term.sel2 .s-ter{fill:var(--lead2);stroke:var(--lead2)}
+.term text{font-weight:700;font-size:14px}
+.lead{fill:none;stroke-width:4;stroke-linecap:round}
+.lead1{stroke:var(--lead1)} .lead2{stroke:var(--lead2)}
+.jack{fill:var(--surface);stroke-width:4}
+.lamp-off{opacity:.3}
+.volt-badge{font-size:12px;font-weight:700}
+.side{display:flex;flex-direction:column;gap:14px}
+.seg{display:flex;gap:0;border:2px solid var(--ink);border-radius:6px;overflow:hidden;align-self:flex-start}
+.seg button{font:inherit;font-weight:700;border:0;background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button+button{border-left:2px solid var(--ink)}
+.checks{display:flex;flex-direction:column;gap:6px;background:var(--surface2);border-radius:6px;padding:10px 12px}
+.checks label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:.95rem}
+.checks input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+.inst{background:var(--surface2);border:2px solid var(--ink);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.inst-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:700;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em}
+.lcd{background:var(--lcd-bg);color:var(--lcd-ink);border-radius:6px;border:2px solid var(--ink);padding:10px 14px;font-family:var(--f-lcd);position:relative;min-height:104px;display:flex;flex-direction:column;justify-content:center}
+.lcd .val{font-size:clamp(2.2rem,8vw,3.2rem);line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lcd .unit{font-size:1.4rem;margin-left:8px}
+.lcd .sub{font-size:.95rem;margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.buzz{position:absolute;top:8px;right:12px;font-family:var(--f-body);font-size:.8rem;font-weight:700;opacity:.25}
+.buzz.on{opacity:1;animation:blink .5s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.buzz.on{animation:none}}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:inherit;font-weight:700;border:2px solid var(--ink);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:6px;cursor:pointer}
+.btn:hover{background:var(--accent-soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.testbtn{flex:1;min-width:140px;font-size:1.05rem}
+.testbtn.run{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.vsel{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vsel button{font:inherit;font-weight:700;border:2px solid var(--ink);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer;font-family:var(--f-lcd);font-size:1.05rem}
+.vsel button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.warnbar{background:var(--bad);color:var(--surface);font-weight:700;border-radius:6px;padding:8px 12px;text-align:center}
+.msg{border-radius:6px;padding:10px 12px;font-size:.95rem;min-height:44px;border:1px solid var(--line);background:var(--surface)}
+.msg.good{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+.msg.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.msg.bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.hint{font-size:.88rem;color:var(--ink2)}
+.doc{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.doc ol,.doc ul{margin:6px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+th{background:var(--surface2)}
+.zhead{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:700;color:var(--ink2)}
+.field input,.field select{font:inherit;font-weight:400;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.card{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface);display:flex;flex-direction:column;gap:10px;min-width:0}
+.card header{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.card .meta{font-size:.85rem;color:var(--ink2)}
+.vals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.vals div{background:var(--surface2);border-radius:6px;padding:6px 8px;font-size:.88rem;min-width:0}
+.vals b{display:block;font-family:var(--f-lcd);font-size:1.15rem;font-variant-numeric:tabular-nums;font-weight:400}
+.vals .miss b{color:var(--ink2)}
+.res{display:flex;flex-direction:column;gap:2px;font-size:.88rem}
+.res .ok{color:var(--good)} .res .no{color:var(--bad)}
+.score{font-weight:700}
+.sticky-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+</style>
+<style>.backlink{display:block;width:fit-content;margin:0 0 12px;padding:6px 12px;border:1px solid #C6D1C0;border-radius:6px;background:#fff;color:#3D8A1B!important;font:600 13px "Trebuchet MS",sans-serif;letter-spacing:.4px;text-transform:uppercase;text-decoration:none}</style></head><body>
+
+<div class="wrap"><a class="backlink" href="index.html">← Popis vježbi</a>
+  <header class="top">
+    <div>
+      <h1>Virtualni ispitni laboratorij</h1>
+      <p class="sub">Transformatorska i rasklopna postrojenja · 22. i 23. sat · ispitivanje spojeva i izolacije</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Dijelovi stranice">
+      <button class="tab" role="tab" id="tab-upute" aria-selected="false" data-tab="upute">Upute</button>
+      <button class="tab" role="tab" id="tab-lab" aria-selected="true" data-tab="lab">Ispitivanje</button>
+      <button class="tab" role="tab" id="tab-zap" aria-selected="false" data-tab="zap">Zapisnik</button>
+    </div>
+  </header>
+
+  <!-- UPUTE -->
+  <section id="sec-upute" hidden>
+    <div class="doc">
+      <div class="panel">
+        <h2>Kako radiš</h2>
+        <ol>
+          <li>Na kartici <b>Ispitivanje</b> odaberi krug (Krug 1 do Krug 7).</li>
+          <li>Označi da je krug <b>beznaponski</b>. Bez toga instrument ne radi.</li>
+          <li>Klikni točke na shemi: prvi klik postavlja mjerni kabel 1 (crveni), drugi kabel 2 (crni).</li>
+          <li>Očitaj vrijednost i pritisni <b>Upiši u zapisnik</b>.</li>
+          <li>Na kartici <b>Zapisnik</b> izračunaj očekivani otpor, donesi zaključak i odredi uzrok.</li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h2>Kontinuitet PE vodiča</h2>
+        <ul>
+          <li>PE vodič ispituješ između <b>PE stezaljke</b> i <b>metalnog kućišta (K)</b>.</li>
+          <li>Prvo <b>nuliraj</b> mjerne kabele, jer njihov otpor ulazi u rezultat.</li>
+          <li>Izračunaj očekivani otpor: <b>R = ρ · l / S</b>, ρ za bakar je 0,0175 Ω·mm²/m.</li>
+          <li>U ovoj vježbi vodič zadovoljava ako je izmjereni otpor najviše 0,2 Ω veći od izračunatog.</li>
+          <li>Zvučni signal multimetra oglašava se ispod oko 40 Ω (ovisi o modelu). Zato ne govori ništa o kvaliteti spoja.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Otpor izolacije</h2>
+        <ul>
+          <li>Napravi tri mjerenja po krugu: <b>L–PE</b>, <b>N–PE</b> i <b>L–N</b>.</li>
+          <li>Prije ispitivanja označi: beznaponsko stanje, <b>trošilo odspojeno</b> i <b>sklopka zatvorena</b>.</li>
+          <li>Odaberi ispitni napon prema tablici i pritisni TEST. Pričekaj da se očitanje ustali, pa zaustavi.</li>
+          <li>Dok traje ispitivanje, vodiče se ne dira. Nakon ispitivanja objekt se prazni.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Ispitni napon i najmanji otpor</h2>
+        <p class="hint">Niskonaponske instalacije, prema HRN HD 60364-6.</p>
+        <div class="tblwrap"><table>
+          <tr><th>Nazivni napon kruga</th><th>Ispitni napon</th><th>Najmanji otpor</th></tr>
+          <tr><td>SELV / PELV</td><td>250 V</td><td>0,5 MΩ</td></tr>
+          <tr><td>do 500 V</td><td>500 V</td><td>1 MΩ</td></tr>
+          <tr><td>iznad 500 V</td><td>1000 V</td><td>1 MΩ</td></tr>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>Dodatno</h2>
+        <ul>
+          <li><a href="https://www.youtube.com/watch?v=jGL8UnSS7_U" target="_blank" rel="noopener">eFIXX: Insulation Resistance Test with Essential Tips</a> (video, engleski, instrument Metrel).</li>
+          <li><a href="https://www.fluke.com/en-ie/learn/blog/electrical/what-is-continuity" target="_blank" rel="noopener">Fluke: What is Continuity?</a> (tekst, engleski, opisuje multimetar).</li>
+        </ul>
+        <p class="hint" style="margin-top:8px">Virtualni instrumenti su pojednostavljeni. Prava mjerenja izvode se prema normi i uputama proizvođača instrumenta.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAB -->
+  <section id="sec-lab">
+    <div class="lab">
+      <div class="panel">
+        <div class="picker" id="picker" aria-label="Odabir kruga"></div>
+        <div class="plate" id="plate"></div>
+        <svg class="schema" id="schema" viewBox="0 0 760 400" role="img" aria-label="Shema ispitivanog kruga s točkama L, N, PE i K za mjerne kabele">
+          <!-- source -->
+          <rect class="s-box" x="20" y="30" width="130" height="300" rx="10"/>
+          <text x="85" y="22" text-anchor="middle" class="s-lbl">napajanje</text>
+          <!-- wires -->
+          <path d="M150 80 H250" stroke="#7A4A1E" stroke-width="5" fill="none"/>
+          <path d="M320 80 H400" stroke="#7A4A1E" stroke-width="5" fill="none"/>
+          <path d="M470 80 H640 V104" stroke="#7A4A1E" stroke-width="5" fill="none"/>
+          <path d="M150 200 H640 V176" stroke="#2F7FD6" stroke-width="5" fill="none"/>
+          <path d="M150 300 H300" stroke="#2E9E3A" stroke-width="5" fill="none"/>
+          <path d="M150 300 H300" stroke="#F2D21B" stroke-width="5" stroke-dasharray="7 7" fill="none"/>
+          <path d="M380 300 H620 V260" stroke="#2E9E3A" stroke-width="5" fill="none"/>
+          <path d="M380 300 H620 V260" stroke="#F2D21B" stroke-width="5" stroke-dasharray="7 7" fill="none"/>
+          <!-- fuse -->
+          <rect x="250" y="64" width="70" height="32" class="s-stroke" style="fill:var(--surface)"/>
+          <path d="M250 80 H320" class="s-stroke"/>
+          <text x="285" y="54" text-anchor="middle" class="s-lbl">F1 osigurač</text>
+          <!-- switch -->
+          <circle cx="400" cy="80" r="5" style="fill:var(--ink)"/><circle cx="470" cy="80" r="5" style="fill:var(--ink)"/>
+          <path id="blade" d="M400 80 L462 48" class="s-stroke" stroke-width="4"/>
+          <text x="435" y="36" text-anchor="middle" class="s-lbl" id="swlbl">Q1 sklopka (isključena)</text>
+          <!-- PE bar -->
+          <rect x="300" y="294" width="80" height="12" style="fill:var(--ink)" rx="2"/>
+          <text x="340" y="326" text-anchor="middle" class="s-lbl">PE stezaljka</text>
+          <!-- housing -->
+          <rect x="540" y="40" width="200" height="220" rx="6" style="fill:var(--surface2);stroke:var(--ink2);stroke-width:3"/>
+          <text x="640" y="286" text-anchor="middle" class="s-lbl">metalno kućište</text>
+          <g id="lamp">
+            <circle cx="640" cy="140" r="36" class="s-stroke" style="fill:var(--surface)"/>
+            <path d="M614 114 L666 166 M666 114 L614 166" class="s-stroke"/>
+            <text x="640" y="206" text-anchor="middle" class="s-lbl" id="lamplbl">H1</text>
+          </g>
+          <text x="740" y="16" text-anchor="end" class="volt-badge" id="badge"></text>
+          <!-- leads -->
+          <path id="lead1" class="lead lead1" d="" />
+          <path id="lead2" class="lead lead2" d="" />
+          <!-- terminals -->
+          <g class="term" id="t-L" tabindex="0" role="button" aria-label="Točka L, fazni vodič"><circle class="hit" cx="150" cy="80" r="22"/><circle class="s-ter" cx="150" cy="80" r="11"/><text x="124" y="85" text-anchor="end">L</text></g>
+          <g class="term" id="t-N" tabindex="0" role="button" aria-label="Točka N, neutralni vodič"><circle class="hit" cx="150" cy="200" r="22"/><circle class="s-ter" cx="150" cy="200" r="11"/><text x="124" y="205" text-anchor="end">N</text></g>
+          <g class="term" id="t-PE" tabindex="0" role="button" aria-label="Točka PE, zaštitna stezaljka"><circle class="hit" cx="150" cy="300" r="22"/><circle class="s-ter" cx="150" cy="300" r="11"/><text x="124" y="305" text-anchor="end">PE</text></g>
+          <g class="term" id="t-K" tabindex="0" role="button" aria-label="Točka K, metalno kućište"><circle class="hit" cx="620" cy="260" r="22"/><circle class="s-ter" cx="620" cy="260" r="11"/><text x="596" y="250" text-anchor="end">K</text></g>
+          <!-- jacks -->
+          <circle class="jack" id="jack1" cx="300" cy="380" r="11" style="stroke:var(--lead1)"/>
+          <circle class="jack" id="jack2" cx="460" cy="380" r="11" style="stroke:var(--lead2)"/>
+          <text x="318" y="385" class="s-lbl">kabel 1</text>
+          <text x="478" y="385" class="s-lbl">kabel 2</text>
+        </svg>
+        <p class="hint">Klikni točku na shemi da na nju spojiš mjerni kabel. Ponovni klik na istu točku skida kabel.</p>
+      </div>
+
+      <div class="side">
+        <div class="seg" role="group" aria-label="Vrsta ispitivanja">
+          <button type="button" id="m-cont" aria-pressed="true">Kontinuitet</button>
+          <button type="button" id="m-ins" aria-pressed="false">Izolacija</button>
+        </div>
+
+        <div class="checks" id="checks">
+          <label><input type="checkbox" id="k-dead"><span>Krug je isključen i beznaponsko stanje je provjereno dvopolnim ispitivačem napona.</span></label>
+          <label id="l-load"><input type="checkbox" id="k-load"><span>Trošilo (žaruljica) je odspojeno.</span></label>
+          <label id="l-sw"><input type="checkbox" id="k-sw"><span>Sklopka Q1 je zatvorena, da se ispita cijeli vodič.</span></label>
+        </div>
+
+        <!-- continuity instrument -->
+        <div class="inst" id="inst-cont">
+          <div class="inst-head"><span id="cname">Multimetar</span><span id="cinfo">Ω · zvučni signal</span></div>
+          <div class="seg" role="group" aria-label="Odabir instrumenta">
+            <button type="button" id="i-dmm" aria-pressed="true">Multimetar</button>
+            <button type="button" id="i-tst" aria-pressed="false">Ispitivač kontinuiteta</button>
+          </div>
+          <div class="lcd" aria-live="polite">
+            <span class="buzz" id="buzz">♪ ZVUK</span>
+            <div><span class="val" id="cval">– – –</span><span class="unit" id="cunit">Ω</span></div>
+            <div class="sub"><span id="csub1"></span><span id="csub2"></span></div>
+          </div>
+          <div class="row">
+            <button class="btn" type="button" id="zero">Spoji kabele i nuliraj</button>
+            <button class="btn" type="button" id="unzero">Poništi nulu</button>
+            <button class="btn" type="button" id="clear1">Skini kabele</button>
+          </div>
+          <button class="btn primary" type="button" id="rec-cont">Upiši u zapisnik</button>
+        </div>
+
+        <!-- insulation instrument -->
+        <div class="inst" id="inst-ins" hidden>
+          <div class="inst-head"><span>Megaohmmetar</span><span>LINE · EARTH</span></div>
+          <div class="vsel" role="group" aria-label="Ispitni napon">
+            <span class="hint">Ispitni napon:</span>
+            <button type="button" data-v="250" aria-pressed="false">250 V</button>
+            <button type="button" data-v="500" aria-pressed="true">500 V</button>
+            <button type="button" data-v="1000" aria-pressed="false">1000 V</button>
+          </div>
+          <div class="warnbar" id="warnbar" hidden>NE DIRAJ VODIČE. Ispitni napon je priključen.</div>
+          <div class="lcd" aria-live="polite">
+            <div><span class="val" id="ival">– – –</span><span class="unit">MΩ</span></div>
+            <div class="sub"><span id="isub1"></span><span id="isub2"></span></div>
+          </div>
+          <div class="row">
+            <button class="btn primary testbtn" type="button" id="test">TEST</button>
+            <button class="btn" type="button" id="clear2">Skini kabele</button>
+          </div>
+          <button class="btn primary" type="button" id="rec-ins">Upiši u zapisnik</button>
+        </div>
+
+        <div class="msg" id="msg" role="status">Odaberi krug, označi beznaponsko stanje i spoji mjerne kabele.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZAPISNIK -->
+  <section id="sec-zap" hidden>
+    <div class="panel">
+      <h2>Zapisnik o ispitivanju</h2>
+      <div class="zhead">
+        <label class="field">Ime i prezime<input type="text" id="z-name" autocomplete="off"></label>
+        <label class="field">Razred<input type="text" id="z-cls" autocomplete="off"></label>
+        <label class="field">Datum<input type="text" id="z-date" autocomplete="off" placeholder="dd.mm.gggg."></label>
+      </div>
+      <div class="sticky-actions">
+        <button class="btn primary" type="button" id="z-check">Provjeri zapisnik</button>
+        <button class="btn primary" type="button" id="z-save" hidden>Spremi zapisnik (.txt)</button>
+        <button class="btn" type="button" id="z-copy">Kopiraj zapisnik</button>
+        <button class="btn" type="button" id="z-reset">Obriši sve unose</button>
+        <span class="score" id="z-score"></span>
+      </div>
+      <p class="hint" id="z-note" style="margin-top:8px">Zapisnik se sprema u ovom pregledniku. Za predaju kopiraj tekst i zalijepi ga u dokument ili poruku nastavniku.</p>
+      <div class="cards" id="cards" style="margin-top:14px"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+var RHO=0.0175;
+var STANDALONE = true;
+var EXAM = true;
+var CIRC=[
+ {id:1,u:"230 V",l:10,s:2.5,pe:{st:"ok",R:0.10},ins:{"L-PE":912,"N-PE":744,"L-N":801},cause:"ok",ok:true},
+ {id:2,u:"230 V",l:20,s:1.5,pe:{st:"ok",R:0.29},ins:{"L-PE":420,"N-PE":385,"L-N":510},cause:"ok",ok:true},
+ {id:3,u:"230 V",l:10,s:2.5,pe:{st:"loose",R:4.6},ins:{"L-PE":650,"N-PE":590,"L-N":700},cause:"loose",ok:false},
+ {id:4,u:"230 V",l:15,s:1.5,pe:{st:"open"},ins:{"L-PE":880,"N-PE":820,"L-N":905},cause:"open",ok:false},
+ {id:5,u:"230 V",l:10,s:2.5,pe:{st:"ok",R:0.11},ins:{"L-PE":0.38,"N-PE":0.45,"L-N":640},cause:"damp",ok:false},
+ {id:6,u:"230 V",l:12,s:2.5,pe:{st:"ok",R:0.12},ins:{"L-PE":0.02,"N-PE":710,"L-N":690},cause:"broken",ok:false},
+ {id:7,u:"PELV 24 V",l:5,s:1.5,pe:{st:"ok",R:0.09},ins:{"L-PE":0.83,"N-PE":0.91,"L-N":12.4},cause:"ok",ok:true,V:250,min:0.5}
+];
+var CAUSES={ok:"Nema kvara",loose:"Labava stezaljka PE vodiča",open:"Prekid PE vodiča",damp:"Vlaga u izolaciji",broken:"Probijena izolacija faze prema kućištu"};
+var TERM={L:{x:150,y:80},N:{x:150,y:200},PE:{x:150,y:300},K:{x:620,y:260}};
+var JACK={1:{x:300,y:380},2:{x:460,y:380}};
+var LEADR={dmm:0.24,tst:0.12};
+var CFG={dmm:{res:0.1,dec:1,buz:40},tst:{res:0.01,dec:2,buz:2}};
+
+function $(s){return document.querySelector(s);}
+function $$(s){return Array.prototype.slice.call(document.querySelectorAll(s));}
+function fmt(v,d){return v.toFixed(d).replace(".",",");}
+function num(s){var n=parseFloat(String(s).replace(",",".").trim());return isNaN(n)?null:n;}
+function calcOf(c){return Math.round(RHO*c.l/c.s*100+1e-9)/100;}
+function cur(){return CIRC[S.circ-1];}
+function vReq(c){return c.V||500;}
+function minReq(c){return c.min||1;}
+
+var S={tab:"lab",circ:1,mode:"cont",tick:{dead:false,load:false,sw:false},
+  leads:{cont:[null,null],ins:[null,null]},
+  cont:{instr:"dmm",zero:{dmm:null,tst:null}},
+  ins:{V:500,running:false,t0:0,final:null,key:null,shown:null,stable:false,held:null,discharging:false}};
+
+var store={name:"",cls:"",date:"",rec:{}};
+var KEY="virtualni-ispitni-laboratorij-v1";
+try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&typeof p==="object"){store.name=p.name||"";store.cls=p.cls||"";store.date=p.date||"";store.rec=p.rec||{};}}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+function rec(id){if(!store.rec[id])store.rec[id]={pe:null,ins:{},calc:"",verdict:"",cause:""};return store.rec[id];}
+
+/* ---------- poruke ---------- */
+function say(t,k){var m=$("#msg");m.textContent=t;m.className="msg"+(k?" "+k:"");}
+
+/* ---------- tabovi ---------- */
+function showTab(t){
+  S.tab=t;
+  ["upute","lab","zap"].forEach(function(n){
+    $("#sec-"+n).hidden=(n!==t);
+    $("#tab-"+n).setAttribute("aria-selected",n===t?"true":"false");
+  });
+  if(t==="zap")renderCards();
+  if(t!=="lab")stopTest(true);
+}
+$$(".tab").forEach(function(b){b.addEventListener("click",function(){showTab(b.getAttribute("data-tab"));});});
+
+/* ---------- odabir kruga ---------- */
+function renderPicker(){
+  var el=$("#picker");el.innerHTML="";
+  CIRC.forEach(function(c){
+    var b=document.createElement("button");b.type="button";b.className="pill"+(c.id===S.circ?" on":"");
+    b.setAttribute("aria-pressed",c.id===S.circ?"true":"false");
+    var r=store.rec[c.id];var done=r&&(r.pe||Object.keys(r.ins).length);
+    b.innerHTML="Krug "+c.id+(done?'<span class="dot" title="ima unosa u zapisniku"></span>':"");
+    b.addEventListener("click",function(){selectCircuit(c.id);});
+    el.appendChild(b);
+  });
+  var c=cur();
+  $("#plate").innerHTML='<span>Napon: <b>'+c.u+'</b></span><span>PE vodič: <b>bakar, '+c.l+' m, '+fmt(c.s,1)+' mm²</b></span>';
+}
+function selectCircuit(id){
+  stopTest(true);
+  S.circ=id;S.tick={dead:false,load:false,sw:false};
+  S.leads={cont:[null,null],ins:[null,null]};
+  S.ins.held=null;S.ins.shown=null;S.ins.stable=false;
+  $("#k-dead").checked=false;$("#k-load").checked=false;$("#k-sw").checked=false;
+  renderPicker();drawAll();refresh();
+  say("Krug "+id+" je odabran. Provjeri beznaponsko stanje i spoji mjerne kabele.");
+}
+
+/* ---------- shema ---------- */
+function leadsNow(){return S.leads[S.mode];}
+function drawAll(){
+  var L=leadsNow();
+  ["L","N","PE","K"].forEach(function(t){
+    var g=$("#t-"+t);g.classList.remove("sel1","sel2");
+    if(L[0]===t)g.classList.add("sel1");
+    if(L[1]===t)g.classList.add("sel2");
+  });
+  [1,2].forEach(function(i){
+    var t=L[i-1],p=$("#lead"+i);
+    if(!t){p.setAttribute("d","");return;}
+    var a=JACK[i],b=TERM[t];
+    p.setAttribute("d","M"+a.x+","+(a.y-11)+" C"+a.x+","+(a.y-110)+" "+b.x+","+(b.y+120)+" "+b.x+","+(b.y+11));
+  });
+  var lamp=$("#lamp"),ins=(S.mode==="ins");
+  var off=ins&&S.tick.load;
+  lamp.setAttribute("class",off?"lamp-off":"");
+  $("#lamplbl").textContent=off?"H1 odspojena":"H1";
+  var closed=ins&&S.tick.sw;
+  $("#blade").setAttribute("d",closed?"M400 80 L470 80":"M400 80 L462 48");
+  $("#swlbl").textContent="Q1 sklopka ("+(closed?"uključena":"isključena")+")";
+  var b=$("#badge");
+  b.textContent=S.tick.dead?"Beznaponsko stanje provjereno":"Napon nije provjeren";
+  b.style.fill=S.tick.dead?"var(--good)":"var(--bad)";
+}
+function toggleLead(t){
+  var L=leadsNow();
+  if(S.mode==="ins")stopTest(true);
+  var i=L.indexOf(t);
+  if(i>=0){L[i]=null;}
+  else if(!L[0]){L[0]=t;}
+  else if(!L[1]){L[1]=t;}
+  else{L[1]=t;}
+  S.ins.held=null;S.ins.shown=null;S.ins.stable=false;
+  drawAll();refresh();
+}
+["L","N","PE","K"].forEach(function(t){
+  var g=$("#t-"+t);
+  g.addEventListener("click",function(){toggleLead(t);});
+  g.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleLead(t);}});
+});
+function clearLeads(){stopTest(true);S.leads[S.mode]=[null,null];S.ins.held=null;S.ins.shown=null;drawAll();refresh();}
+$("#clear1").addEventListener("click",clearLeads);
+$("#clear2").addEventListener("click",clearLeads);
+
+/* ---------- kontrolna lista ---------- */
+["dead","load","sw"].forEach(function(k){
+  $("#k-"+k).addEventListener("change",function(e){S.tick[k]=e.target.checked;stopTest(true);drawAll();refresh();});
+});
+
+/* ---------- nacin rada ---------- */
+function setMode(m){
+  stopTest(true);S.mode=m;
+  $("#m-cont").setAttribute("aria-pressed",m==="cont"?"true":"false");
+  $("#m-ins").setAttribute("aria-pressed",m==="ins"?"true":"false");
+  $("#inst-cont").hidden=(m!=="cont");$("#inst-ins").hidden=(m!=="ins");
+  $("#l-load").hidden=(m!=="ins");$("#l-sw").hidden=(m!=="ins");
+  drawAll();refresh();
+  say(m==="cont"?"Kontinuitet: PE vodič se ispituje između PE stezaljke i kućišta (K).":"Izolacija: izmjeri L–PE, N–PE i L–N. Prije ispitivanja označi sve stavke kontrolne liste.");
+}
+$("#m-cont").addEventListener("click",function(){setMode("cont");});
+$("#m-ins").addEventListener("click",function(){setMode("ins");});
+
+/* ---------- kontinuitet ---------- */
+function pairKey(a,b){return [a,b].sort().join("-");}
+function contTrue(c,instr){
+  var L=S.leads.cont;if(!L[0]||!L[1])return null;
+  var key=pairKey(L[0],L[1]),R;
+  if(key==="K-PE"){
+    var p=c.pe;
+    if(p.st==="open")R=Infinity;
+    else if(p.st==="loose")R=p.R*(1+(Math.random()*2-1)*0.14);
+    else R=p.R*(1+(Math.random()*2-1)*0.03);
+  }else R=Infinity;
+  return R+LEADR[instr];
+}
+function contDisplay(){
+  var c=cur(),ins=S.cont.instr,cf=CFG[ins];
+  var raw=contTrue(c,ins);
+  if(raw===null)return {txt:"– – –",val:null,buz:false};
+  if(!isFinite(raw)||raw>400)return {txt:"OL",val:null,ol:true,buz:false};
+  var v=raw-(S.cont.zero[ins]||0);if(v<0)v=0;
+  v=Math.round(v/cf.res)*cf.res;
+  return {txt:fmt(v,cf.dec),val:v,buz:raw<=cf.buz};
+}
+function renderCont(){
+  var d=contDisplay(),ins=S.cont.instr;
+  $("#cname").textContent=ins==="dmm"?"Multimetar":"Ispitivač kontinuiteta";
+  $("#cinfo").textContent=ins==="dmm"?"Ω · zvučni signal":"200 mA · 4–24 V";
+  $("#cval").textContent=S.tick.dead?d.txt:"– – –";
+  $("#buzz").className="buzz"+(S.tick.dead&&d.buz?" on":"");
+  var z=S.cont.zero[ins];
+  $("#csub1").textContent=ins==="dmm"?"rezolucija 0,1 Ω":"rezolucija 0,01 Ω";
+  $("#csub2").textContent=z!=null?"NULA aktivna ("+fmt(z,CFG[ins].dec)+" Ω)":"kabeli nisu nulirani";
+}
+$("#i-dmm").addEventListener("click",function(){S.cont.instr="dmm";$("#i-dmm").setAttribute("aria-pressed","true");$("#i-tst").setAttribute("aria-pressed","false");renderCont();});
+$("#i-tst").addEventListener("click",function(){S.cont.instr="tst";$("#i-dmm").setAttribute("aria-pressed","false");$("#i-tst").setAttribute("aria-pressed","true");renderCont();});
+$("#zero").addEventListener("click",function(){
+  var ins=S.cont.instr,cf=CFG[ins];
+  S.cont.zero[ins]=Math.round(LEADR[ins]/cf.res)*cf.res;
+  say("Mjerni kabeli su kratko spojeni i instrument je nuliran. Otpor kabela se više ne ubraja u rezultat.","good");renderCont();
+});
+$("#unzero").addEventListener("click",function(){S.cont.zero[S.cont.instr]=null;say("Nula je poništena.");renderCont();});
+$("#rec-cont").addEventListener("click",function(){
+  if(!S.tick.dead){say("Prvo označi da je krug beznaponski. Otpor se nikad ne mjeri na krugu pod naponom.","bad");return;}
+  var L=S.leads.cont;
+  if(!L[0]||!L[1]){say("Spoji oba mjerna kabela na točke kruga.","warn");return;}
+  if(pairKey(L[0],L[1])!=="K-PE"){say("PE vodič ispituješ između PE stezaljke i kućišta (K). Spoji kabele na ta dva mjesta.","warn");return;}
+  var d=contDisplay(),ins=S.cont.instr;
+  rec(S.circ).pe={txt:d.txt,val:d.ol?null:d.val,ol:!!d.ol,instr:ins,zeroed:S.cont.zero[ins]!=null};
+  save();renderPicker();
+  say("Upisano u zapisnik: PE vodič, krug "+S.circ+": "+d.txt+(d.ol?"":" Ω")+(S.cont.zero[ins]==null?". Kabeli nisu bili nulirani.":"."),"good");
+});
+
+/* ---------- izolacija ---------- */
+function nodeOf(t){return t==="K"?"PE":t;}
+function insKey(){
+  var L=S.leads.ins;if(!L[0]||!L[1])return null;
+  var a=nodeOf(L[0]),b=nodeOf(L[1]);if(a===b)return "same";
+  return pairKey(a,b);
+}
+function insFinal(){
+  var key=insKey();if(!key||key==="same")return null;
+  var c=cur(),base=c.ins[key],V=S.ins.V,f=1;
+  if(base<2)f=1+0.06*(500-V)/250;
+  return base*f;
+}
+function fmtIns(R){
+  if(R>=999)return ">999";
+  if(R<1)return R.toFixed(2).replace(".",",");
+  if(R<100)return R.toFixed(1).replace(".",",");
+  return String(Math.round(R));
+}
+function startTest(){
+  if(!S.tick.dead){say("Prvo provjeri beznaponsko stanje i označi to u kontrolnoj listi.","bad");return;}
+  if(!S.tick.load){say("Odspoji trošilo (žaruljicu). Inače bi se mjerio otpor trošila, a ne izolacije.","bad");return;}
+  if(!S.tick.sw){say("Zatvori sklopku Q1. Inače se ispituje samo dio vodiča.","bad");return;}
+  var key=insKey();
+  if(!key){say("Spoji oba mjerna kabela: LINE i EARTH.","warn");return;}
+  if(key==="same"){say("Oba kabela su na istom vodiču. Spoji ih na dva različita vodiča, npr. L i PE.","warn");return;}
+  var c=cur();
+  if(S.ins.V!==vReq(c)){say("Pažnja: za ovaj krug tablica traži "+vReq(c)+" V, a odabrano je "+S.ins.V+" V. Mjerenje je moguće, ali će se u zapisniku označiti kao pogrešan napon.","warn");}
+  else say("Ispitivanje je u tijeku. Ne diraj vodiče. Pričekaj da se očitanje ustali.");
+  var R=insFinal();
+  S.ins.final=R;S.ins.key=key;S.ins.running=true;S.ins.t0=Date.now();S.ins.stable=false;S.ins.held=null;S.ins.discharging=false;
+  $("#test").textContent="STOP";$("#test").classList.add("run");$("#warnbar").hidden=false;
+}
+function stopTest(silent){
+  if(!S.ins.running)return;
+  S.ins.running=false;
+  $("#test").textContent="TEST";$("#test").classList.remove("run");$("#warnbar").hidden=true;
+  if(S.ins.shown!==null){
+    S.ins.held={key:S.ins.key,V:S.ins.V,R:S.ins.shown,stable:S.ins.stable,circ:S.circ};
+    if(!silent){
+      S.ins.discharging=true;
+      say(S.ins.stable?"Ispitivanje je zaustavljeno. Objekt se prazni, pričekaj prije dodira.":"Zaustavljeno prije nego što se očitanje ustalilo. Ponovi mjerenje i pričekaj.", S.ins.stable?"":"warn");
+      setTimeout(function(){S.ins.discharging=false;if(S.ins.held&&S.ins.held.stable)say("Objekt je prazan. Vrijednost možeš upisati u zapisnik.","good");renderIns();},1600);
+    }else{S.ins.held=null;S.ins.shown=null;}
+  }
+  renderIns();
+}
+function tickIns(){
+  if(!S.ins.running)return;
+  var t=(Date.now()-S.ins.t0)/1000,R=S.ins.final;
+  var tau=R<1?0.25:0.6;
+  var v=R*(1-Math.exp(-t/tau));
+  S.ins.shown=Math.min(v,R);
+  S.ins.stable=(v>=R*0.99);
+  renderIns();
+}
+function renderIns(){
+  var c=cur();
+  var txt="– – –";
+  if(S.ins.shown!==null)txt=fmtIns(Math.min(S.ins.shown,999.5));
+  $("#ival").textContent=txt;
+  var a=S.ins.running?("● "+S.ins.V+" V"):("U = "+S.ins.V+" V");
+  $("#isub1").textContent=a;
+  var st="";
+  if(S.ins.running)st=S.ins.stable?"očitanje je stabilno":"očitanje raste…";
+  else if(S.ins.discharging)st="pražnjenje…";
+  else if(S.ins.held)st=S.ins.held.stable?"HOLD":"HOLD (nestabilno)";
+  $("#isub2").textContent=st;
+  $$(".vsel button").forEach(function(b){b.setAttribute("aria-pressed",String(parseInt(b.getAttribute("data-v"),10)===S.ins.V));});
+}
+$$(".vsel button").forEach(function(b){b.addEventListener("click",function(){stopTest(true);S.ins.V=parseInt(b.getAttribute("data-v"),10);S.ins.held=null;S.ins.shown=null;renderIns();});});
+$("#test").addEventListener("click",function(){if(S.ins.running)stopTest(false);else startTest();});
+$("#rec-ins").addEventListener("click",function(){
+  var h=S.ins.held;
+  if(S.ins.running){say("Prvo zaustavi ispitivanje.","warn");return;}
+  if(!h||h.circ!==S.circ){say("Nema očitanja za upis. Pokreni TEST, pričekaj stabilnu vrijednost i zaustavi.","warn");return;}
+  if(!h.stable){say("Očitanje nije bilo stabilno. Ponovi mjerenje.","warn");return;}
+  if(S.ins.discharging){say("Pričekaj da se objekt isprazni.","warn");return;}
+  var r=rec(S.circ);
+  r.ins[h.key]={txt:fmtIns(Math.min(h.R,999.5)),val:h.R,V:h.V};
+  save();renderPicker();
+  say("Upisano u zapisnik: "+h.key.replace("-","–")+", "+fmtIns(Math.min(h.R,999.5))+" MΩ pri "+h.V+" V.","good");
+});
+
+/* ---------- osvjezavanje ---------- */
+function refresh(){
+  renderCont();renderIns();
+}
+setInterval(function(){if(S.tab==="lab"&&S.mode==="cont")renderCont();},400);
+setInterval(tickIns,100);
+
+/* ---------- zapisnik ---------- */
+function evalCard(c,r){
+  var out=[];
+  var calc=calcOf(c),rc=num(r.calc);
+  out.push({ok:rc!==null&&Math.abs(rc-calc)<=0.011,label:"Izračun otpora PE vodiča",hint:"Provjeri formulu R = ρ · l / S (ρ za bakar je 0,0175 Ω·mm²/m)."});
+  out.push({ok:!!r.pe,label:"Izmjeren kontinuitet PE vodiča",hint:"Izmjeri između PE stezaljke i kućišta (K)."});
+  var keys=["L-PE","N-PE","L-N"],all=keys.every(function(k){return r.ins[k];});
+  out.push({ok:all,label:"Izmjerena izolacija L–PE, N–PE i L–N",hint:"Nedostaju mjerenja izolacije."});
+  var V=vReq(c);
+  out.push({ok:all&&keys.every(function(k){return r.ins[k].V===V;}),label:"Ispravan ispitni napon",hint:"Pogledaj tablicu ispitnih napona u uputama."});
+  out.push({ok:r.verdict===(c.ok?"ok":"bad"),label:"Zaključak",hint:"Usporedi izmjerene vrijednosti s izračunom i s tablicom."});
+  out.push({ok:r.cause===c.cause,label:"Uzrok",hint:"Što pokazuju izmjerene vrijednosti?"});
+  return out;
+}
+function renderCards(){
+  $("#z-name").value=store.name;$("#z-cls").value=store.cls;$("#z-date").value=store.date;
+  var box=$("#cards");box.innerHTML="";
+  CIRC.forEach(function(c){
+    var r=rec(c.id);
+    var card=document.createElement("div");card.className="card";card.id="card-"+c.id;
+    var pe=r.pe?(r.pe.ol?"OL":r.pe.txt+" Ω"):"nije izmjereno";
+    function iv(k){var x=r.ins[k];return x?x.txt+" MΩ":"nije izmjereno";}
+    function cls(x){return x?"":"miss";}
+    var vv=r.ins["L-PE"]||r.ins["N-PE"]||r.ins["L-N"];
+    var vtxt=Object.keys(r.ins).map(function(k){return r.ins[k].V;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(", ");
+    card.innerHTML=
+      '<header><h3>Krug '+c.id+'</h3><span class="meta">'+c.u+' · PE '+c.l+' m, '+fmt(c.s,1)+' mm²</span></header>'+
+      '<div class="vals">'+
+        '<div class="'+cls(r.pe)+'">R PE izmjereno<b>'+pe+'</b></div>'+
+        '<div class="'+cls(vv)+'">Ispitni napon<b>'+(vtxt?vtxt+" V":"–")+'</b></div>'+
+        '<div class="'+cls(r.ins["L-PE"])+'">L–PE<b>'+iv("L-PE")+'</b></div>'+
+        '<div class="'+cls(r.ins["N-PE"])+'">N–PE<b>'+iv("N-PE")+'</b></div>'+
+        '<div class="'+cls(r.ins["L-N"])+'">L–N<b>'+iv("L-N")+'</b></div>'+
+        '<div><label class="field" for="calc-'+c.id+'">R izračunato (Ω)<input type="text" id="calc-'+c.id+'" inputmode="decimal" value="'+(r.calc||"")+'" placeholder="npr. 0,07"></label></div>'+
+      '</div>'+
+      '<label class="field" for="ver-'+c.id+'">Zaključak'+
+        '<select id="ver-'+c.id+'"><option value="">Odaberi</option><option value="ok">Zadovoljava</option><option value="bad">Ne zadovoljava</option></select></label>'+
+      '<label class="field" for="cau-'+c.id+'">Uzrok'+
+        '<select id="cau-'+c.id+'"><option value="">Odaberi</option>'+Object.keys(CAUSES).map(function(k){return '<option value="'+k+'">'+CAUSES[k]+'</option>';}).join("")+'</select></label>'+
+      '<div class="res" id="res-'+c.id+'" aria-live="polite"></div>';
+    box.appendChild(card);
+    $("#ver-"+c.id).value=r.verdict;$("#cau-"+c.id).value=r.cause;
+    $("#calc-"+c.id).addEventListener("input",function(e){r.calc=e.target.value;save();});
+    $("#ver-"+c.id).addEventListener("change",function(e){r.verdict=e.target.value;save();});
+    $("#cau-"+c.id).addEventListener("change",function(e){r.cause=e.target.value;save();});
+  });
+}
+function checkAll(){
+  var total=0,got=0,perfect=0;
+  CIRC.forEach(function(c){
+    var r=rec(c.id),res=evalCard(c,r),n=res.filter(function(x){return x.ok;}).length;
+    total+=res.length;got+=n;if(n===res.length)perfect++;
+    var html='';
+    res.forEach(function(x){html+='<div class="'+(x.ok?"ok":"no")+'">'+(x.ok?"✓ ":"✗ ")+x.label+(x.ok?"":". "+x.hint)+'</div>';});
+    if(r.pe&&!r.pe.zeroed&&r.pe.instr)html+='<div class="hint">Napomena: kod mjerenja PE vodiča kabeli nisu bili nulirani.</div>';
+    $("#res-"+c.id).innerHTML=html;
+  });
+  $("#z-score").textContent="Ispravno: "+got+" od "+total+" ("+perfect+" od "+CIRC.length+" krugova potpuno)";
+}
+["name","cls","date"].forEach(function(k){
+  $("#z-"+k).addEventListener("input",function(e){store[k]=e.target.value;save();});
+});
+if(EXAM){$("#z-check").hidden=true;$("#z-note").textContent="Način provjere znanja: ocjenjivanje obavlja nastavnik. Za predaju kopiraj zapisnik i zalijepi ga u poruku ili dokument.";}
+$("#z-check").addEventListener("click",checkAll);
+function zText(){
+  var t=["ZAPISNIK O ISPITIVANJU","Ime i prezime: "+store.name,"Razred: "+store.cls,"Datum: "+store.date,""];
+  CIRC.forEach(function(c){
+    var r=rec(c.id);
+    var pe=r.pe?(r.pe.ol?"OL":r.pe.txt+" Ω"):"-";
+    function iv(k){return r.ins[k]?r.ins[k].txt+" MΩ":"-";}
+    var V=Object.keys(r.ins).map(function(k){return r.ins[k].V;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join("/");
+    t.push("Krug "+c.id+" ("+c.u+", PE "+c.l+" m, "+fmt(c.s,1)+" mm²)");
+    t.push("  R PE izračunato: "+(r.calc||"-")+" Ω, izmjereno: "+pe);
+    t.push("  Izolacija (ispitni napon "+(V||"-")+" V): L-PE "+iv("L-PE")+", N-PE "+iv("N-PE")+", L-N "+iv("L-N"));
+    t.push("  Zaključak: "+(r.verdict==="ok"?"zadovoljava":r.verdict==="bad"?"ne zadovoljava":"-")+"; uzrok: "+(CAUSES[r.cause]||"-"));
+    t.push("");
+  });
+  return t.join("\n");
+}
+$("#z-copy").addEventListener("click",function(){
+  var txt=zText(),done=function(ok){$("#z-score").textContent=ok?"Zapisnik je kopiran. Zalijepi ga u dokument.":"Kopiranje nije uspjelo. Označi tekst ručno.";};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){done(true);},function(){fallbackCopy(txt);});
+  }else fallbackCopy(txt);
+});
+function fallbackCopy(txt){
+  var ta=$("#z-fallback");
+  if(!ta){ta=document.createElement("textarea");ta.id="z-fallback";ta.rows=12;ta.style.cssText="width:100%;margin-top:12px;font-family:var(--f-lcd);background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:6px;padding:8px";$("#z-note").insertAdjacentElement("afterend",ta);}
+  ta.value=txt;ta.focus();ta.select();
+  $("#z-score").textContent="Označi tekst u polju ispod i kopiraj ga (Ctrl+C).";
+}
+
+if(STANDALONE){
+  $("#z-save").hidden=false;
+  $("#z-note").textContent="Na kraju sata pritisni Spremi zapisnik. Datoteka se preuzme na računalo, a zatim je predaj na Loomenu. Unosi se čuvaju i u ovom pregledniku.";
+}
+function saveName(){
+  var n=(store.name||"ucenik").replace(/đ/g,"d").replace(/Đ/g,"D").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+  var dt=(store.date||"").replace(/[^0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  return "Zapisnik_"+(n||"ucenik")+(dt?"_"+dt:"")+".txt";
+}
+$("#z-save").addEventListener("click",function(){
+  if(!store.name.trim()){$("#z-score").textContent="Prvo upiši ime i prezime na vrhu zapisnika.";$("#z-name").focus();return;}
+  try{
+    var blob=new Blob(["\ufeff"+zText().replace(/\n/g,"\r\n")],{type:"text/plain;charset=utf-8"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=saveName();
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    $("#z-score").textContent="Zapisnik je spremljen kao "+saveName()+" (mapa Preuzimanja). Predaj ga na Loomenu.";
+  }catch(e){fallbackCopy(zText());}
+});
+var armed=false,armT=null;
+$("#z-reset").addEventListener("click",function(){
+  var b=$("#z-reset");
+  if(!armed){armed=true;b.textContent="Potvrdi brisanje";b.classList.add("danger");armT=setTimeout(function(){armed=false;b.textContent="Obriši sve unose";b.classList.remove("danger");},4000);return;}
+  clearTimeout(armT);armed=false;b.textContent="Obriši sve unose";b.classList.remove("danger");
+  store.rec={};save();renderCards();renderPicker();$("#z-score").textContent="Unosi su obrisani.";
+});
+
+/* ---------- start ---------- */
+renderPicker();setMode("cont");drawAll();refresh();
+say("Odaberi krug, označi beznaponsko stanje i spoji mjerne kabele na točke L, N, PE i K.");
+})();
+</script>
+
+</body></html>
