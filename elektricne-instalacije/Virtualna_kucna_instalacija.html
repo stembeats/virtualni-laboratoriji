@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kućna instalacija: spoji i upali</title>
+<style>
+:root{
+  --bg:#F3F7F0;--ink:#1B2A22;--ink2:#4F6258;--surface:#FFFFFF;--surface2:#EAF1E6;--line:#D2DDD0;
+  --accent:#3A8A1C;--accent-d:#2C6B14;--accent-ink:#FFFFFF;--accent-bg:#DDF0D2;
+  --wall:#EEF3F9;--wall2:#DCE6F1;--plate:#FFFFFF;--plate-edge:#98A6B2;--metal:#C9D1D8;--metal-d:#76828D;
+  --brown:#8A5A2B;--blue:#2E7FD3;--black:#2B2B2B;--wire-edge:#16202A;
+  --good:#1F7A33;--good-bg:#DFF3E3;--bad:#B3261E;--bad-bg:#FBE3E0;--warn:#8A5A00;--warn-bg:#FFF0CC;
+  --on:#2FA84F;--off:#8C98A2;--glow:#FFD84A;--sel:#FF8A00;
+  --f:"Trebuchet MS","Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121A16;--ink:#E8F1EA;--ink2:#A6B8AC;--surface:#1B2620;--surface2:#222F28;--line:#34443A;
+    --accent:#6FCB4B;--accent-d:#8BDD6A;--accent-ink:#0E1A10;--accent-bg:#27402A;
+    --wall:#1F2A36;--wall2:#273546;--plate:#E9EEF2;--plate-edge:#5E6B77;--metal:#9AA6B0;--metal-d:#5A6670;
+    --brown:#B77B3E;--blue:#4F9BEA;--black:#0D0D0D;--wire-edge:#05090D;
+    --good:#7FDB93;--good-bg:#1F3A26;--bad:#FF8F86;--bad-bg:#47211E;--warn:#FFCF6B;--warn-bg:#41330F;
+    --on:#4CD174;--off:#7C8892;--glow:#FFE27A;--sel:#FFA033;
+  }
+}
+:root[data-theme="dark"]{
+    --bg:#121A16;--ink:#E8F1EA;--ink2:#A6B8AC;--surface:#1B2620;--surface2:#222F28;--line:#34443A;
+    --accent:#6FCB4B;--accent-d:#8BDD6A;--accent-ink:#0E1A10;--accent-bg:#27402A;
+    --wall:#1F2A36;--wall2:#273546;--plate:#E9EEF2;--plate-edge:#5E6B77;--metal:#9AA6B0;--metal-d:#5A6670;
+    --brown:#B77B3E;--blue:#4F9BEA;--black:#0D0D0D;--wire-edge:#05090D;
+    --good:#7FDB93;--good-bg:#1F3A26;--bad:#FF8F86;--bad-bg:#47211E;--warn:#FFCF6B;--warn-bg:#41330F;
+    --on:#4CD174;--off:#7C8892;--glow:#FFE27A;--sel:#FFA033;
+}
+*{box-sizing:border-box}
+html{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f);font-size:18px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-left,0px)) 40px max(16px,env(safe-area-inset-right,0px))}
+h1{margin:0;font-size:1.9rem;line-height:1.15;text-wrap:balance}
+h2{margin:0 0 6px;font-size:1.25rem}
+h3{margin:0 0 4px;font-size:1.05rem}
+.sub{color:var(--ink2);margin:4px 0 0;font-size:1rem}
+header{padding-bottom:12px;border-bottom:3px solid var(--accent);margin-bottom:14px}
+.tasks{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:6px}
+.tasks button{flex:0 0 auto;font:inherit;font-weight:700;border:2px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:12px;cursor:pointer;display:flex;gap:8px;align-items:center}
+.tasks button[aria-current="true"]{border-color:var(--accent);background:var(--accent-bg)}
+.tasks button .n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink2);color:var(--surface);font-size:.95rem}
+.tasks button[aria-current="true"] .n{background:var(--accent);color:var(--accent-ink)}
+.tasks button.done .n{background:var(--good);color:#fff}
+.tasks button.done .n::before{content:"✓"}
+.tasks button.done .n span{display:none}
+.stage{position:relative;border-radius:18px;overflow:hidden;border:2px solid var(--line);background:var(--wall)}
+.scenescroll{overflow-x:auto}
+#scene{display:block;width:100%;min-width:760px;height:auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.status{margin:12px 0 0;padding:12px 16px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-size:1.15rem;min-height:3.2em;display:flex;align-items:center}
+.status.good{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+.status.bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.status.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.btn{font:inherit;font-weight:700;border:2px solid var(--ink);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:10px;cursor:pointer}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--accent);border-color:var(--accent-d);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-d)}
+.tog{display:inline-flex;gap:8px;align-items:center;font-size:.98rem;padding:4px 6px}
+.tog input{width:20px;height:20px;accent-color:var(--accent)}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));margin-top:14px}
+.card{background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.card p{margin:4px 0 0}
+.goal{background:var(--accent-bg);border-color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font-size:.98rem}
+.legend i{display:inline-block;width:30px;height:9px;border-radius:5px;margin-right:6px;vertical-align:middle;border:1px solid var(--wire-edge)}
+.hintbox{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn);display:none}
+.hintbox.on{display:block}
+details{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:10px}
+summary{cursor:pointer;font-weight:700}
+details p{margin:6px 0 0}
+.pojmovi{margin-top:18px}
+/* scena */
+.wall{fill:var(--wall)}
+.wall2{fill:var(--wall2)}
+.plate{fill:var(--plate);stroke:var(--plate-edge);stroke-width:3}
+.plate2{fill:none;stroke:var(--plate-edge);stroke-width:1.5;opacity:.6}
+.metal{fill:var(--metal);stroke:var(--metal-d);stroke-width:2}
+.t-txt{font-family:var(--f);font-size:15px;font-weight:700;fill:#33414D}
+.t-sm{font-family:var(--f);font-size:13px;font-weight:700;fill:#33414D}
+.t-wall,.t-txt,.t-sm,.t-big{pointer-events:none}
+.t-wall{font-family:var(--f);font-size:16px;font-weight:700;fill:var(--ink2)}
+.t-big{font-family:var(--f);font-size:26px;font-weight:700;fill:#fff}
+.rock{stroke:#2a3640;stroke-width:2.5}
+.rock.on{fill:#3BB35C}.rock.off{fill:#9AA6B0}.rock.a{fill:#3C8CE0}.rock.b{fill:#F0A030}
+.hit{cursor:pointer}
+.term circle.ring{fill:none;stroke:var(--sel);stroke-width:4;opacity:0}
+.term:hover circle.ring{opacity:.85}
+.term.sel circle.ring{opacity:1;animation:pulse .8s ease-in-out infinite}
+.term circle.body{fill:#D8DEE3;stroke:#55616B;stroke-width:3}
+.term line{stroke:#55616B;stroke-width:3;stroke-linecap:round}
+.term circle.hitc{fill:transparent;cursor:crosshair}
+@keyframes pulse{0%,100%{stroke-width:3}50%{stroke-width:7}}
+.wire-edge{fill:none;stroke:var(--wire-edge);stroke-width:11;stroke-linecap:round}
+.wire{fill:none;stroke-width:7;stroke-linecap:round}
+.wire.brown{stroke:var(--brown)}.wire.blue{stroke:var(--blue)}.wire.black{stroke:#4a4a4a}
+.wire.live-glow{fill:none;stroke:var(--glow);stroke-width:17;stroke-linecap:round;opacity:.55}
+.wire-flow{fill:none;stroke:#FFF6B0;stroke-width:3.5;stroke-linecap:round;stroke-dasharray:3 15;animation:flow .6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-18}}
+.wire-hit{fill:none;stroke:transparent;stroke-width:22;cursor:pointer}
+.wire-grp:hover .wire-edge{stroke:var(--bad)}
+.preview{fill:none;stroke:var(--sel);stroke-width:5;stroke-dasharray:9 8;stroke-linecap:round;pointer-events:none}
+.int{stroke:#FF8A00;stroke-width:6;stroke-linecap:round;fill:none}
+.spark{fill:#FFE066;stroke:#FF7A00;stroke-width:1.5}
+.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+#confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#confetti i{position:absolute;top:-20px;width:12px;height:16px;border-radius:2px;animation:fall 2.4s ease-in forwards}
+@keyframes fall{to{transform:translateY(620px) rotate(540deg);opacity:.9}}
+@media (prefers-reduced-motion: reduce){.wire-flow{animation:none}.term.sel circle.ring{animation:none}#confetti{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Kućna instalacija: spoji i upali!</h1>
+  <p class="sub">Spoji vodiče, uključi osigurač i klikni prekidač. Ako je sve dobro spojeno, zasvijetli žarulja.</p>
+</header>
+
+<nav class="tasks" id="tasks" aria-label="Zadaci"></nav>
+
+<div class="stage">
+  <div class="scenescroll"><svg id="scene" viewBox="0 0 1000 540" role="img" aria-label="Pokusna ploča za spajanje kućne instalacije"></svg></div>
+  <div id="confetti"></div>
+</div>
+<div class="status" id="status" role="status" aria-live="polite"></div>
+<div class="tools">
+  <button class="btn" id="b-hint" type="button">Savjet</button>
+  <button class="btn primary" id="b-check" type="button">Provjeri spoj</button>
+  <button class="btn" id="b-undo" type="button">Poništi zadnji vodič</button>
+  <button class="btn" id="b-clear" type="button">Obriši sve vodiče</button>
+  <button class="btn" id="b-solve" type="button">Pokaži rješenje</button>
+  <label class="tog"><input type="checkbox" id="c-int"><span>Pokaži unutrašnjost prekidača</span></label>
+  <label class="tog"><input type="checkbox" id="c-snd" checked><span>Zvuk</span></label>
+</div>
+
+<div class="cards">
+  <div class="card goal"><h2 id="t-title"></h2><h3>Zadatak</h3><p id="t-goal"></p></div>
+  <div class="card"><h3>Što učimo</h3><p id="t-learn"></p></div>
+  <div class="card">
+    <h3>Kako se radi</h3>
+    <p>1. Isključi osigurač (spajamo samo kad nema napona).<br>2. Klikni jednu stezaljku, pa drugu: nastaje vodič. Klik na vodič ga briše.<br>3. Uključi osigurač i isprobaj prekidač.</p>
+    <div class="legend"><span><i style="background:var(--brown)"></i>faza L</span><span><i style="background:var(--blue)"></i>nula N</span><span><i style="background:#4a4a4a"></i>povratni vodič</span><span><i style="background:var(--glow)"></i>pod naponom</span></div>
+    <div class="hintbox" id="hintbox"></div>
+  </div>
+</div>
+
+<div class="pojmovi">
+  <h2>Pojmovi</h2>
+  <details><summary>Faza, nula i osigurač</summary><p>Faza (L) je vodič pod naponom od 230 V i opasna je za dodir. Nula (N) je povratni vodič. Osigurač (automat) automatski prekida krug kod preopterećenja ili kratkog spoja. Prije svakog spajanja isključi osigurač.</p></details>
+  <details><summary>Kratki spoj</summary><p>Kratki spoj nastaje kad se faza spoji izravno na nulu, bez žarulje ili drugog trošila između. Struja tada naraste jako brzo, pa osigurač isključi napajanje.</p></details>
+  <details><summary>Prekidač i sklopka</summary><p>Prekidač je sklopka koju uključujemo rukom i ona ostaje u položaju u kojem je ostavimo. Tipkalo je sklopka s oprugom: vodi struju samo dok ga držimo pritisnutog. Prekidač uvijek prekida fazu, a ne nulu.</p></details>
+  <details><summary>Vrste prekidača u kući</summary><p><b>Obični</b>: jedna žarulja s jednog mjesta. <b>Serijski</b>: dvije tipke, dva kruga (npr. luster s dvije grupe žarulja). <b>Izmjenični</b>: jedna žarulja s dva mjesta (hodnik, stepenice). <b>Križni</b>: dodaje se između dva izmjenična kad žarulju upravljamo s tri ili više mjesta.</p></details>
+  <details><summary>Razvodna kutija</summary><p>U razvodnoj kutiji vodiči se spajaju spojnicama. Sve što je u jednoj spojnici međusobno je spojeno. Kutija mora ostati dostupna i zatvorena poklopcem.</p></details>
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s);};
+var NS="http://www.w3.org/2000/svg";
+var RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- predlošci uređaja ---------- */
+function T(id,x,y,dir,lab,lx,ly,la){return {id:id,x:x,y:y,dir:dir,lab:lab||"",lx:lx||0,ly:ly||0,la:la||"middle"};}
+var UP=[0,-1],DN=[0,1],RT=[1,0];
+var TEMPL={
+ panel:{w:150,h:250,name:"Razvodna ploča",terms:[T("L",150,175,RT,"L",-24,5,"end"),T("N",150,215,RT,"N",-24,5,"end")]},
+ obicni:{w:120,h:160,name:"Obični prekidač",terms:[T("t1",60,16,UP,"1",0,32),T("t2",60,144,DN,"2",0,-22)]},
+ serijski:{w:160,h:160,name:"Serijski prekidač",terms:[T("C",80,16,UP,"ulaz",0,32),T("A",45,144,DN,"1",0,-22),T("B",115,144,DN,"2",0,-22)]},
+ izmj:{w:120,h:160,name:"Izmjenični prekidač",terms:[T("C",60,16,UP,"zaj.",0,32),T("p1",32,144,DN,"1",0,-22),T("p2",88,144,DN,"2",0,-22)]},
+ krizni:{w:140,h:160,name:"Križni prekidač",terms:[T("a1",40,16,UP,"1",0,32),T("a2",100,16,UP,"2",0,32),T("b1",40,144,DN,"3",0,-22),T("b2",100,144,DN,"4",0,-22)]},
+ tipkalo:{w:100,h:140,name:"Tipkalo",terms:[T("t1",50,16,UP,"1",0,32),T("t2",50,124,DN,"2",0,-22)]},
+ lampa:{w:110,h:170,name:"Žarulja",terms:[T("t1",30,18,UP,"1",0,36),T("t2",80,18,UP,"2",0,36)]},
+ zvonce:{w:120,h:150,name:"Zvonce",terms:[T("t1",35,16,UP,"1",0,34),T("t2",85,16,UP,"2",0,34)]},
+ kutija:{w:380,h:250,name:"Razvodna kutija",terms:[]}
+};
+for(var j=0;j<4;j++){for(var k=0;k<3;k++){TEMPL.kutija.terms.push(T("J"+(j+1)+"abc"[k],22+80*j+35,70+k*48,null,"",0,0));}}
+var STATES={
+ obicni:[{on:false},{on:true}],
+ serijski:[{a:false,b:false},{a:true,b:false},{a:false,b:true},{a:true,b:true}],
+ izmj:[{pos:0},{pos:1}],
+ krizni:[{cross:false},{cross:true}],
+ tipkalo:[{p:false},{p:true}]
+};
+var SWT={obicni:1,serijski:1,izmj:1,krizni:1,tipkalo:1};
+function initState(type){
+ return {obicni:{on:false},serijski:{a:false,b:false},izmj:{pos:0},krizni:{cross:false},tipkalo:{p:false},panel:{on:false}}[type]||{};
+}
+function contacts(c,s){
+ s=s||c.s;var r=[],id=c.id;
+ function p(a,b){r.push([id+"."+a,id+"."+b]);}
+ if(c.type==="obicni"&&s.on)p("t1","t2");
+ if(c.type==="serijski"){if(s.a)p("C","A");if(s.b)p("C","B");}
+ if(c.type==="izmj"){p("C",s.pos?"p2":"p1");}
+ if(c.type==="krizni"){if(s.cross){p("a1","b2");p("a2","b1");}else{p("a1","b1");p("a2","b2");}}
+ if(c.type==="tipkalo"&&s.p)p("t1","t2");
+ return r;
+}
+
+/* ---------- zadaci ---------- */
+var TASKS=[
+{id:"t1",name:"Obični prekidač",
+ title:"1. Obični prekidač i žarulja",
+ goal:"Spoji prekidač i žarulju na ploču s izvorom. Uključi osigurač pa klikni prekidač: žarulja mora zasvijetliti.",
+ learn:"Struja teče samo u zatvorenom krugu: iz faze (L) kroz prekidač i žarulju natrag u nulu (N). Prekidač uvijek stavljamo u fazni vodič. Tada je ugašena žarulja bez napona i sigurno se mijenja.",
+ hints:["Kreni od faze L (smeđi vodič). Što je prvo na putu faze?","Faza ide u prekidač, a iz prekidača u žarulju.","Nula N ide izravno na drugu stezaljku žarulje, bez prekidača."],
+ comps:[["P","panel",30,130],["S1","obicni",420,50],["H1","lampa",760,280]],
+ sol:[["P.L","S1.t1"],["S1.t2","H1.t1"],["H1.t2","P.N"]],
+ exp:function(cb){return {H1:!!cb.S1.on};},
+ fact:"Zapamti: prekidač prekida fazu, nikad nulu."},
+{id:"t2",name:"Zvonce i tipkalo",
+ title:"2. Zvonce i tipkalo",
+ goal:"Spoji tipkalo i zvonce. Uključi osigurač, pa pritisni i drži tipkalo: zvonce mora zvoniti.",
+ learn:"Tipkalo je sklopka s oprugom. Vodi struju samo dok ga držiš pritisnutog, a kad ga pustiš, opruga ga vrati i krug se prekida. Zato se koristi za zvonce na vratima.",
+ hints:["Spoj isto kao kod obične žarulje, samo je trošilo zvonce.","Faza L ide u tipkalo, a iz tipkala u zvonce.","Druga stezaljka zvonca ide na nulu N."],
+ comps:[["P","panel",30,130],["B1","tipkalo",440,50],["Z1","zvonce",770,290]],
+ sol:[["P.L","B1.t1"],["B1.t2","Z1.t1"],["Z1.t2","P.N"]],
+ exp:function(cb){return {Z1:!!cb.B1.p};},
+ fact:"Ding-dong! U zvoncu elektromagnet privlači čekić na zvono."},
+{id:"t3",name:"Serijski prekidač",
+ title:"3. Serijski prekidač",
+ goal:"Spoji serijski prekidač i dvije žarulje tako da svaka tipka pali svoju žarulju.",
+ learn:"Serijski prekidač su dva prekidača u jednoj kutiji. Zajednički ulaz je jedan, a svaka tipka uključuje svoj izlaz. Tako jednim prekidačem upravljamo s dvije grupe žarulja, npr. na lusteru.",
+ hints:["Faza ulazi samo u jednu stezaljku: gornju, zajedničku (ulaz).","Svaki izlaz (1 i 2, dolje) ide u jednu žarulju.","Obje žarulje trebaju nulu N. Možeš ih spojiti jednu uz drugu."],
+ comps:[["P","panel",30,130],["S1","serijski",400,40],["H1","lampa",640,300],["H2","lampa",830,300]],
+ sol:[["P.L","S1.C"],["S1.A","H1.t1"],["S1.B","H2.t1"],["H1.t2","P.N"],["H2.t2","P.N"]],
+ exp:function(cb){return {H1:!!cb.S1.a,H2:!!cb.S1.b};},
+ fact:"Pazi: žarulje moraju biti jedna uz drugu (paralelno), ne jedna iza druge."},
+{id:"t4",name:"Izmjenični prekidač",
+ title:"4. Izmjenični prekidač (hodnik)",
+ goal:"Spoji dva izmjenična prekidača tako da svaki od njih može upaliti i ugasiti istu žarulju.",
+ learn:"U hodniku ili na stepenicama jednu žarulju upravljamo s dva mjesta. Svaki izmjenični prekidač prebacuje zajednički vodič na jedan od dva putna vodiča. Putne vodiče spajamo između prekidača. Svaka promjena bilo kojeg prekidača pali ili gasi žarulju.",
+ hints:["Faza L ide u zajedničku stezaljku prvog prekidača (gore).","Donje stezaljke prvog spoji s donjim stezaljkama drugog: 1 s 1 i 2 s 2.","Zajednička stezaljka drugog prekidača ide u žarulju, a druga stezaljka žarulje na nulu N."],
+ comps:[["P","panel",30,130],["S1","izmj",290,40],["S2","izmj",590,40],["H1","lampa",830,230]],
+ sol:[["P.L","S1.C"],["S1.p1","S2.p1"],["S1.p2","S2.p2"],["S2.C","H1.t1"],["H1.t2","P.N"]],
+ alt:true,
+ fact:"Izmjenični prekidač se zove i hotelski, jer se koristi u hodnicima."},
+{id:"t5",name:"Križni prekidač",
+ title:"5. Križni prekidač (tri mjesta)",
+ goal:"Spoji dva izmjenična i jedan križni prekidač. Svaki od tri prekidača mora moći upaliti i ugasiti žarulju.",
+ learn:"Za tri ili više mjesta između dva izmjenična stavlja se križni prekidač. On putne vodiče ili propušta ravno ili ih ukrsti. Za svako dodatno mjesto dodaje se još jedan križni prekidač.",
+ hints:["Početak je isti kao u zadatku 4: faza L u zajedničku stezaljku prvog izmjeničnog.","Putne vodiče prvog izmjeničnog spoji na gornje stezaljke križnog (1 i 2).","Donje stezaljke križnog (3 i 4) idu na putne stezaljke zadnjeg izmjeničnog. Njegova zajednička ide u žarulju."],
+ comps:[["P","panel",30,130],["S1","izmj",230,40],["K","krizni",410,40],["S2","izmj",610,40],["H1","lampa",840,270]],
+ sol:[["P.L","S1.C"],["S1.p1","K.a1"],["S1.p2","K.a2"],["K.b1","S2.p1"],["K.b2","S2.p2"],["S2.C","H1.t1"],["H1.t2","P.N"]],
+ alt:true,
+ fact:"Križni prekidač je jedini koji nema zajedničku stezaljku: ima dva ulaza i dva izlaza."},
+{id:"t6",name:"Razvodna kutija",
+ title:"6. Razvodna kutija",
+ goal:"Spoji prekidač i žarulju preko razvodne kutije. Vodiči idu s uređaja u kutiju i unutar kutije se spajaju (uređaji se ne spajaju izravno jedan s drugim).",
+ learn:"U zidu se vodiči spajaju u razvodnoj kutiji. Spojnica spaja sve vodiče koji u nju uđu. Faza, nula i povratni vodič iz prekidača prema žarulji idu svaki u svoju spojnicu. Faza i nula nikad ne idu u istu spojnicu.",
+ hints:["Spojnica 1: faza L s ploče i ulaz prekidača (stezaljka 1).","Spojnica 2: nula N s ploče i druga stezaljka žarulje.","Spojnica 3: izlaz prekidača (stezaljka 2) i prva stezaljka žarulje."],
+ comps:[["P","panel",30,30],["S1","obicni",40,330],["H1","lampa",820,40],["BOX","kutija",330,150]],
+ sol:[["P.L","BOX.J1a"],["S1.t1","BOX.J1b"],["P.N","BOX.J2a"],["H1.t2","BOX.J2b"],["S1.t2","BOX.J3a"],["H1.t1","BOX.J3b"]],
+ box:true,
+ exp:function(cb){return {H1:!!cb.S1.on};},
+ fact:"Spojnice (stezaljke) u kutiji omogućuju da se vodiči spoje bez lemljenja i izolirke."}
+];
+
+/* ---------- stanje ---------- */
+var cur=0,comps=[],byId={},wires=[],sel=null,power=false,paintSeq=0;
+var seen={lit:{},dark:false},solved={},sparkUntil=0,chk=null,sound=true;
+var PKEY="virt-kucna-instalacija-v1";
+try{var sv=JSON.parse(localStorage.getItem(PKEY)||"{}");if(sv&&sv.solved)solved=sv.solved;}catch(e){}
+function saveProg(){try{localStorage.setItem(PKEY,JSON.stringify({solved:solved}));}catch(e){}}
+
+/* ---------- zvuk ---------- */
+var AC=null;
+function tone(freqs,dur,type,vol){
+  if(!sound)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    var t0=AC.currentTime;
+    freqs.forEach(function(f,i){
+      var o=AC.createOscillator(),g=AC.createGain();o.type=type||"sine";o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t0+i*dur);g.gain.exponentialRampToValueAtTime(vol||0.2,t0+i*dur+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t0+(i+1)*dur);
+      o.connect(g);g.connect(AC.destination);o.start(t0+i*dur);o.stop(t0+(i+1)*dur+0.05);
+    });
+  }catch(e){}
+}
+function sClick(){tone([1400],0.03,"square",0.05);}
+function sDing(){tone([880,660],0.28,"sine",0.25);}
+function sTrip(){tone([200,120],0.12,"sawtooth",0.15);}
+function sWin(){tone([523,659,784,1046],0.12,"triangle",0.2);}
+
+/* ---------- gradnja scene ---------- */
+function termKey(c,t){return c.id+"."+t.id;}
+function termAt(key){var a=key.split("."),c=byId[a[0]];var t=c.tm.terms.filter(function(x){return x.id===a[1];})[0];return {c:c,t:t,x:c.x+t.x,y:c.y+t.y};}
+function isJoint(key){return /^BOX\.J/.test(key);}
+
+function staticSvg(c){
+  var tm=c.tm,w=tm.w,h=tm.h,s="",i;
+  function plate(){return '<rect class="plate" x="0" y="0" width="'+w+'" height="'+h+'" rx="16"/><rect class="plate2" x="8" y="8" width="'+(w-16)+'" height="'+(h-16)+'" rx="10"/>';}
+  if(c.type==="panel"){
+    s='<rect x="0" y="0" width="150" height="250" rx="12" style="fill:#5F6D79;stroke:#3C4852;stroke-width:4"/>'+
+      '<rect x="10" y="10" width="130" height="230" rx="8" style="fill:#7A8895"/>'+
+      '<text x="75" y="32" text-anchor="middle" class="t-big" style="font-size:17px">Razvodna ploča</text>'+
+      '<text x="75" y="52" text-anchor="middle" class="t-sm" style="fill:#fff">230 V · osigurač 10 A</text>'+
+      '<circle cx="82" cy="172" r="9" style="fill:var(--brown);stroke:#fff;stroke-width:2"/><circle cx="82" cy="212" r="9" style="fill:var(--blue);stroke:#fff;stroke-width:2"/>';
+  }else if(c.type==="obicni"||c.type==="serijski"||c.type==="izmj"||c.type==="krizni"||c.type==="tipkalo"){
+    s=plate();
+  }else if(c.type==="lampa"){
+    s='<rect x="0" y="0" width="110" height="46" rx="10" class="metal"/>'+
+      '<rect x="22" y="46" width="66" height="26" rx="6" class="metal"/>'+
+      '<circle id="gl-'+c.id+'" cx="55" cy="118" r="70" fill="url(#glowG)" opacity="0"/>'+
+      '<g id="rays-'+c.id+'" opacity="0" style="stroke:#FFB400;stroke-width:4;stroke-linecap:round">';
+    for(i=0;i<10;i++){var a=Math.PI*(0.1+i*0.2),x1=55+Math.cos(a)*48,y1=118+Math.sin(a)*48,x2=55+Math.cos(a)*62,y2=118+Math.sin(a)*62;s+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'"/>';}
+    s+='</g><circle cx="55" cy="118" r="36" style="fill:#E4EBEF;stroke:#7C8A94;stroke-width:3;opacity:.95"/>'+
+      '<circle id="bu-'+c.id+'" cx="55" cy="118" r="34" style="fill:#FFE066" opacity="0"/>'+
+      '<path d="M44 130 Q55 100 66 130" fill="none" style="stroke:#8A949B;stroke-width:2.5"/>';
+  }else if(c.type==="zvonce"){
+    s='<rect x="0" y="0" width="120" height="42" rx="10" class="metal"/>'+
+      '<g id="bell-'+c.id+'" style="transform-origin:60px 42px">'+
+      '<path d="M18 130 Q18 62 60 58 Q102 62 102 130 Z" style="fill:#E8B84A;stroke:#8A6A14;stroke-width:3"/>'+
+      '<rect x="12" y="128" width="96" height="10" rx="5" style="fill:#C99A2E;stroke:#8A6A14;stroke-width:3"/>'+
+      '<circle cx="60" cy="144" r="8" style="fill:#555;stroke:#222;stroke-width:2"/></g>'+
+      '<g id="ding-'+c.id+'" opacity="0"><text x="118" y="80" class="t-wall" style="font-size:22px">ding!</text><text x="-6" y="108" text-anchor="end" class="t-wall" style="font-size:22px">dong!</text></g>';
+  }else if(c.type==="kutija"){
+    s='<rect x="0" y="0" width="380" height="250" rx="14" style="fill:#EDE8DA;stroke:#8E846B;stroke-width:4"/>'+
+      '<rect x="10" y="10" width="360" height="230" rx="9" style="fill:#F8F4EA;stroke:#B8AE92;stroke-width:2"/>'+
+      '<text x="190" y="34" text-anchor="middle" class="t-sm" style="font-size:17px">Razvodna kutija (spojnice)</text>';
+    for(var jn=0;jn<4;jn++){
+      var jx=22+80*jn;
+      s+='<rect x="'+jx+'" y="48" width="70" height="170" rx="10" style="fill:#D5DCE1;stroke:#6A7782;stroke-width:3"/>'+
+         '<rect x="'+(jx+31)+'" y="62" width="8" height="142" rx="4" style="fill:#B0762A"/>'+
+         '<text x="'+(jx+35)+'" y="236" text-anchor="middle" class="t-sm">spojnica '+(jn+1)+'</text>';
+    }
+    [[0,0],[380,0],[0,250],[380,250]].forEach(function(p){});
+  }
+  s+='<g id="dyn-'+c.id+'"></g>';
+  return s;
+}
+function termSvg(c){
+  var s="";
+  c.tm.terms.forEach(function(t){
+    var k=termKey(c,t);
+    s+='<g class="term" data-term="'+k+'" id="tm-'+k.replace(".","-")+'" transform="translate('+(c.x+t.x)+' '+(c.y+t.y)+')">'+
+      '<circle class="ring" r="19"/><circle class="body" r="11"/><line x1="-6" y1="-6" x2="6" y2="6"/><circle class="hitc" r="22"/></g>';
+    if(t.lab)s+='<text x="'+(c.x+t.x+t.lx)+'" y="'+(c.y+t.y+t.ly)+'" text-anchor="'+t.la+'" class="t-txt" style="pointer-events:none;'+(c.type==="panel"?"fill:#fff":"")+'">'+t.lab+'</text>';
+  });
+  return s;
+}
+function dynSvg(c,sim){
+  var s="",st=c.s,showInt=$("#c-int").checked,tm=c.tm;
+  function rock(x,y,w,h,cls,txt,sw,key){return '<g class="hit" data-sw="'+c.id+'" data-key="'+key+'"><rect class="rock '+cls+'" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="10"/><text x="'+(x+w/2)+'" y="'+(y+h/2+9)+'" text-anchor="middle" class="t-big">'+txt+'</text></g>';}
+  if(c.type==="panel"){
+    s+='<g class="hit" data-sw="P" data-key="on"><rect x="30" y="62" width="90" height="82" rx="10" style="fill:#2E3942;stroke:#141B20;stroke-width:3"/>'+
+       '<rect x="'+(st.on?48:48)+'" y="'+(st.on?70:100)+'" width="54" height="36" rx="8" style="fill:'+(st.on?"#3BB35C":"#C84B3F")+';stroke:#0b0f12;stroke-width:3"/>'+
+       '<text x="75" y="'+(st.on?95:125)+'" text-anchor="middle" class="t-sm" style="fill:#fff;font-size:15px">'+(st.on?"I":"O")+'</text></g>'+
+       '<text x="75" y="160" text-anchor="middle" class="t-sm" style="fill:#fff">'+(st.on?"UKLJUČENO":"ISKLJUČENO")+'</text>';
+  }else if(c.type==="obicni"){
+    s+=rock(35,48,50,66,st.on?"on":"off",st.on?"I":"O",0,"on");
+  }else if(c.type==="serijski"){
+    s+=rock(20,48,50,66,st.a?"on":"off",st.a?"I":"O",0,"a")+rock(90,48,50,66,st.b?"on":"off",st.b?"I":"O",0,"b");
+  }else if(c.type==="izmj"){
+    s+=rock(35,48,50,66,st.pos?"b":"a",st.pos?"▼":"▲",0,"pos");
+  }else if(c.type==="krizni"){
+    s+='<g class="hit" data-sw="K" data-key="cross"><rect x="28" y="40" width="84" height="80" rx="12" style="fill:#EDF1F4;stroke:#6C7A86;stroke-width:3"/>';
+    if(st.cross)s+='<line x1="52" y1="52" x2="88" y2="108" style="stroke:#E07A18;stroke-width:8;stroke-linecap:round"/><line x1="88" y1="52" x2="52" y2="108" style="stroke:#E07A18;stroke-width:8;stroke-linecap:round"/>';
+    else s+='<line x1="52" y1="52" x2="52" y2="108" style="stroke:#3C8CE0;stroke-width:8;stroke-linecap:round"/><line x1="88" y1="52" x2="88" y2="108" style="stroke:#3C8CE0;stroke-width:8;stroke-linecap:round"/>';
+    s+='</g>';
+  }else if(c.type==="tipkalo"){
+    s+='<g class="hit" data-btn="'+c.id+'"><circle cx="50" cy="70" r="'+(st.p?24:28)+'" style="fill:'+(st.p?"#C94A3C":"#E4604F")+';stroke:#7a231a;stroke-width:4"/><circle cx="50" cy="70" r="'+(st.p?13:17)+'" style="fill:#fff;opacity:.35"/></g>';
+  }
+  if(showInt&&SWT[c.type]){
+    contacts(c).forEach(function(pr){
+      var a=termAt(pr[0]),b=termAt(pr[1]);
+      s+='<line class="int" x1="'+(a.t.x)+'" y1="'+(a.t.y)+'" x2="'+(b.t.x)+'" y2="'+(b.t.y)+'" style="pointer-events:none" opacity=".8"/>';
+    });
+  }
+  return s;
+}
+
+/* ---------- simulacija ---------- */
+function solve(states,supply){
+  var par={};
+  function f(a){if(par[a]===undefined)par[a]=a;while(par[a]!==a){par[a]=par[par[a]];a=par[a];}return a;}
+  function u(a,b){a=f(a);b=f(b);if(a!==b)par[a]=b;}
+  wires.forEach(function(w){u(w[0],w[1]);});
+  comps.forEach(function(c){
+    if(c.type==="kutija"){for(var j=1;j<=4;j++){u("BOX.J"+j+"a","BOX.J"+j+"b");u("BOX.J"+j+"a","BOX.J"+j+"c");}}
+    if(SWT[c.type])contacts(c,states&&states[c.id]).forEach(function(p){u(p[0],p[1]);});
+  });
+  var gL=f("P.L"),gN=f("P.N");
+  if(gL===gN)return {short:true};
+  var loads=comps.filter(function(c){return c.type==="lampa"||c.type==="zvonce";});
+  var idx={},n=0,roots=[];
+  function reg(r){if(r===gL||r===gN)return;if(idx[r]===undefined){idx[r]=n++;roots.push(r);}}
+  loads.forEach(function(c){reg(f(c.id+".t1"));reg(f(c.id+".t2"));});
+  var A=[],B=[],i,j;
+  for(i=0;i<n;i++){A.push(new Array(n).fill(0));B.push(0);}
+  var Vs=supply?1:0;
+  loads.forEach(function(c){
+    var ra=f(c.id+".t1"),rb=f(c.id+".t2");if(ra===rb)return;
+    [[ra,rb],[rb,ra]].forEach(function(p){
+      var a=p[0],b=p[1];if(idx[a]===undefined)return;
+      A[idx[a]][idx[a]]+=1;
+      if(idx[b]!==undefined)A[idx[a]][idx[b]]-=1;else B[idx[a]]+=(b===gL?Vs:0);
+    });
+  });
+  for(i=0;i<n;i++)A[i][i]+=1e-6;
+  for(i=0;i<n;i++){
+    var m=i;for(j=i+1;j<n;j++)if(Math.abs(A[j][i])>Math.abs(A[m][i]))m=j;
+    var tA=A[i];A[i]=A[m];A[m]=tA;var tB=B[i];B[i]=B[m];B[m]=tB;
+    for(j=i+1;j<n;j++){var fct=A[j][i]/A[i][i];for(var k=i;k<n;k++)A[j][k]-=fct*A[i][k];B[j]-=fct*B[i];}
+  }
+  var V=new Array(n).fill(0);
+  for(i=n-1;i>=0;i--){var sacc=B[i];for(j=i+1;j<n;j++)sacc-=A[i][j]*V[j];V[i]=sacc/A[i][i];}
+  function volt(key){var r=f(key);if(r===gL)return Vs;if(r===gN)return 0;return idx[r]===undefined?0:V[idx[r]];}
+  var P={};loads.forEach(function(c){var d=volt(c.id+".t1")-volt(c.id+".t2");P[c.id]=d*d;});
+  return {short:false,P:P,volt:volt,f:f,gL:gL,gN:gN,loads:loads};
+}
+function combos(){
+  var cb=[{}];
+  comps.filter(function(c){return SWT[c.type];}).forEach(function(c){
+    var nx=[];cb.forEach(function(x){STATES[c.type].forEach(function(o){var y=Object.assign({},x);y[c.id]=o;nx.push(y);});});cb=nx;
+  });
+  return cb;
+}
+function loadName(c){var all=comps.filter(function(x){return x.type===c.type;});return (c.type==="zvonce"?"Zvonce":"Žarulja")+(all.length>1&&c.type==="lampa"?" "+c.id.slice(1):"");}
+function runCheck(){
+  var task=TASKS[cur];
+  if(!wires.length)return {ok:false,msg:"Još nema nijednog vodiča. Klikni jednu stezaljku, pa drugu."};
+  var cbs=combos(),loads=comps.filter(function(c){return c.type==="lampa"||c.type==="zvonce";});
+  var maxP={},unsafe=null,wrong=null,short=false,litList=[];
+  loads.forEach(function(c){maxP[c.id]=0;});
+  for(var i=0;i<cbs.length;i++){
+    var r=solve(cbs[i],true);
+    if(r.short){short=true;break;}
+    var ex=task.alt?null:task.exp(cbs[i]);
+    loads.forEach(function(c){
+      var P=r.P[c.id];if(P>maxP[c.id])maxP[c.id]=P;
+      var lit=P>0.9;
+      if(task.alt){litList.push({cb:cbs[i],lit:lit});}
+      var want=ex?ex[c.id]:lit;
+      if(ex){
+        if(want&&!lit&&!wrong)wrong=loadName(c)+(P>0.05?" svijetli slabo kad bi trebala jako.":" ne radi kako treba u svim položajima prekidača.");
+        if(!want&&P>0.05&&!wrong)wrong=loadName(c)+" radi i kad bi trebala biti ugašena. Provjeri koja tipka upravlja kojom žaruljom.";
+      }
+      if(!lit&&(!ex||!want)){
+        var v1=r.volt(c.id+".t1"),v2=r.volt(c.id+".t2");
+        if((v1>0.5||v2>0.5)&&!unsafe)unsafe=loadName(c)+" je ugašena, ali joj je stezaljka pod naponom (faza). Prekidač mora prekidati fazu, a ne nulu.";
+      }
+    });
+  }
+  if(short)return {ok:false,msg:"Kratki spoj! U nekom položaju prekidača faza je spojena izravno na nulu, bez žarulje. Provjeri vodiče."};
+  var dead=loads.filter(function(c){return maxP[c.id]<0.05;});
+  if(dead.length)return {ok:false,msg:loadName(dead[0])+" nikad ne svijetli. Provjeri je li spojena i s fazom (preko prekidača) i s nulom."};
+  if(unsafe)return {ok:false,msg:unsafe};
+  var dim=loads.filter(function(c){return maxP[c.id]<0.9;});
+  if(dim.length)return {ok:false,msg:loadName(dim[0])+" svijetli slabo. Trošila (žarulje) ne smiju biti spojena jedno iza drugoga, nego svako zasebno između faze i nule."};
+  if(wrong)return {ok:false,msg:wrong};
+  if(task.alt){
+    var okAlt=true,anyOn=litList.some(function(x){return x.lit;}),anyOff=litList.some(function(x){return !x.lit;});
+    litList.forEach(function(a){litList.forEach(function(b){
+      var diff=Object.keys(a.cb).filter(function(k){return JSON.stringify(a.cb[k])!==JSON.stringify(b.cb[k]);});
+      if(diff.length===1&&a.lit===b.lit)okAlt=false;
+    });});
+    if(!anyOn)return {ok:false,msg:"Žarulja nikad ne svijetli."};
+    if(!anyOff||!okAlt)return {ok:false,msg:"Svaki prekidač mora sam moći promijeniti stanje žarulje. Sad barem jedan to ne može. Provjeri putne vodiče između prekidača."};
+  }
+  if(task.box){
+    var bad=wires.filter(function(w){return !isJoint(w[0])&&!isJoint(w[1]);});
+    if(bad.length)return {ok:false,msg:"U ovom zadatku svi vodiči moraju ići preko razvodne kutije. Neki uređaji spojeni su izravno."};
+  }
+  return {ok:true,msg:"Spoj je ispravan!"};
+}
+
+/* ---------- crtanje ---------- */
+function wirePathD(a,b){
+  var dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),k=Math.max(45,Math.min(170,dist*0.45));
+  var da=a.t&&a.t.dir?a.t.dir:[Math.sign(dx)||1,0],db=b.t&&b.t.dir?b.t.dir:[Math.sign(-dx)||-1,0];
+  return "M"+a.x+","+a.y+" C"+(a.x+da[0]*k)+","+(a.y+da[1]*k)+" "+(b.x+db[0]*k)+","+(b.y+db[1]*k)+" "+b.x+","+b.y;
+}
+function netColors(){
+  var par={};function f(a){if(par[a]===undefined)par[a]=a;while(par[a]!==a){par[a]=par[par[a]];a=par[a];}return a;}
+  function u(a,b){a=f(a);b=f(b);if(a!==b)par[a]=b;}
+  wires.forEach(function(w){u(w[0],w[1]);});
+  if(byId.BOX)for(var j=1;j<=4;j++){u("BOX.J"+j+"a","BOX.J"+j+"b");u("BOX.J"+j+"a","BOX.J"+j+"c");}
+  var L=f("P.L"),N=f("P.N");
+  return function(key){var r=f(key);return r===L?"brown":(r===N?"blue":"black");};
+}
+function paintWires(sim){
+  var col=netColors(),s="",sp="";
+  var live=sim&&!sim.short&&power;
+  wires.forEach(function(w,i){
+    var a=termAt(w[0]),b=termAt(w[1]),d=wirePathD(a,b),cl=col(w[0]);
+    var isLive=live&&sim.f(w[0])===sim.gL;
+    var flows=false;
+    if(live){var r=sim.f(w[0]);sim.loads.forEach(function(c){if(sim.P[c.id]>0.05&&(sim.f(c.id+".t1")===r||sim.f(c.id+".t2")===r))flows=true;});}
+    s+='<g class="wire-grp" data-wire="'+i+'">'+(isLive?'<path class="live-glow wire" d="'+d+'" style="stroke:var(--glow);stroke-width:17;opacity:.5"/>':'')+
+       '<path class="wire-edge" d="'+d+'"/><path class="wire '+cl+'" d="'+d+'"/>'+(flows?'<path class="wire-flow" d="'+d+'"/>':'')+
+       '<path class="wire-hit" d="'+d+'"/></g>';
+  });
+  $("#wires").innerHTML=s;
+}
+function paintDyn(){comps.forEach(function(c){var g=$("#dyn-"+c.id);if(g)g.innerHTML=dynSvg(c);});}
+function paintSel(){
+  document.querySelectorAll(".term").forEach(function(g){g.classList.toggle("sel",g.getAttribute("data-term")===sel);});
+}
+var lastSim=null;
+function paint(){
+  lastSim=solve(null,power);
+  paintDyn();paintWires(lastSim);paintSel();
+  comps.forEach(function(c){if(c.type==="panel"){/* status by dyn */}});
+}
+function build(){
+  var task=TASKS[cur];comps=[];byId={};wires=[];sel=null;power=false;seen={lit:{},dark:false};chk=null;sparkUntil=0;prevBell=false;$("#confetti").innerHTML="";
+  task.comps.forEach(function(d){var c={id:d[0],type:d[1],x:d[2],y:d[3],tm:TEMPL[d[1]],s:initState(d[1]),b:0};comps.push(c);byId[c.id]=c;});
+  var svg=$("#scene"),s='<defs><radialGradient id="glowG"><stop offset="0" stop-color="#FFE98A" stop-opacity=".95"/><stop offset=".55" stop-color="#FFD84A" stop-opacity=".35"/><stop offset="1" stop-color="#FFD84A" stop-opacity="0"/></radialGradient></defs>';
+  s+='<rect class="wall" x="0" y="0" width="1000" height="540"/>';
+  for(var y=0;y<540;y+=54)s+='<line x1="0" y1="'+y+'" x2="1000" y2="'+y+'" style="stroke:var(--wall2);stroke-width:2"/>';
+  s+='<rect x="0" y="500" width="1000" height="40" class="wall2"/>';
+  comps.forEach(function(c){s+='<g id="c-'+c.id+'" transform="translate('+c.x+' '+c.y+')">'+staticSvg(c)+'</g>';
+    if(c.type!=="panel"&&c.type!=="kutija"){
+      var nm=c.tm.name+(c.type==="izmj"?(c.id==="S1"?" (1)":" (2)"):""),side=(c.type==="lampa"||c.type==="zvonce");
+      s+=side?'<text x="'+(c.x+c.tm.w/2)+'" y="'+(c.y+c.tm.h+22)+'" text-anchor="middle" class="t-wall">'+nm+'</text>':
+                '<text x="'+(c.x+c.tm.w+10)+'" y="'+(c.y+c.tm.h/2+5)+'" class="t-wall">'+nm.replace(" prekidač","<tspan x=\""+(c.x+c.tm.w+10)+"\" dy=\"19\">prekidač</tspan>")+'</text>';
+    }});
+  s+='<g id="wires"></g><path id="preview" class="preview" d="" style="display:none"/>';
+  comps.forEach(function(c){s+=termSvg(c);});
+  s+='<g id="sparks"></g>';
+  svg.innerHTML=s;
+  // dinamični dijelovi u pravim koordinatama
+  comps.forEach(function(c){var g=$("#dyn-"+c.id);});
+  paint();
+  var t=TASKS[cur];
+  $("#t-title").textContent=t.title;$("#t-goal").textContent=t.goal;$("#t-learn").textContent=t.learn;
+  hintN=0;$("#hintbox").className="hintbox";$("#hintbox").textContent="";
+  document.querySelectorAll("#tasks button").forEach(function(b,i){b.setAttribute("aria-current",i===cur?"true":"false");});
+  say("Isključi osigurač (već je isključen). Klikni jednu stezaljku, pa drugu da napraviš vodič.","");
+}
+var hintN=0;
+
+/* ---------- poruke ---------- */
+function say(t,k){var e=$("#status");e.textContent=t;e.className="status"+(k?" "+k:"");}
+
+/* ---------- vodiči ---------- */
+function termCount(k){return wires.filter(function(w){return w[0]===k||w[1]===k;}).length;}
+function blockedEdit(){
+  if(power){say("Prvo isključi osigurač! Vodiče uvijek spajamo kad nema napona.","warn");var p=$("#c-P");if(p){p.classList.remove("shake");void p.getBoundingClientRect();p.classList.add("shake");}return true;}
+  return false;
+}
+function clickTerm(k){
+  if(blockedEdit()){sel=null;paintSel();return;}
+  if(sel===null){sel=k;paintSel();say("Odabrana je stezaljka. Sad klikni stezaljku na koju ide vodič.","");return;}
+  if(sel===k){sel=null;paintSel();say("Odabir je poništen.","");return;}
+  var a=sel,b=k;sel=null;
+  var dup=wires.some(function(w){return (w[0]===a&&w[1]===b)||(w[0]===b&&w[1]===a);});
+  if(dup){paintSel();say("Ta dva priključka već su spojena.","warn");return;}
+  if(a.split(".")[0]===b.split(".")[0]&&!isJoint(a)){paintSel();say("Vodič ne spajamo na isti uređaj.","warn");return;}
+  if(isJoint(a)&&isJoint(b)&&a.slice(0,6)===b.slice(0,6)){paintSel();say("Ovo su ista spojnica: već su spojeni.","warn");return;}
+  if(TASKS[cur].box&&!isJoint(a)&&!isJoint(b)){paintSel();say("U ovom zadatku vodiči idu preko razvodne kutije. Spoji uređaj sa spojnicom.","warn");return;}
+  var lim=function(x){return isJoint(x)?1:2;};
+  if(termCount(a)>=lim(a)||termCount(b)>=lim(b)){paintSel();say(isJoint(a)||isJoint(b)?"U jedan pol spojnice ide jedan vodič. Upotrijebi drugi pol iste spojnice.":"U stezaljku idu najviše dva vodiča.","warn");return;}
+  wires.push([a,b]);sClick();paint();
+  say("Vodič je spojen ("+wires.length+"). Kad završiš, uključi osigurač na ploči.","");
+}
+function afterChange(){chk=null;seen={lit:{},dark:false};}
+
+/* ---------- događaji ---------- */
+var svgEl=$("#scene");
+function svgPt(ev){var pt=svgEl.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;var m=svgEl.getScreenCTM();return m?pt.matrixTransform(m.inverse()):{x:0,y:0};}
+svgEl.addEventListener("click",function(ev){
+  var t=ev.target.closest&&ev.target.closest("[data-term]");
+  if(t){clickTerm(t.getAttribute("data-term"));return;}
+  var w=ev.target.closest&&ev.target.closest("[data-wire]");
+  if(w){if(blockedEdit())return;wires.splice(+w.getAttribute("data-wire"),1);afterChange();sel=null;sClick();paint();say("Vodič je obrisan.","");return;}
+  var sw=ev.target.closest&&ev.target.closest("[data-sw]");
+  if(sw){toggleSw(sw.getAttribute("data-sw"),sw.getAttribute("data-key"));return;}
+  if(sel){sel=null;paintSel();$("#preview").style.display="none";}
+});
+svgEl.addEventListener("pointermove",function(ev){
+  var pv=$("#preview");
+  if(!sel){pv.style.display="none";return;}
+  var a=termAt(sel),p=svgPt(ev);
+  pv.setAttribute("d",wirePathD(a,{x:p.x,y:p.y,t:null}));pv.style.display="";
+});
+function btnDown(id,down){
+  var c=byId[id];if(!c)return;
+  if(c.s.p===down)return;
+  c.s.p=down;sClick();update();
+}
+svgEl.addEventListener("pointerdown",function(ev){
+  var b=ev.target.closest&&ev.target.closest("[data-btn]");
+  if(b){ev.preventDefault();btnDown(b.getAttribute("data-btn"),true);}
+});
+function releaseAll(){comps.forEach(function(c){if(c.type==="tipkalo"&&c.s.p)btnDown(c.id,false);});}
+window.addEventListener("pointerup",releaseAll);
+window.addEventListener("pointercancel",releaseAll);
+window.addEventListener("blur",releaseAll);
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){sel=null;paintSel();$("#preview").style.display="none";}});
+
+function toggleSw(id,key){
+  var c=byId[id];if(!c)return;
+  if(c.type==="panel"){
+    power=!power;c.s.on=power;sClick();
+    if(power)say("Osigurač je uključen. Isprobaj prekidače.","");else{say("Osigurač je isključen. Sad je sigurno spajati vodiče.","");}
+    update();return;
+  }
+  if(c.type==="izmj")c.s.pos=c.s.pos?0:1;
+  else if(c.type==="krizni")c.s.cross=!c.s.cross;
+  else c.s[key]=!c.s[key];
+  sClick();update();
+}
+
+/* ažuriranje nakon promjene stanja */
+var prevBell=false;
+function update(){
+  var sim=solve(null,power);
+  if(sim.short&&power){
+    power=false;byId.P.s.on=false;sparkUntil=performance.now()+1300;sTrip();
+    paint();say("KRATKI SPOJ! Faza je spojena izravno na nulu, pa je osigurač isključio napajanje. Nađi gdje se faza i nula dodiruju bez žarulje između.","bad");
+    return;
+  }
+  lastSim=sim;paintDyn();paintWires(sim);paintSel();
+  if(!power)return;
+  var task=TASKS[cur];
+  if(chk===null)chk=runCheck();
+  var anyLit=false,anyDark=false;
+  comps.forEach(function(c){if(c.type==="lampa"||c.type==="zvonce"){var P=sim.P[c.id];if(P>0.9){anyLit=true;seen.lit[c.id]=true;}if(P<0.05)anyDark=true;}});
+  if(anyDark)seen.dark=true;
+  var ringing=comps.some(function(c){return c.type==="zvonce"&&sim.P[c.id]>0.9;});
+  if(ringing&&!prevBell)sDing();
+  prevBell=ringing;
+  var loads=sim.loads;
+  var allSeen=loads.every(function(c){return seen.lit[c.id];})&&(!task.alt||seen.dark);
+  if(chk.ok&&allSeen&&!solved[task.id]){
+    solved[task.id]=true;saveProg();paintTabs();win();
+  }else if(!anyLit&&!solved[task.id]){
+    if(chk.ok)say("Osigurač je uključen. Sad klikni prekidač"+(task.id==="t2"?" (tipkalo drži pritisnuto)":"")+".","");
+    else say("Osigurač je uključen, ali ništa ne radi. Klikni prekidač. Ako i dalje ne radi, pritisni Provjeri spoj.","warn");
+  }else if(anyLit&&!solved[task.id]){
+    say("Svijetli! Isprobaj sve prekidače i položaje"+(task.alt?", žarulja mora i gasiti i paliti":"")+".","good");
+  }
+}
+function win(){
+  var t=TASKS[cur];sWin();
+  say("Bravo! Zadatak je riješen. "+t.fact+(cur<TASKS.length-1?" Idi na sljedeći zadatak.":" Riješio si sve zadatke!"),"good");
+  var c=$("#confetti");c.innerHTML="";
+  if(!RM){var cols=["#FF5A5F","#FFC93C","#3BB35C","#3C8CE0","#C86DD7"];
+    for(var i=0;i<46;i++){var e=document.createElement("i");e.style.left=(Math.random()*100)+"%";e.style.background=cols[i%5];e.style.animationDelay=(Math.random()*0.7)+"s";e.style.animationDuration=(1.8+Math.random()*1.4)+"s";c.appendChild(e);}
+    setTimeout(function(){c.innerHTML="";},4200);}
+}
+
+/* ---------- gumbi ---------- */
+$("#b-hint").addEventListener("click",function(){
+  var h=TASKS[cur].hints;var hb=$("#hintbox");
+  hb.className="hintbox on";hb.textContent="Savjet "+(hintN+1)+": "+h[hintN%h.length];hintN++;
+  if(hintN>h.length)hintN=h.length;
+});
+$("#b-check").addEventListener("click",function(){
+  var r=runCheck();
+  say(r.ok?"Spoj je ispravan! Uključi osigurač i isprobaj prekidač, pa će žarulja zasvijetliti.":r.msg,r.ok?"good":"warn");
+});
+$("#b-undo").addEventListener("click",function(){if(blockedEdit())return;if(wires.length){wires.pop();afterChange();paint();say("Zadnji vodič je uklonjen.","");}});
+$("#b-clear").addEventListener("click",function(){if(blockedEdit())return;wires=[];afterChange();sel=null;paint();say("Svi vodiči su obrisani.","");});
+$("#b-solve").addEventListener("click",function(){
+  if(power){power=false;byId.P.s.on=false;}
+  wires=TASKS[cur].sol.map(function(p){return p.slice();});afterChange();sel=null;paint();
+  say("Ovo je jedno od mogućih rješenja. Uključi osigurač i isprobaj prekidače.","");
+});
+$("#c-int").addEventListener("change",function(){paint();});
+$("#c-snd").addEventListener("change",function(e){sound=e.target.checked;});
+
+function paintTabs(){
+  var nav=$("#tasks");nav.innerHTML="";
+  TASKS.forEach(function(t,i){
+    var b=document.createElement("button");b.type="button";b.className=solved[t.id]?"done":"";
+    b.innerHTML='<span class="n"><span>'+(i+1)+'</span></span>'+t.name;
+    b.setAttribute("aria-current",i===cur?"true":"false");
+    b.addEventListener("click",function(){cur=i;build();});
+    nav.appendChild(b);
+  });
+}
+
+/* ---------- animacija ---------- */
+function frame(now){
+  var sim=lastSim;
+  comps.forEach(function(c){
+    if(c.type==="lampa"){
+      var tgt=(sim&&!sim.short&&power)?Math.min(1,sim.P[c.id]||0):0;
+      c.b+=(tgt-c.b)*0.25;
+      var b=c.b<0.01?0:c.b;
+      var g=document.getElementById("gl-"+c.id),r=document.getElementById("rays-"+c.id),u=document.getElementById("bu-"+c.id);
+      if(g){g.setAttribute("opacity",b.toFixed(3));r.setAttribute("opacity",b.toFixed(3));u.setAttribute("opacity",(b*0.95).toFixed(3));}
+    }
+    if(c.type==="zvonce"){
+      var ring=sim&&!sim.short&&power&&sim.P[c.id]>0.9;
+      var bell=document.getElementById("bell-"+c.id),dd=document.getElementById("ding-"+c.id);
+      if(bell){bell.style.transform=ring&&!RM?"rotate("+(Math.sin(now/35)*9).toFixed(1)+"deg)":"none";dd.setAttribute("opacity",ring?(Math.sin(now/120)>0?1:0.25):0);}
+    }
+  });
+  var sg=document.getElementById("sparks");
+  if(sg){
+    if(now<sparkUntil){
+      var s="";var p=byId.P;
+      for(var i=0;i<7;i++){var x=p.x+150+(Math.random()-0.2)*60,y=p.y+175+Math.random()*40;s+='<polygon class="spark" points="'+x+','+(y-12)+' '+(x+5)+','+(y)+' '+(x+14)+','+(y+2)+' '+(x+4)+','+(y+7)+' '+(x+8)+','+(y+17)+' '+(x-2)+','+(y+9)+' '+(x-12)+','+(y+11)+'"/>';}
+      sg.innerHTML=s;
+    }else if(sg.innerHTML)sg.innerHTML="";
+  }
+  requestAnimationFrame(frame);
+}
+
+paintTabs();build();requestAnimationFrame(frame);
+window.__lab={TASKS:TASKS,get comps(){return comps;},get wires(){return wires;},set wires(v){wires=v;},solve:solve,runCheck:runCheck,toggleSw:toggleSw,clickTerm:clickTerm,build:build,setCur:function(i){cur=i;build();},get power(){return power;},get solved(){return solved;},btnDown:btnDown,update:update,paint:paint,afterChange:afterChange};
+})();
+</script>
+</body>
+</html>
