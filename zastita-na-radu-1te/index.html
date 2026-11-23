@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Virtualna radionica – Zaštita na radu</title>
+<style>
+:root{
+  --bg:#f4f1ea;--card:#ffffff;--ink:#14213d;--muted:#5b6475;--line:#d9d3c4;
+  --accent:#f2b705;--accent-ink:#14213d;--ok:#1f7a4d;--okbg:#e4f4ea;--bad:#b3261e;--badbg:#fbe9e7;--info:#1b5e9b;--infobg:#e6f0fa;--warnbg:#fff4cc;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#12161d;--card:#1b212b;--ink:#e8ecf2;--muted:#9aa5b5;--line:#2e3643;--ok:#4cc38a;--okbg:#17301f;--bad:#ff7a70;--badbg:#3a1d1a;--info:#6db3f2;--infobg:#14283b;--warnbg:#3a3112}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
+.stripe{height:12px;margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));background:repeating-linear-gradient(45deg,#f2b705 0 14px,#14213d 14px 28px)}
+.wrap{max-width:1180px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:flex-end;justify-content:space-between;padding:18px 0 10px}
+h1{font-size:1.55rem;line-height:1.15;margin:0;letter-spacing:.2px;text-wrap:balance}
+h1 small{display:block;font-size:.82rem;font-weight:600;color:var(--muted);letter-spacing:1.6px;text-transform:uppercase;margin-bottom:4px}
+.badge-proto{display:inline-block;background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:.72rem;letter-spacing:1.4px;padding:3px 9px;border-radius:4px;text-transform:uppercase}
+.who{color:var(--muted);font-size:.9rem}
+nav.steps{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+nav.steps button{border:2px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:8px;font:inherit;font-size:.9rem;font-weight:600;cursor:pointer;display:flex;gap:8px;align-items:center}
+nav.steps button .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--card);font-size:.78rem}
+nav.steps button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+nav.steps button.done .n{background:var(--ok)}
+nav.steps button:disabled{opacity:.5;cursor:not-allowed;border-style:dashed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.view{display:none}.view.on{display:block}
+.btn{background:var(--ink);color:var(--card);border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer}
+.btn.y{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn:focus-visible,nav.steps button:focus-visible,.opt:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+input[type=text]{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%}
+label{font-weight:700;font-size:.9rem;display:block;margin:12px 0 4px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.scene{padding:10px}
+svg.scene-svg{width:100%;height:auto;display:block;border-radius:8px;background:#dfe6ee}
+.hit{fill:transparent;cursor:pointer}
+.hit:hover,.hit:focus{stroke:#f2b705;stroke-width:4;stroke-dasharray:10 6;outline:none}
+.hit.sel{stroke:#14213d;stroke-width:4;stroke-dasharray:none}
+path.hit{fill:none}
+.pulse{animation:pl 1s ease-in-out 4;stroke:#f2b705;stroke-width:6}
+@keyframes pl{0%,100%{stroke-opacity:1}50%{stroke-opacity:.15}}
+.meter{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:6px 0}
+.meter>i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.panel h2{font-size:1.1rem;margin:0 0 6px}
+.panel p{margin:6px 0}
+.muted{color:var(--muted)}
+.opt{display:block;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;font:inherit;color:var(--ink);cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--info)}
+.opt:disabled{cursor:default}
+.opt.bad{border-color:var(--bad);background:var(--badbg)}
+.opt.good{border-color:var(--ok);background:var(--okbg)}
+.opt.sel{border-color:var(--info);background:var(--infobg)}
+.note{border-left:5px solid var(--info);background:var(--infobg);padding:9px 12px;border-radius:6px;margin:10px 0;font-size:.95rem}
+.note.ok{border-color:var(--ok);background:var(--okbg)}
+.note.bad{border-color:var(--bad);background:var(--badbg)}
+.note.warn{border-color:var(--accent);background:var(--warnbg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{font-size:.8rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px;background:var(--bg)}
+.chip.ok{border-color:var(--ok);color:var(--ok);font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.s2grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:16px;align-items:start}
+@media (max-width:900px){.s2grid{grid-template-columns:minmax(0,1fr)}}
+.bar{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#4cc38a 0%,#9bd34a 30%,#f2b705 52%,#ff8a3d 70%,#d6342a 100%);margin:12px 0 4px}
+.bar b{position:absolute;top:-5px;width:4px;height:26px;background:var(--ink);border-radius:2px;transition:left .3s}
+.scale{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted)}
+.tap{width:100%;height:120px;font-size:1.4rem;border-radius:16px;border:0;background:var(--bad);color:#fff;font-weight:900;cursor:pointer;user-select:none;touch-action:manipulation;transition:transform .06s}
+.tap:active,.tap.hit2{transform:scale(.96)}
+table{border-collapse:collapse;width:100%}
+td,th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
+.code{font-family:Consolas,monospace;font-size:1.5rem;letter-spacing:2px;background:var(--bg);border:2px dashed var(--ink);border-radius:8px;padding:10px 14px;display:inline-block}
+.permit{border:3px solid var(--ink);border-radius:12px;padding:16px;background:var(--card);position:relative}
+.permit.ok{border-color:var(--ok)}
+.permit.no{border-color:var(--bad)}
+footer{font-size:.82rem;color:var(--muted);margin-top:24px;max-width:900px}
+
+/* ---- animacije scena ---- */
+.okk{display:none}
+#scene.fix-h1 .brk-h1{display:none}#scene.fix-h1 .okk-h1{display:inline}#scene.fix-h2 .brk-h2{display:none}#scene.fix-h2 .okk-h2{display:inline}#scene.fix-h3 .brk-h3{display:none}#scene.fix-h3 .okk-h3{display:inline}#scene.fix-h4 .brk-h4{display:none}#scene.fix-h4 .okk-h4{display:inline}#scene.fix-h5 .brk-h5{display:none}#scene.fix-h5 .okk-h5{display:inline}#scene.fix-h6 .brk-h6{display:none}#scene.fix-h6 .okk-h6{display:inline}#scene.fix-h7 .brk-h7{display:none}#scene.fix-h7 .okk-h7{display:inline}#scene.fix-h8 .brk-h8{display:none}#scene.fix-h8 .okk-h8{display:inline}
+.fx{pointer-events:none}
+.spk{opacity:0;animation:spk var(--t,.9s) cubic-bezier(.2,.6,.5,1) infinite;animation-delay:var(--d,0s)}
+@keyframes spk{0%{transform:translate(0,0);opacity:0}6%{opacity:1}55%{transform:translate(calc(var(--dx)*.65),calc(var(--dy)*.25 - 14px))}100%{transform:translate(var(--dx),var(--dy));opacity:0}}
+.wheel{transform-box:fill-box;transform-origin:center;animation:spin .3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.blink{transform-box:fill-box;transform-origin:center;animation:blink 4.2s infinite}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.vib{animation:vib .07s linear infinite alternate}
+@keyframes vib{from{transform:translate(0,0)}to{transform:translate(.9px,-.7px)}}
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(1.6px)}}
+.smoke{opacity:0;transform-box:fill-box;transform-origin:center bottom;animation:smoke var(--t,3s) ease-out infinite;animation-delay:var(--d,0s)}
+@keyframes smoke{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:.55}100%{transform:translate(var(--sx,6px),-38px) scale(1.9);opacity:0}}
+.wisp{animation:wisp 2.6s ease-out infinite;animation-delay:var(--d,0s)}
+@keyframes wisp{0%{transform:translate(0,0);opacity:.9}100%{transform:translate(4px,-18px);opacity:0}}
+.flick{animation:flick 2.4s steps(1,end) infinite;animation-delay:var(--d,0s)}
+@keyframes flick{0%{opacity:0}3%{opacity:1}5%{opacity:0}7%{opacity:.8}8%{opacity:0}44%{opacity:0}45%{opacity:1}47%{opacity:.2}48%{opacity:1}50%{opacity:0}78%{opacity:0}79%{opacity:1}81%{opacity:0}}
+.glowp{animation:glowp 1.6s ease-in-out infinite}
+@keyframes glowp{0%,100%{opacity:.15}50%{opacity:.55}}
+.drip{opacity:0;animation:drip 1.5s ease-in infinite}
+@keyframes drip{0%{transform:translateY(0);opacity:0}10%{opacity:1}68%{transform:translateY(20px);opacity:1}70%,100%{transform:translateY(20px);opacity:0}}
+.ripple{opacity:0;transform-box:fill-box;transform-origin:center;animation:ripple 3.2s ease-out infinite;animation-delay:var(--d,0s)}
+@keyframes ripple{0%{transform:scale(.15);opacity:.8}100%{transform:scale(1);opacity:0}}
+.ripple.fast{animation:ripple2 1.5s ease-out infinite}
+@keyframes ripple2{0%,68%{transform:scale(.1);opacity:0}70%{opacity:.9}100%{transform:scale(1);opacity:0}}
+.trace{stroke-dasharray:50 90;animation:trace 2.2s linear infinite}
+@keyframes trace{to{stroke-dashoffset:-140}}
+.led{animation:led var(--p,1.4s) steps(1,end) infinite}
+@keyframes led{0%{opacity:1}50%{opacity:.15}}
+.door{transform-origin:40px 195px;animation:door 6s ease-in-out infinite}
+@keyframes door{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.965)}}
+.sign{animation:sign 2s ease-in-out infinite}
+@keyframes sign{0%,100%{opacity:1}50%{opacity:.72}}
+.walker{animation:walk 16s linear 2s infinite both}
+@keyframes walk{from{transform:translate(1040px,462px)}to{transform:translate(-90px,462px)}}
+.lean{transform-origin:0 0;animation:lean 16s linear 2s infinite both}
+@keyframes lean{0%,32%{transform:rotate(0)}34%{transform:rotate(-17deg) translateY(3px)}37%{transform:rotate(7deg)}40%,100%{transform:rotate(0)}}
+@keyframes hop{0%,32%{transform:translateY(0)}34.5%{transform:translateY(-16px)}37%,100%{transform:translateY(0)}}
+#scene.fix-h2 .lean{animation-name:hop}
+.leg,.arm{transform-box:fill-box;transform-origin:50% 0;animation:step .72s ease-in-out infinite alternate}
+.leg.b,.arm.a{animation-delay:-.72s}
+@keyframes step{from{transform:rotate(-26deg)}to{transform:rotate(26deg)}}
+.ping{fill:none;stroke:#f2b705;stroke-width:5;transform-box:fill-box;transform-origin:center;animation:ping .7s ease-out forwards}
+@keyframes ping{from{transform:scale(.3);opacity:1}to{transform:scale(1.7);opacity:0}}
+/* stanica 2 */
+.tremble{transform-origin:330px 290px;animation:trem .22s linear infinite}
+@keyframes trem{0%,100%{transform:translate(-1.4px,0) rotate(-.8deg)}25%{transform:translate(1.6px,-1px) rotate(.9deg)}50%{transform:translate(-1px,1px) rotate(-.5deg)}75%{transform:translate(1.2px,0) rotate(.7deg)}}
+.flow{stroke-dasharray:3 10;animation:flow .6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-26}}
+.lightflick{animation:lf 1.8s steps(1,end) infinite}
+@keyframes lf{0%{opacity:0}4%{opacity:.22}6%{opacity:0}57%{opacity:.25}59%{opacity:0}}
+.chest{transform-box:fill-box;transform-origin:50% 100%}
+.cprs.pump .rup{animation:pumpUp .28s ease-out}
+@keyframes pumpUp{0%{transform:translateY(0)}40%{transform:translateY(10px)}100%{transform:translateY(0)}}
+.cprs.pump .chest{animation:chestc .28s ease-out}
+@keyframes chestc{0%{transform:scaleY(1)}40%{transform:scaleY(.74)}100%{transform:scaleY(1)}}
+.cprs.metro-on .heart{animation:beat .545s ease-in-out infinite}
+.heart{transform-box:fill-box;transform-origin:center}
+@keyframes beat{0%,100%{transform:scale(1)}20%{transform:scale(1.3)}}
+.animbtn{font:inherit;font-size:.8rem;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 9px;cursor:pointer}
+body.noanim .scene-svg *{animation:none!important}
+body.noanim .fx{display:none}
+@media (prefers-reduced-motion:reduce){.scene-svg *{animation:none!important}.fx{display:none}}
+/* ---- stanice 3-6 ---- */
+.fl{transform-box:fill-box;transform-origin:50% 100%;animation:flame .5s ease-in-out infinite alternate}
+@keyframes flame{0%{transform:scale(1,1) skewX(-3deg)}100%{transform:scale(.9,1.14) skewX(4deg)}}
+.flames{transform-box:fill-box;transform-origin:50% 100%}
+.flames.fout{opacity:0;animation:fireOut 2.2s ease-in .5s both}
+@keyframes fireOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.15)}}
+.flames.flare{animation:flare .45s ease-in-out infinite alternate}
+@keyframes flare{from{transform:scale(1.25)}to{transform:scale(1.6,1.75)}}
+.smk{opacity:0;transform-box:fill-box;transform-origin:center bottom;animation:smk var(--t,3.4s) ease-out infinite;animation-delay:var(--d,0s)}
+@keyframes smk{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:.6}100%{transform:translate(var(--sx,8px),-95px) scale(2.6);opacity:0}}
+.spr{opacity:0;animation:spr .55s ease-out infinite;animation-delay:var(--d,0s)}
+@keyframes spr{0%{transform:translate(0,0) scale(.4);opacity:.95}100%{transform:translate(var(--dx,60px),var(--dy,8px)) scale(1.9);opacity:0}}
+.sweep{animation:sweep 1.1s ease-in-out infinite alternate}
+@keyframes sweep{from{transform:rotate(3deg)}to{transform:rotate(20deg)}}
+.pinout{transform-box:fill-box;transform-origin:center;animation:pinout .6s ease-in forwards}
+@keyframes pinout{to{transform:translate(18px,-26px) rotate(40deg);opacity:0}}
+.smkdown{transform-box:fill-box;transform-origin:50% 0;animation:smkdown 3s ease-out both}
+@keyframes smkdown{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+.runr{animation:run 3.6s linear infinite both}
+@keyframes run{from{transform:translate(30px,240px)}to{transform:translate(370px,240px)}}
+.lever{transition:transform .3s}.lever.off{transform:translateY(14px)}
+.lever.off.new{animation:leverOff .45s ease-out}
+@keyframes leverOff{from{transform:translateY(0)}to{transform:translateY(14px)}}
+.lock.new,.tin.new,.screen.new{animation:dropIn .55s cubic-bezier(.3,1.4,.5,1)}
+@keyframes dropIn{from{transform:translateY(-30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.tin.new{animation-name:slideIn}
+@keyframes slideIn{from{transform:translateX(50px);opacity:0}to{transform:translateX(0);opacity:1}}
+.draw{stroke-dasharray:100}
+.draw.new{animation:drawIn .9s ease-out}
+@keyframes drawIn{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+.draw2.new{animation:fadeIn .4s ease-out .8s both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.strm{stroke-dasharray:7 9;animation:flow .45s linear infinite}
+.fadeR{animation:fadeR 3.5s ease-out forwards;fill-opacity:.3}
+@keyframes fadeR{from{fill-opacity:1}to{fill-opacity:.3}}
+.bd{opacity:0;animation:bd 1.3s ease-in infinite;animation-delay:var(--d,0s)}
+@keyframes bd{0%{transform:translateY(0);opacity:0}10%{opacity:1}85%{transform:translateY(58px);opacity:1}100%{transform:translateY(62px);opacity:0}}
+.pressh{animation:pressh .8s ease-in-out infinite alternate}
+@keyframes pressh{from{transform:translateY(0)}to{transform:translateY(4px)}}
+.growr{transform-box:fill-box;transform-origin:center;animation:growr 6s ease-out forwards}
+@keyframes growr{from{transform:scale(.5)}to{transform:scale(1.15)}}
+.fly{animation:fly 2.2s ease-in infinite}
+@keyframes fly{0%{transform:translate(0,0) scale(1);opacity:1}80%{transform:translate(-190px,86px) scale(.7);opacity:1}100%{transform:translate(-190px,86px) scale(.2);opacity:0}}
+.rub{animation:rub .5s ease-in-out infinite alternate}
+@keyframes rub{from{transform:translate(-16px,-6px) rotate(-6deg)}to{transform:translate(16px,6px) rotate(6deg)}}
+.pick{transition:transform .25s}.pick.on{transform:translateY(-14px)}
+.signpop{transform-box:fill-box;transform-origin:center;animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.opt .muted{font-size:.85rem}
+/* ---- stanice 7-8 ---- */
+.quake{animation:quake .14s linear infinite}
+@keyframes quake{0%,100%{transform:translate(-3px,1px)}25%{transform:translate(3px,-2px)}50%{transform:translate(-2px,-1px)}75%{transform:translate(2px,2px)}}
+.swing{transform-origin:240px 0;animation:swing 1s ease-in-out infinite alternate}
+@keyframes swing{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
+.fall{animation:fall 2.6s ease-in infinite}
+@keyframes fall{0%,35%{transform:translate(0,0) rotate(0)}70%{transform:translate(34px,150px) rotate(70deg);opacity:1}71%,100%{transform:translate(34px,150px) rotate(70deg);opacity:0}}
+.spreadp{transform-box:fill-box;transform-origin:center;animation:spreadp 3.5s ease-out forwards}
+@keyframes spreadp{from{transform:scale(.25)}to{transform:scale(1)}}
+.stamp{transform-box:fill-box;transform-origin:center;animation:stampIn .5s cubic-bezier(.3,1.6,.5,1) .9s both}
+@keyframes stampIn{from{transform:scale(2.4) rotate(-14deg);opacity:0}to{transform:scale(1) rotate(-14deg);opacity:1}}
+.growl{transform-box:fill-box;transform-origin:left center;animation:growl 1s ease-out both;animation-delay:var(--d,0s)}
+@keyframes growl{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.dang{transform-box:fill-box;transform-origin:50% 0;animation:dang 1.1s ease-in-out infinite alternate}
+@keyframes dang{from{transform:rotate(-12deg)}to{transform:rotate(12deg)}}
+/* ---- stanica 9 ---- */
+.rain{opacity:0;animation:rain .8s linear infinite;animation-delay:var(--d,0s)}
+@keyframes rain{from{transform:translateY(-20px);opacity:.9}to{transform:translateY(250px);opacity:.15}}
+.dust{animation:dust 3.4s linear infinite;animation-delay:var(--d,0s)}
+@keyframes dust{from{transform:translate(0,0);opacity:.9}to{transform:translate(120px,24px);opacity:.2}}
+.digp{animation:digp 1.4s ease-in-out infinite alternate}
+@keyframes digp{from{opacity:.65}to{opacity:1}}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<div class="wrap">
+<p style="margin:10px 0 0;font-size:.9rem"><a href="../index.html" style="color:var(--muted)">← Virtualni laboratoriji</a></p>
+<header>
+  <h1><small>Zaštita i opasnosti na radu · 1. TE</small>Virtualna radionica</h1>
+  <div class="who" id="whowrap"><span id="who"></span> <button class="animbtn" id="animbtn" aria-pressed="true">Animacije: uključene</button></div>
+</header>
+<nav class="steps" id="steps" aria-label="Stanice"></nav>
+
+<!-- START -->
+<section class="view on" id="v-start">
+ <div class="card" style="max-width:720px">
+  <h2 style="margin-top:0">Dobro došao u virtualnu radionicu</h2>
+  <p>Prije rada u laboratoriju moraš pokazati da prepoznaješ opasnosti i da znaš kako se ponašati kad nešto krene po zlu. Prolaziš kroz stanice; u svakoj donosiš odluke, a odgovor odmah vidiš s objašnjenjem.</p>
+  <p class="muted">Na kraju dobivaš <b>potvrdni kod radne dozvole</b>. Pogreške su dopuštene, ali kritične (one koje bi u stvarnosti ugrozile život) moraš ispraviti ponavljanjem stanice.</p>
+  <label for="ime">Ime i prezime</label><input type="text" id="ime" autocomplete="off">
+  <label for="razred">Razred</label><input type="text" id="razred" value="1. TE" autocomplete="off">
+  <p style="margin-top:16px"><button class="btn y" id="startBtn">Uđi u radionicu</button></p>
+ </div>
+</section>
+
+<!-- STANICA 1 -->
+<section class="view" id="v-1">
+ <div class="grid2">
+  <div class="card scene">
+   <svg class="scene-svg" id="scene" viewBox="0 0 960 540" role="img" aria-label="Prikaz školske radionice s ugrađenim opasnostima">
+    <rect x="0" y="0" width="960" height="360" fill="#dfe6ee"/>
+    <rect x="0" y="360" width="960" height="180" fill="#b9bfc7"/>
+    <rect x="0" y="352" width="960" height="10" fill="#8f98a3"/>
+    <g fill="#fff6c9" stroke="#c9bf8a"><rect x="140" y="10" width="130" height="10"/><rect x="420" y="10" width="130" height="10"/><rect x="700" y="10" width="130" height="10"/></g>
+    <g stroke="#a7aeb8" stroke-width="2"><line x1="0" y1="400" x2="960" y2="400"/><line x1="0" y1="450" x2="960" y2="450"/><line x1="0" y1="510" x2="960" y2="510"/></g>
+
+    <!-- ormar -->
+    <g id="art-h1">
+      <rect x="40" y="60" width="150" height="270" rx="4" fill="#7d8996" stroke="#4a5461" stroke-width="3"/>
+      <rect x="52" y="74" width="126" height="242" fill="#2b323b"/>
+      <g fill="#e8e8e8" stroke="#555">
+        <rect x="62" y="92" width="14" height="26"/><rect x="80" y="92" width="14" height="26"/><rect x="98" y="92" width="14" height="26"/><rect x="116" y="92" width="14" height="26"/><rect x="134" y="92" width="14" height="26"/><rect x="152" y="92" width="14" height="26"/>
+        <rect x="62" y="150" width="14" height="26"/><rect x="80" y="150" width="14" height="26"/><rect x="98" y="150" width="14" height="26"/><rect x="116" y="150" width="14" height="26"/><rect x="134" y="150" width="14" height="26"/><rect x="152" y="150" width="14" height="26"/>
+        <rect x="62" y="210" width="14" height="26"/><rect x="80" y="210" width="14" height="26"/><rect x="98" y="210" width="14" height="26"/><rect x="116" y="210" width="14" height="26"/><rect x="134" y="210" width="14" height="26"/><rect x="152" y="210" width="14" height="26"/>
+      </g>
+      <g stroke-width="3" fill="none"><path d="M69 118 V150" stroke="#c0392b"/><path d="M87 118 V150" stroke="#2c6fb7"/><path d="M105 118 V150" stroke="#d4b106"/><path d="M123 176 V210" stroke="#c0392b"/><path d="M141 176 V210" stroke="#2c6fb7"/><path d="M159 236 V300" stroke="#d4b106"/><path d="M69 236 V300" stroke="#2c6fb7"/></g>
+      <g class="door brk-h1"><polygon points="40,60 6,84 6,322 40,330" fill="#98a4b0" stroke="#4a5461" stroke-width="3"/>
+      <circle cx="16" cy="200" r="5" fill="#4a5461"/></g>
+    </g>
+
+    <!-- izlaz -->
+    <g id="art-h5">
+      <rect class="sign" x="244" y="70" width="86" height="30" rx="3" fill="#1f8a4c"/>
+      <text x="287" y="91" text-anchor="middle" font-size="16" font-weight="800" fill="#fff" font-family="Arial">IZLAZ ➜</text>
+      <rect x="240" y="108" width="94" height="246" fill="#8d99a6" stroke="#5c6672" stroke-width="3"/>
+      <rect x="252" y="124" width="70" height="90" fill="#9fabb7" stroke="#6c7783"/>
+      <rect x="318" y="228" width="8" height="30" rx="3" fill="#444"/>
+      <g class="brk-h5" stroke="#6d4c25" stroke-width="2"><rect x="222" y="290" width="62" height="68" fill="#c79a5b"/><rect x="284" y="312" width="62" height="46" fill="#b98d4f"/><rect x="238" y="232" width="62" height="58" fill="#d0a566"/></g>
+      <g class="brk-h5" stroke="#8c6b3a" stroke-width="3"><line x1="222" y1="318" x2="284" y2="318"/><line x1="284" y1="332" x2="346" y2="332"/><line x1="238" y1="258" x2="300" y2="258"/></g>
+    </g>
+
+    <!-- aparat -->
+    <g id="art-h4">
+      <rect x="412" y="130" width="44" height="44" rx="3" fill="#c62828"/>
+      <rect x="428" y="140" width="12" height="26" fill="#fff"/><rect x="421" y="148" width="26" height="8" fill="#fff"/>
+      <rect x="420" y="190" width="28" height="78" rx="10" fill="#d32f2f" stroke="#7a1313" stroke-width="2"/>
+      <rect x="428" y="178" width="12" height="14" fill="#333"/>
+      <g class="brk-h4" stroke="#27323f" stroke-width="2"><rect x="378" y="256" width="46" height="102" rx="6" fill="#2d6cb5"/><rect x="430" y="276" width="44" height="82" rx="6" fill="#3b7cc4"/></g>
+      <g class="brk-h4" stroke="#27323f" stroke-width="2"><line x1="378" y1="286" x2="424" y2="286"/><line x1="378" y1="330" x2="424" y2="330"/><line x1="430" y1="304" x2="474" y2="304"/><line x1="430" y1="336" x2="474" y2="336"/></g>
+      <rect class="brk-h4" x="384" y="222" width="66" height="34" fill="#c79a5b" stroke="#6d4c25" stroke-width="2"/>
+    </g>
+
+    <!-- dekoracije -->
+    <g id="art-d1"><rect x="560" y="130" width="70" height="62" rx="5" fill="#1f8a4c" stroke="#145c33" stroke-width="2"/><rect x="590" y="140" width="10" height="42" fill="#fff"/><rect x="574" y="156" width="42" height="10" fill="#fff"/></g>
+    <g id="art-d2"><rect x="660" y="110" width="170" height="100" fill="#d8c9a6" stroke="#8a7a52" stroke-width="3"/>
+      <g stroke="#3b4350" stroke-width="5" stroke-linecap="round"><line x1="680" y1="125" x2="680" y2="190"/><line x1="705" y1="125" x2="705" y2="185"/><line x1="730" y1="125" x2="730" y2="195"/><line x1="755" y1="130" x2="755" y2="180"/><line x1="780" y1="125" x2="780" y2="190"/><line x1="805" y1="130" x2="805" y2="185"/></g>
+      <g fill="#c62828"><rect x="676" y="125" width="8" height="26"/><rect x="726" y="125" width="8" height="26"/></g>
+      <g fill="#f2b705"><rect x="701" y="125" width="8" height="22"/><rect x="776" y="125" width="8" height="22"/></g></g>
+
+    <!-- klupa -->
+    <rect x="500" y="290" width="440" height="22" fill="#8a6a43" stroke="#5e4529" stroke-width="2"/>
+    <rect x="510" y="312" width="14" height="108" fill="#6f553a"/><rect x="916" y="312" width="14" height="108" fill="#6f553a"/>
+    <rect x="520" y="344" width="400" height="10" fill="#6f553a"/>
+    <!-- laptop -->
+    <rect x="516" y="278" width="76" height="12" fill="#444"/><rect x="524" y="228" width="60" height="50" fill="#1e2630" stroke="#111"/><rect x="530" y="234" width="48" height="38" fill="#2a74c9"/>
+    <!-- multimetar -->
+    <rect x="602" y="256" width="34" height="34" rx="4" fill="#f2b705" stroke="#8a6a00"/><circle cx="619" cy="272" r="8" fill="#fff" stroke="#333"/>
+
+    <!-- lemilica -->
+    <g id="art-h7">
+      <rect x="650" y="274" width="34" height="16" fill="#555"/>
+      <rect x="664" y="250" width="6" height="26" fill="#777"/><rect x="660" y="236" width="14" height="16" rx="3" fill="#c0392b"/><polygon points="664,250 670,250 667,232" fill="#bbb"/>
+      <path d="M684 282 C700 270 704 296 716 288" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path class="flick brk-h7" d="M716 288 l5 -3 m-3 5 l7 1 m-5 -9 l3 -5" stroke="#e08a2d" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M720 284 C730 286 732 276 740 280" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path class="flick brk-h7" style="--d:-.9s" d="M718 276 l-3 -7 m9 7 l4 -6" stroke="#ffd23f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- razdjelnici -->
+    <g id="art-h8">
+      <rect x="735" y="262" width="92" height="16" rx="3" fill="#eee" stroke="#777"/>
+      <g fill="#333"><rect x="742" y="266" width="10" height="8"/><rect x="758" y="266" width="10" height="8"/><rect x="774" y="266" width="10" height="8"/><rect x="790" y="266" width="10" height="8"/><rect x="806" y="266" width="10" height="8"/></g>
+      <rect x="748" y="244" width="66" height="14" rx="3" fill="#ddd" stroke="#777"/>
+      <path d="M754 258 V262 M786 258 V262" stroke="#333" stroke-width="3"/>
+      <g stroke-width="4" fill="none" stroke-linecap="round"><path d="M746 262 C740 240 730 230 722 222" stroke="#c0392b"/><path d="M762 262 C766 238 770 226 780 214" stroke="#2c6fb7"/><path d="M778 262 C790 250 800 244 812 238" stroke="#2f9e44"/><path d="M794 262 C806 256 820 252 830 250" stroke="#8e44ad"/><path d="M810 262 C820 270 826 280 832 288" stroke="#333"/></g>
+      <path class="wisp brk-h8" d="M790 236 q6 -10 0 -18 q-6 -8 0 -16 M806 236 q6 -10 0 -18" stroke="#e8663a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- brusilica + ucenik -->
+    <g id="art-h6">
+      <rect x="848" y="204" width="44" height="82" rx="6" fill="#3b6ea8"/>
+      <circle cx="870" cy="182" r="19" fill="#f0c9a0" stroke="#b08a60"/><path d="M851 178 q19 -26 38 0" fill="#4a3320"/>
+      <circle class="blink" cx="863" cy="182" r="2" fill="#222"/><circle class="blink" cx="877" cy="182" r="2" fill="#222"/><path d="M864 191 q6 3 12 0" stroke="#7a4b3a" fill="none"/>
+      <rect x="884" y="266" width="52" height="22" fill="#555"/>
+      <circle cx="906" cy="258" r="22" fill="#9aa1a9" stroke="#555" stroke-width="3"/><circle cx="906" cy="258" r="6" fill="#444"/>
+      <g class="flick brk-h6" style="--d:-.4s" stroke="#f08a24" stroke-width="3" stroke-linecap="round"><line x1="880" y1="246" x2="852" y2="236"/><line x1="880" y1="256" x2="846" y2="256"/><line x1="882" y1="266" x2="856" y2="280"/><line x1="890" y1="238" x2="876" y2="220"/></g>
+      <path class="vib" d="M884 232 l18 28" stroke="#3b6ea8" stroke-width="10" stroke-linecap="round"/>
+    </g>
+
+    <!-- lokva + razdjelnik -->
+    <g id="art-h3">
+      <g class="brk-h3"><ellipse cx="250" cy="470" rx="112" ry="26" fill="#7fb3e6" opacity=".65"/>
+      <ellipse cx="236" cy="466" rx="70" ry="14" fill="#a8cdf0" opacity=".6"/></g>
+      <polygon points="136,430 168,430 176,462 130,462" fill="#6b7c8f" stroke="#3d4856" stroke-width="2"/><ellipse cx="153" cy="430" rx="17" ry="5" fill="#4b5968"/>
+      <rect x="232" y="456" width="64" height="16" rx="3" fill="#eee" stroke="#777"/>
+      <g fill="#333"><rect x="238" y="460" width="9" height="8"/><rect x="252" y="460" width="9" height="8"/><rect x="266" y="460" width="9" height="8"/><rect x="280" y="460" width="9" height="8"/></g>
+      <path d="M296 464 C320 462 330 452 350 454" stroke="#333" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path class="brk-h3" d="M170 440 q-14 6 -22 22" stroke="#7fb3e6" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- produzni kabel preko prolaza -->
+    <g id="art-h2">
+      <rect x="470" y="334" width="22" height="22" rx="3" fill="#eee" stroke="#777"/><circle cx="478" cy="345" r="2.5" fill="#333"/><circle cx="486" cy="345" r="2.5" fill="#333"/>
+      <path d="M481 352 C520 430 600 380 640 450 S760 505 850 468" stroke="#333" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <path d="M481 352 C520 430 600 380 640 450 S760 505 850 468" stroke="#ffb703" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <rect x="838" y="458" width="26" height="20" rx="3" fill="#eee" stroke="#777"/>
+    </g>
+
+
+    <defs>
+      <radialGradient id="gHot"><stop offset="0" stop-color="#ff7a3a" stop-opacity=".9"/><stop offset="1" stop-color="#ff7a3a" stop-opacity="0"/></radialGradient>
+      <radialGradient id="gArc"><stop offset="0" stop-color="#fff9c4" stop-opacity="1"/><stop offset="1" stop-color="#8fd0ff" stop-opacity="0"/></radialGradient>
+    </defs>
+    <g class="fx">
+      <!-- ormar: LED-ice -->
+      <g class="brk-h1"><circle class="led" cx="66" cy="84" r="2.6" fill="#46d36b" style="--p:1.3s;animation-delay:-0.7999999999999972s"/><circle class="led" cx="78" cy="84" r="2.6" fill="#ffb000" style="--p:0.9s;animation-delay:-0.20000000000000284s"/><circle class="led" cx="90" cy="84" r="2.6" fill="#ff4d3d" style="--p:2.1s;animation-delay:-0.0s"/><circle class="led" cx="160" cy="84" r="2.6" fill="#46d36b" style="--p:1.7s;animation-delay:-0.0s"/><circle class="led" cx="170" cy="136" r="2.6" fill="#ffb000" style="--p:1.1s;animation-delay:-2.842170943040401e-14s"/><circle class="led" cx="170" cy="196" r="2.6" fill="#46d36b" style="--p:0.8s;animation-delay:-0.0s"/><circle class="led" cx="66" cy="262" r="2.6" fill="#ff4d3d" style="--p:1.9s;animation-delay:-0.3999999999999915s"/><circle class="led" cx="78" cy="262" r="2.6" fill="#46d36b" style="--p:1.5s;animation-delay:-0.0s"/></g>
+      <!-- laptop: graf -->
+      <polyline class="trace" points="532,262 538,252 544,260 550,246 556,256 562,248 568,258 576,250" fill="none" stroke="#9ef0b8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- lemilica: vrh i dim -->
+      <circle class="glowp" cx="667" cy="231" r="9" fill="url(#gHot)"/>
+      <g fill="none" stroke="#aab3bd" stroke-width="3" stroke-linecap="round">
+        <path class="smoke" style="--d:0s;--sx:8px" d="M667 224 c-5 -7 5 -12 0 -20"/>
+        <path class="smoke" style="--d:-1s;--sx:-6px" d="M668 224 c5 -7 -5 -12 0 -20"/>
+        <path class="smoke" style="--d:-2s;--sx:5px" d="M666 224 c-4 -6 4 -10 0 -16"/>
+      </g>
+      <!-- lemilica: svjetlosni luk na oštećenju kabela -->
+      <g class="brk-h7"><circle class="flick" cx="716" cy="287" r="11" fill="url(#gArc)"/>
+      <path class="flick" style="--d:-.5s" d="M710 289 l4 -6 l2 5 l5 -7 l3 5" fill="none" stroke="#cfeaff" stroke-width="2" stroke-linejoin="round"/></g>
+      <!-- razdjelnici: zagrijavanje i dim -->
+      <g class="brk-h8"><ellipse class="glowp" cx="780" cy="264" rx="58" ry="20" fill="url(#gHot)"/>
+      <circle class="smoke" style="--d:0s;--sx:10px" cx="790" cy="236" r="6" fill="#6b7280"/>
+      <circle class="smoke" style="--d:-.9s;--sx:-8px" cx="806" cy="236" r="5" fill="#7b8391"/>
+      <circle class="smoke" style="--d:-1.8s;--sx:4px;--t:3.4s" cx="798" cy="232" r="7" fill="#5f6672"/></g>
+      <!-- brusilica: kotač, iskre, prašina -->
+      <circle class="wheel brk-h6x" cx="906" cy="258" r="15" fill="none" stroke="#5a6068" stroke-width="2.5" stroke-dasharray="5 7"/>
+      <circle class="spk brk-h6" r="2.3" cx="886" cy="262" fill="#ffb347" style="--dx:-62px;--dy:18px;--t:0.8s;--d:0s"/><circle class="spk brk-h6" r="2.3" cx="886" cy="262" fill="#ffb347" style="--dx:-80px;--dy:-6px;--t:1.0s;--d:0.15s"/><circle class="spk brk-h6" r="2.3" cx="886" cy="262" fill="#ffb347" style="--dx:-48px;--dy:40px;--t:0.7s;--d:0.3s"/><circle class="spk brk-h6" r="2.3" cx="886" cy="262" fill="#ffb347" style="--dx:-92px;--dy:30px;--t:1.1s;--d:0.5s"/><circle class="spk brk-h6" r="2.3" cx="886" cy="262" fill="#ffb347" style="--dx:-70px;--dy:60px;--t:0.9s;--d:0.65s"/><circle class="spk brk-h6" r="2.3" cx="886" cy="262" fill="#ffb347" style="--dx:-40px;--dy:-10px;--t:0.75s;--d:0.8s"/><circle class="spk brk-h6" r="2.3" cx="886" cy="262" fill="#ffb347" style="--dx:-58px;--dy:52px;--t:1.0s;--d:0.4s"/><circle class="spk brk-h6" r="2.3" cx="886" cy="262" fill="#ffb347" style="--dx:-100px;--dy:8px;--t:1.2s;--d:0.2s"/>
+      <g class="brk-h6" fill="#8b929b"><circle class="smoke" style="--d:0s;--sx:-14px;--t:2.2s" cx="884" cy="250" r="5"/><circle class="smoke" style="--d:-1.1s;--sx:-20px;--t:2.2s" cx="884" cy="256" r="4"/></g>
+      <!-- lokva: valovi i kapi -->
+      <ellipse class="ripple" style="--d:0s" cx="262" cy="472" rx="60" ry="11" fill="none" stroke="#fff" stroke-width="2"/>
+      <ellipse class="ripple" style="--d:-1.6s" cx="206" cy="468" rx="46" ry="9" fill="none" stroke="#fff" stroke-width="2"/>
+      <g class="brk-h3"><circle class="drip" cx="149" cy="452" r="3" fill="#7fb3e6"/>
+      <ellipse class="ripple fast" cx="152" cy="473" rx="22" ry="5" fill="none" stroke="#fff" stroke-width="2"/></g>
+      <!-- kolega koji prolazi i posrne o kabel -->
+      <g class="walker"><g class="lean"><g transform="scale(2.1)">
+        <rect class="leg" x="-8" y="-62" width="9" height="62" rx="4" fill="#2f3b54"/>
+        <rect class="leg b" x="-1" y="-62" width="9" height="62" rx="4" fill="#26324a"/>
+        <rect x="-11" y="-118" width="22" height="58" rx="8" fill="#c0762a"/>
+        <rect x="6" y="-110" width="9" height="34" rx="4" fill="#7b4a1c"/>
+        <rect class="arm a" x="-4" y="-114" width="8" height="46" rx="4" fill="#f0c9a0"/>
+        <circle cx="-2" cy="-132" r="14" fill="#f0c9a0" stroke="#b08a60"/>
+        <path d="M-16 -134 q14 -22 28 -2 l-2 -4 q-12 -10 -24 6z" fill="#2b2118"/>
+        <circle cx="-8" cy="-132" r="1.8" fill="#222"/>
+      </g></g></g>
+    </g>
+    <!-- popravljeno stanje -->
+    <g class="okk okk-h1"><rect x="52" y="74" width="126" height="242" fill="#8b97a4" stroke="#4a5461" stroke-width="3"/><rect x="62" y="84" width="106" height="222" fill="none" stroke="#6c7783" stroke-width="2"/><circle cx="160" cy="200" r="5" fill="#333"/><polygon points="115,112 146,170 84,170" fill="#f2b705" stroke="#14213d" stroke-width="3" stroke-linejoin="round"/><path d="M119 128 l-12 22 h9 l-4 14 l14 -22 h-9 z" fill="#14213d"/></g>
+    <g class="okk okk-h2" fill="none" pointer-events="none"><path d="M481 352 C520 430 600 380 640 450 S760 505 850 468" stroke="#222" stroke-width="15" stroke-linecap="round"/><path d="M481 352 C520 430 600 380 640 450 S760 505 850 468" stroke="#ffd23f" stroke-width="11" stroke-dasharray="13 13"/></g>
+    <g class="okk okk-h6" pointer-events="none"><rect x="855" y="177" width="30" height="11" rx="5" fill="#9ad7ff" fill-opacity=".65" stroke="#14213d" stroke-width="2"/><path d="M906 228 A30 30 0 0 0 906 288" fill="none" stroke="#2f3b54" stroke-width="6" stroke-linecap="round"/></g>
+    <!-- hit area -->
+    <rect class="hit" data-id="h1" tabindex="0" role="button" aria-label="Razvodni ormar" x="6" y="55" width="194" height="282"/>
+    <rect class="hit" data-id="h5" tabindex="0" role="button" aria-label="Vrata izlaza" x="212" y="65" width="140" height="296"/>
+    <rect class="hit" data-id="h4" tabindex="0" role="button" aria-label="Vatrogasni aparat" x="372" y="125" width="106" height="236"/>
+    <rect class="hit" data-id="d1" tabindex="0" role="button" aria-label="Kutija prve pomoći" x="552" y="122" width="86" height="76"/>
+    <rect class="hit" data-id="d2" tabindex="0" role="button" aria-label="Ploča s alatom" x="656" y="104" width="180" height="112"/>
+    <rect class="hit" data-id="h7" tabindex="0" role="button" aria-label="Lemilica s kabelom" x="640" y="226" width="100" height="72"/>
+    <rect class="hit" data-id="h8" tabindex="0" role="button" aria-label="Razdjelnici" x="716" y="196" width="122" height="96"/>
+    <rect class="hit" data-id="h6" tabindex="0" role="button" aria-label="Brusilica i učenik" x="842" y="160" width="104" height="134"/>
+    <ellipse class="hit" data-id="h3" tabindex="0" role="button" aria-label="Lokva i razdjelnik" cx="250" cy="462" rx="130" ry="44"/>
+    <path class="hit" data-id="h2" tabindex="0" role="button" aria-label="Produžni kabel preko prolaza" d="M481 352 C520 430 600 380 640 450 S760 505 850 468" stroke="transparent" stroke-width="36" stroke-linecap="round"/>
+    <g id="badges"></g><g id="pings" pointer-events="none"></g>
+   </svg>
+   <p class="muted" style="margin:8px 4px 0;font-size:.88rem">Klikni na dio radionice za koji misliš da je opasan. Ne mora sve što izgleda sumnjivo biti pogrešno.</p>
+  </div>
+  <div class="card panel" id="p1"></div>
+ </div>
+</section>
+
+<!-- STANICA 2 -->
+<section class="view" id="v-2"><div class="card" id="s2root"></div></section>
+
+<section class="view" id="v-3"><div class="card" id="s3root"></div></section>
+<section class="view" id="v-4"><div class="card" id="s4root"></div></section>
+<section class="view" id="v-5"><div class="card" id="s5root"></div></section>
+<section class="view" id="v-6"><div class="card" id="s6root"></div></section>
+<section class="view" id="v-7"><div class="card" id="s7root"></div></section>
+<section class="view" id="v-8"><div class="card" id="s8root"></div></section>
+<section class="view" id="v-9"><div class="card" id="s9root"></div></section>
+
+<!-- SAZETAK -->
+<section class="view" id="v-sum"><div class="card" id="sumroot"></div></section>
+
+<footer>Sadržaj dopunjuje, a ne zamjenjuje stručno osposobljavanje za rad na siguran način, nastavnikove upute i praktični pokaz u radionici. Brojevi struja su orijentacijske vrijednosti (IEC 60479) i ovise o putu struje, trajanju i stanju kože.</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+var S={name:"",razred:"",s1:null,s2:null,view:"start"};
+var MAX1=16,MAX2=10,PASS=0.8;
+var ST={};
+
+/* ---------- podaci stanice 1 ---------- */
+var HAZ={
+h1:{name:"Otvoreni razvodni ormar bez oznake",what:"Razvodni ormar stoji otvoren, vidljivi su vodiči i prekidači, a na njemu nema nikakve oznake upozorenja.",
+ opts:[
+ {t:"Zatvoriti i zaključati ormar, označiti ga znakom upozorenja na električnu opasnost (žuti trokut sa munjom) i dopustiti pristup samo ovlaštenim osobama.",ok:1,why:"Tako se spriječi slučajan dodir dijelova pod naponom, a znak upozorava svakoga tko se približi."},
+ {t:"Samo ga zatvoriti da u njega ne ulazi prašina.",why:"Zatvaranje je dobar prvi korak, ali bez zaključavanja i znaka svatko ga može ponovno otvoriti, a nitko ne zna da je opasan."},
+ {t:"Preko ormara objesiti krpu da se ne vidi unutrašnjost.",why:"Krpa ne štiti od dodira, može se zapaliti i skriva stvarni problem."}],
+ more:"Znak upozorenja na električnu opasnost je žuti trokut s crnim rubom i munjom (znak opasnosti)."},
+h2:{name:"Produžni kabel preko prolaza",what:"Kabel leži preko cijelog prolaza po kojem ljudi hodaju.",
+ opts:[
+ {t:"Kabel položiti uz zid ili ga zaštititi kabelskim mostićem, a prolaz mora ostati slobodan.",ok:1,why:"Tako se izbjegava spoticanje i mehaničko oštećenje izolacije koja se gazi i vuče."},
+ {t:"Ostaviti ga kako jest i upozoriti ljude da paze gdje hodaju.",why:"Upozorenje ne uklanja opasnost. Netko će se prije ili kasnije spotaknuti, a kabel će se oštetiti."},
+ {t:"Preko kabela prostrijeti tepih.",why:"Tepih skriva oštećenja i može uzrokovati pregrijavanje kabela, a hodanje po kabelu i dalje ga ošteće."}],
+ more:"Najbolje je kabel uopće ne voditi po prolazu, nego koristiti utičnicu bliže mjestu rada."},
+h3:{name:"Voda uz električnu opremu",what:"Prevrnuta kanta, lokva vode i razdjelnik na podu usred lokve.",
+ opts:[
+ {t:"Ne prilaziti lokvi. Isključiti strujni krug na razvodnoj ploči, tek tada očistiti vodu i prije ponovne uporabe osušiti i provjeriti opremu.",ok:1,why:"Voda smanjuje otpor i struja može proći kroz osobu koja stoji u njoj. Napon se mora prekinuti sigurnim putem, bez gaženja po lokvi."},
+ {t:"Brzo izvući utikač razdjelnika iz utičnice, dok stojim u vodi.",crit:1,why:"KRITIČNO: stojiš u vodi i dotičeš opremu u vodi. Ako je razdjelnik ili kabel oštećen, struja prolazi kroz tebe."},
+ {t:"Krpama brisati vodu oko razdjelnika dok je pod naponom.",crit:1,why:"KRITIČNO: mokre krpe i voda uz opremu pod naponom izravna su opasnost od električnog udara."}],
+ more:"Električna oprema i voda ne idu zajedno. Prostor mora ostati odvojen od mokrih površina."},
+h4:{name:"Zakrčen vatrogasni aparat",what:"Pred zidnim aparatom stoje bačve i sanduci pa se do njega ne može doći.",
+ opts:[
+ {t:"Osloboditi pristup. Aparat mora biti vidljiv, označen znakom i dostupan u svakom trenutku.",ok:1,why:"U požaru se broje sekunde. Aparat do kojeg se ne može doći praktično ne postoji."},
+ {t:"Ostaviti sve kako jest; svi znaju gdje je aparat.",why:"Netko tko ne zna lokaciju, ili u panici, neće ga moći dohvatiti. Pristup mora biti slobodan uvijek."},
+ {t:"Premjestiti aparat u ormar da bude zaštićen.",why:"Aparat mora biti na vidljivom i označenom mjestu, ne skriven u ormaru."}],
+ more:"Preporuka je da se prostor ispred aparata drži slobodnim i da je označen znakom."},
+h5:{name:"Zakrčen izlaz za nuždu",what:"Pred vratima označenim zelenim znakom IZLAZ složene su kutije.",
+ opts:[
+ {t:"Odmah ukloniti kutije. Put do izlaza i sama vrata moraju uvijek biti slobodni.",ok:1,why:"Pri požaru ili evakuaciji ljudi moraju izaći brzo i bez prepreka. Zakrčen izlaz može biti smrtonosan."},
+ {t:"Kutije ostaviti ako se vrata mogu djelomično otvoriti.",why:"Djelomično otvorena vrata usporavaju izlazak i u panici stvaraju gužvu."},
+ {t:"Zaključati vrata da se oprema ne ukrade.",crit:1,why:"KRITIČNO: izlaz za nuždu nikad se ne smije zaključati ili ometati dok ljudi rade u prostoru."}],
+ more:"Zeleni znak označava put spašavanja. Njegov put mora biti slobodan svih 24 sata."},
+h6:{name:"Brusilica bez zaštite, učenik bez naočala",what:"Učenik brusi na stroju bez zaštitnog štitnika, a iskre lete prema njegovu licu. Zaštitne naočale ne nosi.",
+ opts:[
+ {t:"Brusilica mora imati zaštitni štitnik, a učenik zaštitne naočale. Kosu i rukave pričvrstiti i raditi tek nakon pouke.",ok:1,why:"Iskre i čestice mogu trajno oštetiti oči. Slobodna kosa ili rukav mogu se uhvatiti za rotirajući kolut."},
+ {t:"Naočale nisu potrebne ako se brusi samo kratko.",why:"Jedna čestica dovoljna je za ozljedu oka, bez obzira na to koliko kratko brusiš."},
+ {t:"Dovoljno je zatvoriti oči kad iskre prsnu.",why:"Reakcija nije dovoljno brza i oči ostaju nezaštićene."}],
+ more:"Zaštitna oprema se bira prema opasnosti. Za brušenje je to zaštita za oči ili lice."},
+h7:{name:"Oštećen kabel lemilice",what:"Na kabelu lemilice izolacija je razderana i vidi se goli bakar.",
+ opts:[
+ {t:"Prestati koristiti lemilicu, izvući utikač, označiti uređaj kao neispravan i predati ga na popravak ili zamjenu kabela.",ok:1,why:"Oštećena izolacija znači da se golog vodiča može dotaknuti pod naponom. Takav se uređaj ne popravlja improvizacijom."},
+ {t:"Omotati izolir-trakom i nastaviti raditi.",why:"Improvizirana popravka nije pouzdana. Traka se pomiče, a ispod nje je i dalje oštećen vodič."},
+ {t:"Raditi dalje, ali samo u gumenim rukavicama.",crit:1,why:"KRITIČNO: obične rukavice nisu zaštita od napona. Oštećen uređaj mora se izvući iz uporabe."}],
+ more:"Prije svake uporabe pogledaj kabel i utikač. Svaku neispravnost odmah prijavi nastavniku."},
+h8:{name:"Preopterećeni razdjelnici",what:"U jedan razdjelnik spojen je drugi razdjelnik, a na njima je više uređaja. Kabeli su pregrijani.",
+ opts:[
+ {t:"Rasporediti uređaje, ne spajati razdjelnik na razdjelnik i paziti da ukupna snaga ne prelazi nazivnu vrijednost razdjelnika.",ok:1,why:"Preopterećenje zagrijava vodiče i utikače te može izazvati požar."},
+ {t:"U razvodnoj ploči staviti veći osigurač da ne ispada.",crit:1,why:"KRITIČNO: osigurač štiti vodič od pregrijavanja. Veći osigurač znači da kabel gori prije nego što zaštita reagira."},
+ {t:"Pokriti razdjelnike da se ne vide.",why:"Pokrivanje spriječava hlađenje i pogoršava pregrijavanje."}],
+ more:"Zaštita od preopterećenja mora odgovarati presjeku vodiča, nikad se ne povećava da prestane isklapati."}
+};
+var HORDER=["h1","h2","h3","h4","h5","h6","h7","h8"];
+var DEC={
+d1:{t:"Kutija prve pomoći",x:"U redu je. Kutija prve pomoći je vidljiva, označena zelenim križem i lako dostupna. To je ispravno i nije opasnost."},
+d2:{t:"Ploča s alatom",x:"U redu je. Alat je uredno obješen na ploču i nema ga na podu ni na klupi. Pospremljen alat smanjuje rizik od ozljede."}
+};
+var BADGE={h1:[104,198],h2:[560,410],h3:[250,470],h4:[420,240],h5:[290,230],h6:[895,190],h7:[690,250],h8:[780,250]};
+
+function newS1(){return {found:{},done:{},tries:{},pts:{},crit:0,critSeen:{},hints:0,fa:{},cur:null}}
+function newS2(){return {node:"s1",tries:{},pts:{},crit:0,done:false,cpr:null,multi:{}}}
+
+/* ---------- navigacija ---------- */
+var STATIONS=[
+ {id:"1",t:"Inspekcija radionice",on:true},
+ {id:"2",t:"Električni udar",on:true},
+ {id:"3",t:"Pet pravila rada na električnim uređajima",on:true},
+ {id:"4",t:"Gašenje požara",on:true},
+ {id:"5",t:"Prva pomoć",on:true},
+ {id:"6",t:"Sigurnosni znakovi",on:true},
+ {id:"7",t:"Opasne tvari i zaštitna oprema",on:true},
+ {id:"8",t:"Propisi i hitne situacije",on:true},
+ {id:"9",t:"Zaštita od električnog udara (FID, PE, IP)",on:true}
+];
+function buildNav(){
+  var h="";
+  STATIONS.forEach(function(s){
+    var cls=(S.view===s.id?" on":"")+(isDone(s.id)?" done":"");
+    h+='<button data-go="'+s.id+'" class="'+cls+'"'+(s.on&&S.name?"":" disabled")+'><span class="n">'+s.id+'</span>'+esc(s.t)+(s.on?"":" (uskoro)")+'</button>';
+  });
+  h+='<button data-go="sum"'+(S.name?"":" disabled")+(S.view==="sum"?' class="on"':"")+'><span class="n">★</span>Radna dozvola</button>';
+  $("#steps").innerHTML=h;
+  $$("#steps button").forEach(function(b){b.onclick=function(){go(b.getAttribute("data-go"))}});
+}
+function isDone(id){
+  if(id==="1")return S.s1&&Object.keys(S.s1.done).length===8;
+  if(id==="2")return S.s2&&S.s2.done;
+  if(ST[id])return stDone(id);
+  return false;
+}
+function go(v){
+  S.view=v;
+  $$(".view").forEach(function(x){x.classList.remove("on")});
+  $("#v-"+(v==="start"?"start":v)).classList.add("on");
+  if(v==="1")renderP1(S.s1.cur);
+  if(v==="2")renderS2();
+  if(ST[v])renderStn(v);
+  if(v==="sum")renderSum();
+  buildNav();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------- stanica 1 ---------- */
+function score1(){var t=0;HORDER.forEach(function(k){t+=S.s1.pts[k]||0});return Math.max(0,t-S.s1.hints)}
+function applyFix(){
+  var sc=$("#scene");if(!sc)return;
+  HORDER.forEach(function(k){sc.classList.toggle("fix-"+k,!!(S.s1&&S.s1.done[k]))});
+}
+function ping(el){
+  try{
+    var b=el.getBBox(),g=$("#pings");if(!g)return;
+    var c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("class","ping");c.setAttribute("cx",b.x+b.width/2);c.setAttribute("cy",b.y+b.height/2);c.setAttribute("r",Math.min(48,Math.max(24,Math.max(b.width,b.height)/2.4)));
+    g.appendChild(c);setTimeout(function(){if(c.parentNode)c.parentNode.removeChild(c)},800);
+  }catch(e){}
+}
+function updBadges(){applyFix();
+  var g=$("#badges");var h="";
+  HORDER.forEach(function(k){
+    if(!S.s1.found[k])return;
+    var p=BADGE[k],ok=!!S.s1.done[k];
+    h+='<g transform="translate('+p[0]+','+p[1]+')"><circle r="16" fill="'+(ok?"#1f7a4d":"#f2b705")+'" stroke="#14213d" stroke-width="3"/><text y="6" text-anchor="middle" font-size="18" font-weight="800" fill="'+(ok?"#fff":"#14213d")+'" font-family="Arial">'+(ok?"✓":"!")+'</text></g>';
+  });
+  g.innerHTML=h;
+}
+function chipsHtml(){
+  var h='<div class="chips">';
+  HORDER.forEach(function(k){h+='<span class="chip'+(S.s1.done[k]?" ok":"")+'">'+(S.s1.found[k]?esc(HAZ[k].name):"?")+'</span>'});
+  return h+'</div>';
+}
+function head1(){
+  var n=Object.keys(S.s1.found).length,d=Object.keys(S.s1.done).length;
+  return '<h2>Inspekcija radionice</h2><p class="muted" style="margin-top:0">Pronađeno <b>'+n+'/8</b> opasnosti, riješeno <b>'+d+'/8</b>.</p><div class="meter"><i style="width:'+(d/8*100)+'%"></i></div>';
+}
+function renderP1(cur){applyFix();
+  var p=$("#p1");S.s1.cur=cur||null;
+  $$(".hit").forEach(function(x){x.classList.remove("sel")});
+  if(cur)$$('.hit[data-id="'+cur+'"]').forEach(function(x){x.classList.add("sel")});
+  var h=head1();
+  var d=Object.keys(S.s1.done).length;
+  if(!cur){
+    if(d===8){
+      h+=finish1();
+    }else{
+      h+='<div class="note">Uđi u radionicu kao inspektor: u prizoru je skriveno <b>8 opasnosti</b>. Kad jednu pronađeš, odaberi ispravnu mjeru.</div>';
+      h+='<div class="row"><button class="btn ghost" id="hint">Nagovještaj ('+(2-S.s1.hints)+' preostala, -1 bod)</button></div>';
+    }
+    h+=chipsHtml();
+    p.innerHTML=h;wireCommon();return;
+  }
+  if(DEC[cur]){
+    h+='<div class="note ok"><b>'+esc(DEC[cur].t)+'</b><br>'+esc(DEC[cur].x)+'</div><p class="muted">Lažna uzbuna. Nije svaki predmet u radionici opasnost.</p>';
+    h+=chipsHtml();p.innerHTML=h;return;
+  }
+  var z=HAZ[cur];
+  var st=S.s1;
+  h+='<div class="note warn"><b>⚠ '+esc(z.name)+'</b><br>'+esc(z.what)+'</div>';
+  if(st.done[cur]){
+    var okopt=z.opts.filter(function(o){return o.ok})[0];
+    h+='<p><b>Ispravna mjera:</b></p><div class="note ok">'+esc(okopt.t)+'<br><span class="muted">'+esc(okopt.why)+'</span></div><p class="muted">'+esc(z.more)+'</p>';
+    h+=nextHint1();
+  }else{
+    h+='<p><b>Koja je ispravna mjera?</b></p>';
+    if(!st.order)st.order={};
+    if(!st.order[cur])st.order[cur]=shuffle(z.opts.map(function(_,i){return i}));
+    st.order[cur].forEach(function(i){
+      var o=z.opts[i];var wrong=(st.wrongPicked&&st.wrongPicked[cur+i]);
+      h+='<button class="opt'+(wrong?" bad":"")+'" data-i="'+i+'"'+(wrong?" disabled":"")+'>'+esc(o.t)+'</button>';
+      if(wrong)h+='<div class="note bad">'+esc(o.why)+'</div>';
+    });
+  }
+  h+=chipsHtml();
+  p.innerHTML=h;
+  $$(".opt",p).forEach(function(b){b.onclick=function(){pick1(cur,+b.getAttribute("data-i"))}});
+  wireCommon();
+}
+function nextHint1(){
+  if(Object.keys(S.s1.done).length===8)return finish1();
+  return '<p class="muted">Nastavi tražiti ostale opasnosti na slici.</p>';
+}
+function finish1(){
+  return '<div class="note ok"><b>Radionica je pregledana.</b><br>Bodovi: <b>'+score1()+'/'+MAX1+'</b> · lažne uzbune: '+Object.keys(S.s1.fa).length+' · kritične pogreške: '+S.s1.crit+'</div><p class="row"><button class="btn y" id="next1">Dalje: Električni udar</button> <button class="btn ghost" id="redo1">Ponovi stanicu</button></p>';
+}
+function wireCommon(){
+  var h=$("#hint");if(h)h.onclick=hint1;
+  var n=$("#next1");if(n)n.onclick=function(){go("2")};
+  var r=$("#redo1");if(r)r.onclick=function(){S.s1=newS1();updBadges();renderP1(null);buildNav()};
+}
+function pick1(k,i){
+  var st=S.s1,z=HAZ[k],o=z.opts[i];
+  if(o.ok){
+    var t=st.tries[k]||0;
+    st.pts[k]=t===0?2:(t===1?1:0);
+    st.done[k]=true;
+    updBadges();buildNav();
+  }else{
+    st.tries[k]=(st.tries[k]||0)+1;
+    st.wrongPicked=st.wrongPicked||{};st.wrongPicked[k+i]=true;
+    if(o.crit&&!st.critSeen[k]){st.critSeen[k]=true;st.crit++}
+  }
+  renderP1(k);
+}
+function hint1(){
+  var st=S.s1;if(st.hints>=2)return;
+  var left=HORDER.filter(function(k){return !st.found[k]});if(!left.length)return;
+  st.hints++;
+  var k=left[0];
+  var el=$('.hit[data-id="'+k+'"]');el.classList.remove("pulse");void el.getBBox();el.classList.add("pulse");
+  setTimeout(function(){el.classList.remove("pulse")},4500);
+  renderP1(st.cur);
+}
+$$(".hit").forEach(function(e){
+  function act(){
+    if(!S.name)return;
+    var id=e.getAttribute("data-id");
+    if(DEC[id]){S.s1.fa[id]=true;renderP1(id);return}
+    ping(e);S.s1.found[id]=true;updBadges();renderP1(id);buildNav();
+  }
+  e.addEventListener("click",act);
+  e.addEventListener("keydown",function(ev){if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();act()}});
+});
+
+/* ---------- stanica 2 ---------- */
+function person(mode){
+  var H='<svg viewBox="0 0 480 300" class="scene-svg%CLS%" role="img" aria-label="%ARIA%"><rect width="480" height="300" fill="#dfe6ee"/>';
+  if(mode==="shock"){
+    return H.replace("%CLS%","").replace("%ARIA%","Kolega drži bušilicu s oštećenim kabelom, ukočen je i trese se; žuta crtkana linija prikazuje put struje kroz tijelo")
+    +'<rect y="230" width="480" height="70" fill="#b9bfc7"/>'
+    +'<rect x="40" y="60" width="130" height="150" fill="#cbd3dc" stroke="#9aa5b1"/>'
+    +'<rect x="188" y="90" width="22" height="22" rx="3" fill="#eee" stroke="#777"/><circle cx="196" cy="101" r="2.5" fill="#333"/><circle cx="204" cy="101" r="2.5" fill="#333"/>'
+    +'<path d="M199 108 C230 170 290 140 310 160" stroke="#222" stroke-width="6" fill="none"/>'
+    +'<g class="tremble">'
+    +'<rect x="318" y="106" width="22" height="130" rx="4" fill="#3b6ea8"/><circle cx="329" cy="86" r="22" fill="#f0c9a0" stroke="#b08a60"/><path d="M307 82 q22 -30 44 0" fill="#4a3320"/>'
+    +'<ellipse cx="322" cy="86" rx="2.4" ry="3" fill="#222"/><ellipse cx="337" cy="86" rx="2.4" ry="3" fill="#222"/><ellipse cx="329" cy="98" rx="5" ry="3.5" fill="#7a2a22"/>'
+    +'<path d="M322 116 l-46 40 M336 116 l50 20" stroke="#3b6ea8" stroke-width="12" stroke-linecap="round"/>'
+    +'<rect x="266" y="150" width="46" height="18" rx="4" fill="#d32f2f" stroke="#7a1313"/><rect x="250" y="156" width="20" height="6" fill="#888"/>'
+    +'<path d="M322 236 l-14 54 M336 236 l16 54" stroke="#2f3b54" stroke-width="12" stroke-linecap="round"/>'
+    +'</g>'
+    +'<path d="M199 108 C230 170 290 140 310 160 L282 158 L322 118 L329 140 L329 236 L336 288" fill="none" stroke="#ffcf33" stroke-opacity=".35" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>'
+    +'<path class="flow" d="M199 108 C230 170 290 140 310 160 L282 158 L322 118 L329 140 L329 236 L336 288" fill="none" stroke="#ffd23f" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>'
+    +'<g class="fx"><circle class="flick" cx="268" cy="150" r="16" fill="url(#gArc2)"/>'
+    +'<path class="flick" style="--d:-.4s" d="M270 152 l9 -6 m-4 10 l11 2 m-8 -16 l5 -8" stroke="#e08a2d" stroke-width="3.5" fill="none" stroke-linecap="round"/>'
+    +'<path class="flick" style="--d:-1s" d="M262 142 l-8 -16 l10 4 l-6 -16" stroke="#ffd23f" stroke-width="4" fill="none" stroke-linejoin="round" stroke-linecap="round"/>'
+    +'<g class="flick" style="--d:-.2s" stroke="#ffd23f" stroke-width="3" fill="none" stroke-linecap="round"><path d="M302 70 l-14 -6 m16 22 l-16 2 m68 -40 l14 -10 m-8 30 l18 0"/></g>'
+    +'<rect class="lightflick" width="480" height="300" fill="#fff"/></g>'
+    +'<defs><radialGradient id="gArc2"><stop offset="0" stop-color="#fff9c4"/><stop offset="1" stop-color="#8fd0ff" stop-opacity="0"/></radialGradient></defs>'
+    +'<text x="12" y="290" font-size="11" font-family="Arial" fill="#14213d">žuta crtkana linija = put struje kroz tijelo</text></svg>';
+  }
+  if(mode==="cpr"){
+    return H.replace("%CLS%"," cprs"+(window.__metro?" metro-on":"")).replace("%ARIA%","Kolega leži na podu, spasilac kleči i pritišće prsni koš ravnim rukama")
+    +'<rect y="200" width="480" height="100" fill="#b9bfc7"/>'
+    +'<circle cx="110" cy="236" r="22" fill="#f0c9a0" stroke="#b08a60"/><path d="M90 226 q18 -24 40 -4" fill="#4a3320"/>'
+    +'<rect x="136" y="222" width="128" height="30" rx="8" fill="#3b6ea8"/><rect class="chest" x="150" y="222" width="60" height="30" rx="8" fill="#4a80bd"/>'
+    +'<rect x="262" y="228" width="110" height="22" rx="8" fill="#2f3b54"/><rect x="368" y="238" width="30" height="14" rx="5" fill="#222"/>'
+    +'<path d="M222 190 L220 248" stroke="#2f3b54" stroke-width="22" stroke-linecap="round"/><path d="M220 250 L292 250" stroke="#2f3b54" stroke-width="20" stroke-linecap="round"/><rect x="288" y="242" width="26" height="14" rx="5" fill="#222"/>'
+    +'<g class="rup"><path d="M180 128 L226 190" stroke="#2c8c5a" stroke-width="34" stroke-linecap="round"/>'
+    +'<circle cx="168" cy="98" r="20" fill="#f0c9a0" stroke="#b08a60"/><path d="M148 94 q20 -28 42 -2" fill="#2b2118"/><circle cx="160" cy="98" r="2" fill="#222"/>'
+    +'<path d="M184 130 L178 218" stroke="#f0c9a0" stroke-width="10" stroke-linecap="round"/><circle cx="178" cy="218" r="8" fill="#f0c9a0" stroke="#b08a60"/></g>'
+    +'<g class="heart" transform="translate(400 64)"><path d="M0 10 C-22 -8 -16 -28 0 -16 C16 -28 22 -8 0 10Z" fill="#d6342a"/></g>'
+    +'<text x="400" y="96" text-anchor="middle" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">100–120 / min</text>'
+    +'<text x="12" y="290" font-size="11" font-family="Arial" fill="#14213d">dubina 5–6 cm · prsni koš se mora potpuno vratiti</text></svg>';
+  }
+  return H.replace("%CLS%","").replace("%ARIA%","Kolega leži na podu")+'<rect y="200" width="480" height="100" fill="#b9bfc7"/>'
+  +'<circle cx="110" cy="236" r="22" fill="#f0c9a0" stroke="#b08a60"/><path d="M90 226 q18 -24 40 -4" fill="#4a3320"/>'
+  +'<rect x="136" y="222" width="128" height="30" rx="8" fill="#3b6ea8"/><rect x="262" y="228" width="110" height="22" rx="8" fill="#2f3b54"/><rect x="368" y="238" width="30" height="14" rx="5" fill="#222"/>'
+  +'<path d="M150 236 l-26 14" stroke="#f0c9a0" stroke-width="8" stroke-linecap="round"/>'
+  +'<rect x="300" y="206" width="46" height="18" rx="4" fill="#d32f2f" stroke="#7a1313"/><path d="M280 214 l20 -2" stroke="#222" stroke-width="5"/>'
+  +'<circle cx="190" cy="140" r="26" fill="#f0c9a0" stroke="#b08a60"/><rect x="170" y="164" width="40" height="46" rx="8" fill="#2c8c5a"/>'
+  +'<path d="M184 178 l-6 36 M200 178 l6 36" stroke="#f0c9a0" stroke-width="9" stroke-linecap="round"/>'
+  +'<g class="fx"><g fill="none" stroke="#aab3bd" stroke-width="3" stroke-linecap="round"><path class="smoke" style="--d:0s;--sx:6px;--t:3.4s" d="M322 202 c-5 -7 5 -12 0 -20"/><path class="smoke" style="--d:-1.7s;--sx:-5px;--t:3.4s" d="M330 202 c5 -7 -5 -12 0 -20"/></g></g></svg>';
+}
+function calcHtml(){
+  var vals=[{n:"Suha koža",r:2000},{n:"Vlažna koža",r:1000},{n:"Mokra koža",r:500}];
+  var sel=S.s2.calc==null?0:S.s2.calc;
+  var r=vals[sel].r,i=230/r*1000;
+  var pos=Math.max(0,Math.min(100,Math.log(i/0.5)/Math.log(600/0.5)*100));
+  var zone=i<10?"Osjeti se, ali žrtva još može pustiti vodič.":(i<30?"Mišići se grče; žrtva često ne može sama pustiti vodič.":(i<100?"Opasno za srce i disanje, ovisno o trajanju.":"Vrlo opasno: moguće treperenje srčanih klijetki i zastoj srca."));
+  var h='<div class="note"><b>Zašto kolega ne može pustiti alat?</b> Pogledaj koliku struju daje napon 230 V kroz tijelo:<div class="row" style="margin:8px 0">';
+  vals.forEach(function(v,k){h+='<button class="btn '+(k===sel?"y":"ghost")+'" data-calc="'+k+'">'+v.n+' ('+v.r+' Ω)</button>'});
+  h+='</div><div>I = U / R = 230 V / '+r+' Ω = <b>'+i.toFixed(0)+' mA</b></div><div class="bar"><b style="left:'+pos+'%"></b></div><div class="scale"><span>0,5 mA</span><span>10 mA grč</span><span>30 mA opasno</span><span>100+ mA</span></div><div style="margin-top:6px">'+zone+'</div></div>';
+  return h;
+}
+
+var N={
+s1:{scene:"shock",title:"Situacija 1",calc:1,
+ text:"Tijekom vježbe kolega drži bušilicu s oštećenim kabelom. Ukočen je, trese se i ne može pustiti alat. Izolacija na kabelu je razderana, a bakar je pod naponom 230 V. Što činiš PRVO?",
+ opts:[
+ {t:"Zgrabim ga za rame i povučem od alata.",crit:1,why:"KRITIČNO: tijelo kolege vodi struju, a dodirom i ti postaješ dio strujnog kruga. Sada imate dvije žrtve. Prvo se mora prekinuti napon."},
+ {t:"Odmah isključim napon: prekidač, osigurač ili izvlačenje utikača, ali samo ako mu mogu pristupiti bez doticanja kolege i kabela.",p:2,next:"s2",why:"Točno. Prekid strujnog kruga uklanja uzrok i štiti i tebe. Istodobno viči po pomoć kako bi netko drugi nazvao 112."},
+ {t:"Prvo zovem 112 i čekam da dođe hitna.",why:"Dok je napon priključen, struja i dalje prolazi tijelom, a svaka sekunda šteti. Pomoć pozovi, ali ne umjesto prekida napona, nego paralelno (ili neka to napravi netko drugi)."},
+ {t:"Ne mogu stići do prekidača pa ga odgurnem suhim drvenim ili plastičnim predmetom, npr. metlom bez metalnih dijelova.",p:1,next:"s2",why:"Prihvatljivo samo ako se napon ne može odmah isključiti. Rizično je, jer predmet mora biti suh i neprovodljiv, a ti ne smiješ dodirnuti ni kolegu ni kabel."}]},
+s2:{scene:"down",title:"Situacija 2",
+ text:"Napon je isključen. Kolega je pao na pod i ne odgovara kad ga zoveš. Što radiš?",
+ opts:[
+ {t:"Glasno ga zovem i lagano potresem za ramena, a zatim do 10 sekundi gledam diže li mu se prsni koš (disanje).",p:1,next:"s3",why:"Točno: prvo se provjeravaju svijest i disanje. Za to je dovoljno nekoliko sekundi."},
+ {t:"Posjednem ga i dam mu čašu vode.",why:"Osobi koja nije pri svijesti ne daje se ništa na usta, jer se može ugušiti."},
+ {t:"Ostavim ga da se odmori i čekam da dođe k sebi.",why:"Ako ne reagira, a ne diše normalno, vrijeme je presudno. Čekanje je pogrešno."}]},
+s3:{scene:"down",title:"Situacija 3",
+ text:"Kolega ne reagira i ne diše normalno. Što radiš?",
+ opts:[
+ {t:"Pozovem 112 (telefon na zvučnik) ili zatražim da to netko učini i donese AED, a ja odmah počinjem pritiske na prsni koš.",p:1,next:"cpr",why:"Točno: hitna se zove odmah, a pritisci na prsni koš održavaju krvotok do dolaska pomoći."},
+ {t:"Odem po pomoć u zbornicu i ostavim ga samog.",why:"Ne ostavljaš osobu bez nadzora, a bez pritisaka na prsa gubiš dragocjeno vrijeme. Pomoć pozovi glasom ili telefonom."},
+ {t:"Čekam par minuta, možda će sam početi disati.",why:"Bez disanja i cirkulacije mozak oštećenje dobiva za nekoliko minuta."}]},
+cpr:{scene:"cpr",title:"Pritisci na prsni koš"},
+s5:{scene:"down",title:"Nakon nesreće"}
+};
+var MULTI=[
+ {t:"Obavijestiti nastavnika ili voditelja radionice i povjerenika zaštite na radu.",ok:1},
+ {t:"Neispravnu bušilicu odvojiti i označiti da je nitko ne koristi dok je ne pregleda stručna osoba.",ok:1},
+ {t:"Ozlijeđeni mora liječniku čak i ako se osjeća dobro, jer srčani poremećaji mogu nastupiti i nakon udara.",ok:1},
+ {t:"Događaj se opisuje (što, gdje, kada, tko je bio prisutan) kako bi se ozljeda na radu prijavila i evidentirala.",ok:1},
+ {t:"Nastaviti s vježbom da se ne izgubi vrijeme.",ok:0},
+ {t:"Ako se kolega osjeća dobro, nikome ne treba ništa reći.",ok:0}
+];
+
+function score2(){var t=0;for(var k in S.s2.pts)t+=S.s2.pts[k];return t}
+function renderS2(){
+  var st=S.s2,root=$("#s2root");
+  var id=st.node;
+  if(id==="end"){return endS2(root)}
+  var n=N[id];
+  var h='<div class="s2grid"><div>'+person(n.scene)+'<div class="meter" style="margin-top:10px"><i style="width:'+({s1:10,s2:30,s3:50,cpr:75,s5:90})[id]+'%"></i></div><div class="muted" style="font-size:.85rem">Bodovi: '+score2()+'/'+MAX2+' · kritične pogreške: '+st.crit+'</div></div><div>';
+  h+='<h2 style="margin-top:0">Električni udar · '+esc(n.title)+'</h2>';
+  if(id==="cpr"){h+=cprHtml(root,st)}
+  else if(id==="s5"){h+=multiHtml(st)}
+  else{
+    h+='<p>'+esc(n.text)+'</p>';
+    if(n.calc)h+=calcHtml();
+    if(!st.order)st.order={};
+    if(!st.order[id])st.order[id]=shuffle(n.opts.map(function(_,i){return i}));
+    var chosen=st.chosen&&st.chosen[id];
+    st.order[id].forEach(function(i){
+      var o=n.opts[i];
+      var wrong=st.wrong&&st.wrong[id+i];
+      var cls="opt"+(wrong?" bad":"")+((chosen===i)?" good":"");
+      h+='<button class="'+cls+'" data-i="'+i+'"'+((wrong||chosen!=null)?" disabled":"")+'>'+esc(o.t)+'</button>';
+      if(wrong)h+='<div class="note bad">'+esc(o.why)+'</div>';
+      if(chosen===i)h+='<div class="note ok">'+esc(o.why)+'</div>';
+    });
+    if(chosen!=null)h+='<p><button class="btn y" id="cont">Nastavi</button></p>';
+  }
+  h+='</div></div>';
+  root.innerHTML=h;
+  $$("[data-calc]",root).forEach(function(b){b.onclick=function(){st.calc=+b.getAttribute("data-calc");renderS2()}});
+  $$(".opt[data-i]",root).forEach(function(b){b.onclick=function(){choose2(id,+b.getAttribute("data-i"))}});
+  var c=$("#cont",root);if(c)c.onclick=function(){var o=n.opts[st.chosen[id]];st.node=o.next;renderS2()};
+  if(id==="cpr")wireCpr(root,st);
+  if(id==="s5")wireMulti(root,st);
+}
+function choose2(id,i){
+  var st=S2(),o=N[id].opts[i];
+  st.chosen=st.chosen||{};st.wrong=st.wrong||{};
+  if(o.next){
+    var t=st.tries[id]||0;
+    st.pts[id]=t===0?(o.p||0):0;
+    st.chosen[id]=i;
+  }else{
+    st.tries[id]=(st.tries[id]||0)+1;st.wrong[id+i]=true;
+    if(o.crit&&!(st.critSeen&&st.critSeen[id])){st.critSeen=st.critSeen||{};st.critSeen[id]=true;st.crit++}
+  }
+  renderS2();
+}
+function S2(){return S.s2}
+
+/* CPR */
+function cprHtml(root,st){
+  var c=st.cpr;
+  var h='<p>Kolega ne diše. Pozvao si 112. Kleči uz njega, dlanovima pritišći <b>sredinu prsnog koša</b>, ravnih ruku, dubina oko <b>5–6 cm</b>, a prsni koš se mora potpuno vratiti. Ritam: <b>100–120 pritisaka u minuti</b> (30 pritisaka, zatim 2 udaha ako si osposobljen). Pritišći kad se pojavi ritam. Možeš uključiti zvučni metronom.</p>';
+  if(c&&c.done){
+    h+=cprResult(c);
+    h+='<p class="row"><button class="btn y" id="cprNext">Nastavi</button> <button class="btn ghost" id="cprAgain">Pokušaj ponovno</button></p>';
+  }else{
+    var n=c?c.t.length:0;
+    h+='<div class="row" style="margin:8px 0"><button class="btn ghost" id="metro">Metronom: '+(window.__metro?"uključen":"isključen")+'</button><span id="bpm" class="muted"></span></div>';
+    h+='<div class="meter"><i style="width:'+(n/30*100)+'%"></i></div><div class="muted" style="margin-bottom:8px">Pritisaka: <b id="cnt">'+n+'</b>/30</div>';
+    h+='<button class="tap" id="tap">PRITISNI</button><div class="muted" style="font-size:.8rem;margin-top:6px">Možeš koristiti i razmaknicu (Space).</div>';
+  }
+  return h;
+}
+function cprResult(c){
+  var t=c.t,bpm=(t.length-1)/((t[t.length-1]-t[0])/60000);
+  c.bpm=bpm;
+  var p=(bpm>=100&&bpm<=120)?2:((bpm>=90&&bpm<=135)?1:0);
+  c.p=p;
+  var msg=p===2?"Odličan ritam, točno u rasponu 100–120 u minuti.":(p===1?"Blizu raspona. Cilj je 100–120 u minuti, "+(bpm<100?"malo si prespor.":"malo si prebrz."):("Izvan raspona. "+(bpm<100?"Prespor ritam ne održava dovoljan protok krvi.":"Prebrz ritam ne dopušta da se srce napuni između pritisaka.")));
+  return '<div class="note '+(p===2?"ok":(p===1?"warn":"bad"))+'">'+'<b>Prosječni ritam: '+bpm.toFixed(0)+' pritisaka u minuti</b><br>'+msg+'</div>';
+}
+function wireCpr(root,st){
+  var tap=$("#tap",root),metro=$("#metro",root);
+  if(metro)metro.onclick=function(){toggleMetro();var sv2=$(".cprs",root);if(sv2)sv2.classList.toggle("metro-on",!!window.__metro);metro.textContent="Metronom: "+(window.__metro?"uključen":"isključen")};
+  if(tap){
+    var onTap=function(){
+      var c=st.cpr=st.cpr||{t:[],done:false};
+      c.t.push(performance.now());
+      var n=c.t.length;
+      tap.classList.add("hit2");var sv=$(".cprs",root);if(sv){sv.classList.remove("pump");void sv.getBoundingClientRect();sv.classList.add("pump")}setTimeout(function(){tap.classList.remove("hit2")},70);
+      $("#cnt",root).textContent=n;$(".meter>i",root).style.width=(n/30*100)+"%";
+      if(n>=4){var a=c.t.slice(-4);var b=(3/((a[3]-a[0])/60000));$("#bpm",root).textContent="Trenutni ritam: "+b.toFixed(0)+" / min"}
+      if(n>=30){c.done=true;stopMetro();var bpm=(c.t.length-1)/((c.t[c.t.length-1]-c.t[0])/60000);var p=(bpm>=100&&bpm<=120)?2:((bpm>=90&&bpm<=135)?1:0);st.pts.cpr=(st.cprTries||0)===0?p:0;renderS2()}
+    };
+    tap.onclick=onTap;
+    window.__tapKey=function(e){if(e.code==="Space"&&S.view==="2"&&S.s2.node==="cpr"&&!(S.s2.cpr&&S.s2.cpr.done)){e.preventDefault();onTap()}};
+    document.removeEventListener("keydown",window.__tapKeyBound||function(){});
+    window.__tapKeyBound=window.__tapKey;document.addEventListener("keydown",window.__tapKeyBound);
+  }
+  var nx=$("#cprNext",root);if(nx)nx.onclick=function(){st.node="s5";renderS2()};
+  var ag=$("#cprAgain",root);if(ag)ag.onclick=function(){st.cprTries=(st.cprTries||0)+1;st.cpr=null;renderS2()};
+}
+/* metronom */
+var audioCtx=null,mTimer=null;
+function beep(){try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=880;g.gain.value=.12;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.05)}catch(e){}}
+function toggleMetro(){if(window.__metro)stopMetro();else{window.__metro=true;beep();mTimer=setInterval(beep,60000/110)}}
+function stopMetro(){window.__metro=false;if(mTimer){clearInterval(mTimer);mTimer=null}}
+
+/* multi */
+function multiHtml(st){
+  var h='<p>Hitna je preuzela kolegu. Što je još potrebno napraviti? <b>Označi sve što je točno.</b></p>';
+  if(!st.mOrder)st.mOrder=shuffle(MULTI.map(function(_,i){return i}));
+  st.mOrder.forEach(function(i){
+    var o=MULTI[i];var sel=st.multi[i];var done=st.mDone;
+    var cls="opt"+(sel&&!done?" sel":"")+(done?(sel&&o.ok?" good":(sel&&!o.ok?" bad":(!sel&&o.ok?" bad":""))):"");
+    h+='<button class="'+cls+'" data-m="'+i+'"'+(done?" disabled":"")+'>'+(sel?"☑ ":"☐ ")+esc(o.t)+'</button>';
+  });
+  if(!st.mDone)h+='<p><button class="btn y" id="mOk">Provjeri</button></p>';
+  else{
+    h+='<div class="note '+(st.pts.s5>=3?"ok":"warn")+'">Bodovi u ovom koraku: <b>'+st.pts.s5+'/4</b>. Zeleno su točne tvrdnje koje si označio. Crveno su pogrešno označene ili propuštene.</div><p><button class="btn y" id="mNext">Završi stanicu</button></p>';
+  }
+  return h;
+}
+function wireMulti(root,st){
+  $$("[data-m]",root).forEach(function(b){b.onclick=function(){var i=+b.getAttribute("data-m");st.multi[i]=!st.multi[i];renderS2()}});
+  var ok=$("#mOk",root);if(ok)ok.onclick=function(){
+    var p=0;MULTI.forEach(function(o,i){var s=!!st.multi[i];if(o.ok&&s)p++;if(!o.ok&&s)p--});
+    st.pts.s5=Math.max(0,p);st.mDone=true;renderS2();
+  };
+  var nx=$("#mNext",root);if(nx)nx.onclick=function(){st.node="end";st.done=true;renderS2();buildNav()};
+}
+function endS2(root){
+  var st=S.s2;
+  root.innerHTML='<h2 style="margin-top:0">Električni udar · završeno</h2><div class="note ok">Bodovi: <b>'+score2()+'/'+MAX2+'</b> · kritične pogreške: <b>'+st.crit+'</b></div>'
+  +'<p><b>Zapamti redoslijed:</b></p><ol><li>Prekini napon (ili odgurni suhim neprovodnim predmetom ako ne možeš odmah).</li><li>Provjeri svijest i disanje.</li><li>Pozovi 112, zatraži AED, počni pritiske na prsni koš (30 : 2, 100–120/min).</li><li>Nakon nesreće: obavijesti odgovorne osobe, odvoji neispravnu opremu, ozlijeđeni na liječnički pregled.</li></ol>'
+  +'<p class="row"><button class="btn y" id="toSum">Dalje: stanica 3</button> <button class="btn ghost" id="redo2">Ponovi stanicu</button></p>';
+  $("#toSum",root).onclick=function(){go("3")};
+  $("#redo2",root).onclick=function(){stopMetro();S.s2=newS2();renderS2();buildNav()};
+}
+
+/* ---------- sazetak i dozvola ---------- */
+function fnv(str,seed){var h=seed>>>0;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h>>>0}
+function allRows(){
+  var rows=[{id:"1",n:"1. Inspekcija radionice",s:score1(),m:MAX1,c:S.s1.crit,d:isDone("1")},{id:"2",n:"2. Električni udar",s:score2(),m:MAX2,c:S.s2.crit,d:isDone("2")}];
+  ["3","4","5","6","7","8","9"].forEach(function(k){rows.push({id:k,n:k+". "+ST[k].name,s:stScore(k),m:stMax(k),c:stCrit(k),d:stDone(k)})});
+  return rows;
+}
+function makeCode(){
+  var rows=allRows();
+  var base=[S.name.toLowerCase().trim(),S.razred.trim()].concat(rows.map(function(r){return r.s+":"+r.c})).join("|")+"|zr-proto-2026";
+  var a=fnv(base,2166136261).toString(36).toUpperCase().padStart(7,"0").slice(-4);
+  var b=fnv(base,911382323).toString(36).toUpperCase().padStart(7,"0").slice(-4);
+  return "RD-"+a+"-"+b;
+}
+function renderSum(){
+  var root=$("#sumroot"),rows=allRows();
+  var tot=0,max=0,crit=0,all=true;
+  rows.forEach(function(r){tot+=r.s;max+=r.m;crit+=r.c;if(!r.d)all=false});
+  var pct=tot/max,ok=all&&pct>=PASS&&crit===0;
+  var d=new Date();var dt=d.getDate()+"."+(d.getMonth()+1)+"."+d.getFullYear()+".";
+  var h='<h2 style="margin-top:0">Radna dozvola za laboratorij</h2>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Stanica</th><th>Bodovi</th><th>Kritične pogreške</th><th>Stanje</th></tr>';
+  rows.forEach(function(r){h+='<tr><td>'+esc(r.n)+'</td><td>'+r.s+'/'+r.m+'</td><td>'+r.c+'</td><td>'+(r.d?"završeno":"nije završeno")+'</td></tr>'});
+  h+='<tr><td><b>Ukupno</b></td><td><b>'+tot+'/'+max+' ('+Math.round(pct*100)+' %)</b></td><td><b>'+crit+'</b></td><td></td></tr></table></div>';
+  h+='<p class="muted">Za dozvolu: završene sve stanice, najmanje 80 % bodova i nula kritičnih pogrešaka.</p>';
+  h+='<div class="permit '+(ok?"ok":"no")+'"><b>'+(ok?"RADNA DOZVOLA IZDANA":"DOZVOLA NIJE IZDANA")+'</b><br>'+esc(S.name)+', '+esc(S.razred)+' · '+dt;
+  if(ok){h+='<p style="margin:12px 0 4px">Potvrdni kod:</p><span class="code" id="code">'+makeCode()+'</span> <button class="btn ghost" id="copy">Kopiraj</button><p class="muted" style="margin-top:8px">Pošalji kod nastavniku. Isti podaci uvijek daju isti kod, pa ga nastavnik može provjeriti.</p>'}
+  else{
+    h+='<p style="margin:10px 0 0">';
+    if(!all)h+='Završi sve stanice. ';
+    if(crit>0)h+='Imao si kritične pogreške (<b>'+crit+'</b>). Ponovi stanicu u kojoj su nastale. ';
+    if(pct<PASS&&all)h+='Treba ti barem 80 % bodova. ';
+    h+='</p><p class="row">';
+    rows.forEach(function(r){if(!r.d||r.c>0)h+='<button class="btn ghost" data-redo="'+r.id+'">'+(r.d?"Ponovi":"Idi na")+' stanicu '+r.id+'</button> '});
+    h+='</p>';
+  }
+  h+='</div>';
+  root.innerHTML=h;
+  var c=$("#copy",root);if(c)c.onclick=function(){try{navigator.clipboard.writeText($("#code").textContent).then(function(){c.textContent="Kopirano"},function(){sel()})}catch(e){sel()}function sel(){var r=document.createRange();r.selectNode($("#code"));var s=getSelection();s.removeAllRanges();s.addRange(r)}};
+  $$("[data-redo]",root).forEach(function(b){b.onclick=function(){var k=b.getAttribute("data-redo");if(allRows().filter(function(r){return r.id===k})[0].d)redoStation(k);else go(k)}});
+}
+/* ======== stanice 3-6: zajednički mehanizam ======== */
+function SV(inner,aria,cls){return '<svg viewBox="0 0 480 300" class="scene-svg'+(cls?' '+cls:'')+'" role="img" aria-label="'+aria+'"><rect width="480" height="300" fill="#dfe6ee"/>'+inner+'</svg>'}
+function stState(id){S.st=S.st||{};if(!S.st[id])S.st[id]={i:0,pts:{},tries:{},crit:0,critSeen:{},chosen:{},wrong:{},ord:{},seq:{},msg:{},sel:{},checked:{},cardi:0,ss:"",done:false};return S.st[id]}
+function stScore(id){var t=0,p=stState(id).pts;for(var k in p)t+=p[k];return t}
+function stMax(id){var m=0;ST[id].steps.forEach(function(s){m+=s.type==="seq"?s.items.length:(s.type==="sort"?s.cards.length:(s.max||2))});return m}
+function stCrit(id){return stState(id).crit}
+function stDone(id){return !!(S.st&&S.st[id]&&S.st[id].done)}
+function half(m){return Math.floor(m/2)}
+function addCrit(st,key,o){if(o.crit&&!st.critSeen[key]){st.critSeen[key]=true;st.crit++}}
+function stNext(id){var st=stState(id);st.i++;st.ss="";st.cardi=0;if(st.i>=ST[id].steps.length)st.done=true;renderStn(id);buildNav()}
+function redoStation(k){
+  if(k==="1"){S.s1=newS1();updBadges();go("1")}
+  else if(k==="2"){stopMetro();S.s2=newS2();go("2")}
+  else{if(S.st)delete S.st[k];go(k)}
+}
+function renderStn(id){
+  var cfg=ST[id],st=stState(id),root=$("#s"+id+"root");
+  if(st.done)return endStn(id,root);
+  var step=cfg.steps[st.i],key=step.key,wire=function(){};
+  var h='<div class="s2grid"><div>'+step.scene(st)+'<div class="meter" style="margin-top:10px"><i style="width:'+Math.round(st.i/cfg.steps.length*100)+'%"></i></div><div class="muted" style="font-size:.85rem">Bodovi: '+stScore(id)+'/'+stMax(id)+' · kritične pogreške: '+st.crit+'</div></div><div>';
+  h+='<h2 style="margin-top:0">'+esc(cfg.name)+' · '+esc(step.title)+'</h2>';
+  if(step.type==="choice"){
+    h+='<p>'+esc(step.text)+'</p>';
+    if(!st.ord[key])st.ord[key]=shuffle(step.opts.map(function(_,i){return i}));
+    var ch=st.chosen[key];
+    st.ord[key].forEach(function(i){var o=step.opts[i],w=st.wrong[key+i];
+      h+='<button class="opt'+(w?" bad":"")+(ch===i?" good":"")+'" data-i="'+i+'"'+((w||ch!=null)?" disabled":"")+'>'+esc(o.t)+'</button>';
+      if(w)h+='<div class="note bad">'+esc(o.why)+'</div>';
+      if(ch===i)h+='<div class="note ok">'+esc(o.why)+'</div>'});
+    if(ch!=null)h+='<p><button class="btn y" id="cont">Nastavi</button></p>';
+    wire=function(){
+      $$(".opt[data-i]",root).forEach(function(b){b.onclick=function(){
+        var i=+b.getAttribute("data-i"),o=step.opts[i],mx=step.max||2;
+        if(o.ok){st.pts[key]=(st.tries[key]||0)===0?mx:half(mx);st.chosen[key]=i;st.ss=o.sc||"ok"}
+        else{st.tries[key]=(st.tries[key]||0)+1;st.wrong[key+i]=true;addCrit(st,key,o);st.ss=o.sc||st.ss}
+        renderStn(id)}});
+      var c=$("#cont",root);if(c)c.onclick=function(){stNext(id)};
+    };
+  }else if(step.type==="seq"){
+    var sq=st.seq[key]=st.seq[key]||[];
+    h+='<p>'+esc(step.text)+'</p>';
+    if(!st.ord[key])st.ord[key]=shuffle(step.items.map(function(_,i){return "i"+i}).concat((step.decoys||[]).map(function(_,i){return "d"+i})));
+    if(st.msg[key])h+='<div class="note bad">'+esc(st.msg[key])+'</div>';
+    st.ord[key].forEach(function(c){var isI=c[0]==="i",ix=+c.slice(1),o=isI?step.items[ix]:step.decoys[ix],pos=isI?sq.indexOf(ix):-1;
+      h+='<button class="opt'+(pos>=0?" good":"")+'" data-c="'+c+'"'+(pos>=0?" disabled":"")+'>'+(pos>=0?'<b>'+(pos+1)+'.</b> ':'')+esc(o.t)+'</button>'});
+    if(sq.length)h+='<div class="note ok"><b>'+sq.length+'. korak:</b> '+esc(step.items[sq[sq.length-1]].why)+'</div>';
+    if(sq.length===step.items.length)h+='<p><button class="btn y" id="cont">Nastavi</button></p>';
+    wire=function(){
+      $$(".opt[data-c]",root).forEach(function(b){b.onclick=function(){
+        var c=b.getAttribute("data-c"),isI=c[0]==="i",ix=+c.slice(1),exp=sq.length;
+        if(isI&&ix===exp){st.pts[key+exp]=st.tries[key+exp]?0:1;sq.push(ix);st.msg[key]=""}
+        else{st.tries[key+exp]=(st.tries[key+exp]||0)+1;
+          if(isI)st.msg[key]="Ta radnja je točna, ali ne ide sada na red. Razmisli što mora biti učinjeno prije nje.";
+          else{st.msg[key]=step.decoys[ix].why;addCrit(st,key,step.decoys[ix])}}
+        renderStn(id)}});
+      var c=$("#cont",root);if(c)c.onclick=function(){stNext(id)};
+    };
+  }else if(step.type==="multi"){
+    var sel=st.sel[key]=st.sel[key]||{},chk=st.checked[key];
+    h+='<p>'+esc(step.text)+'</p>';
+    if(!st.ord[key])st.ord[key]=shuffle(step.items.map(function(_,i){return i}));
+    st.ord[key].forEach(function(i){var o=step.items[i],on=!!sel[i],cls="opt"+(on?" sel":""),note="";
+      if(chk){
+        if(on&&o.ok){cls="opt good";note='<div class="note ok">'+esc(o.why)+'</div>'}
+        else if(on&&!o.ok){cls="opt bad";note='<div class="note bad">Ne pripada: '+esc(o.why)+'</div>'}
+        else if(!on&&o.ok){cls="opt bad";note='<div class="note warn">Ovo je trebalo označiti: '+esc(o.why)+'</div>'}
+      }
+      h+='<button class="'+cls+'" data-i="'+i+'" aria-pressed="'+on+'"'+(chk==="ok"?" disabled":"")+'>'+(on?"✔ ":"")+esc(o.t)+'</button>'+note});
+    h+=chk==="ok"?'<p><button class="btn y" id="cont">Nastavi</button></p>':'<p><button class="btn y" id="chk">Provjeri</button></p>';
+    wire=function(){
+      $$(".opt[data-i],.opt.good[data-i],.opt.bad[data-i]",root).forEach(function(b){b.onclick=function(){
+        var i=+b.getAttribute("data-i");sel[i]=!sel[i];st.checked[key]=undefined;renderStn(id)}});
+      var k=$("#chk",root);if(k)k.onclick=function(){
+        var w=0;step.items.forEach(function(o,i){if(!!sel[i]!==!!o.ok)w++});
+        if(!st.tries[key]){st.tries[key]=1;var mx=step.max||2;st.pts[key]=w===0?mx:(w===1?half(mx):0)}
+        st.checked[key]=w===0?"ok":"wrong";renderStn(id)};
+      var c=$("#cont",root);if(c)c.onclick=function(){stNext(id)};
+    };
+  }else if(step.type==="sort"){
+    var cd=step.cards[st.cardi],ck=key+st.cardi;
+    h+='<p>'+esc(step.text)+'</p><div class="muted" style="margin-bottom:6px">Znak '+(st.cardi+1)+' od '+step.cards.length+'</div>';
+    step.cats.forEach(function(c){var w=st.wrong[ck+c.k],ok=st.chosen[ck]===c.k;
+      h+='<button class="opt'+(w?" bad":"")+(ok?" good":"")+'" data-k="'+c.k+'"'+((w||st.chosen[ck])?" disabled":"")+'><b>'+esc(c.t)+'</b></button>'});
+    if(st.msg[ck]&&!st.chosen[ck])h+='<div class="note bad">'+esc(st.msg[ck])+'</div>';
+    if(st.chosen[ck])h+='<div class="note ok"><b>'+esc(cd.name)+'.</b> '+esc(cd.why)+'</div><p><button class="btn y" id="cont">'+(st.cardi+1<step.cards.length?"Sljedeći znak":"Nastavi")+'</button></p>';
+    wire=function(){
+      $$(".opt[data-k]",root).forEach(function(b){b.onclick=function(){
+        var k=b.getAttribute("data-k");
+        if(k===cd.cat){st.pts[ck]=st.tries[ck]?0:1;st.chosen[ck]=k}
+        else{st.tries[ck]=(st.tries[ck]||0)+1;st.wrong[ck+k]=true;st.msg[ck]=cd.hint}
+        renderStn(id)}});
+      var c=$("#cont",root);if(c)c.onclick=function(){if(st.cardi+1<step.cards.length){st.cardi++;renderStn(id)}else stNext(id)};
+    };
+  }
+  h+='</div></div>';
+  root.innerHTML=h;wire();
+}
+function endStn(id,root){
+  var cfg=ST[id],st=stState(id);
+  root.innerHTML='<h2 style="margin-top:0">'+esc(cfg.name)+' · završeno</h2><div class="note ok">Bodovi: <b>'+stScore(id)+'/'+stMax(id)+'</b> · kritične pogreške: <b>'+st.crit+'</b></div><p><b>Zapamti:</b></p><ol>'+cfg.recap.map(function(r){return '<li>'+esc(r)+'</li>'}).join("")+'</ol><p class="row"><button class="btn y" id="toNext">'+(cfg.next==="sum"?"Dalje: radna dozvola":"Dalje: stanica "+cfg.next)+'</button> <button class="btn ghost" id="redo">Ponovi stanicu</button></p>';
+  $("#toNext",root).onclick=function(){go(cfg.next)};
+  $("#redo",root).onclick=function(){redoStation(id)};
+}
+
+/* ---------- scene: stanica 3 (pet pravila) ---------- */
+function sceneS3(n){
+  var cap=["Strujni krug je pod naponom: ne dirati!","1 ✓ napon je isključen","2 ✓ osigurano od ponovnog uključenja","3 ✓ beznaponsko stanje utvrđeno ispitivačem","4 ✓ uzemljeno i kratko spojeno","5 ✓ susjedni dijelovi pod naponom zaštićeni"][n];
+  var h='<defs><pattern id="stp3" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="14" fill="#d6342a"/><rect x="7" width="7" height="14" fill="#fff"/></pattern></defs>';
+  h+='<rect y="250" width="480" height="50" fill="#b9bfc7"/>';
+  h+='<rect x="30" y="30" width="150" height="200" rx="4" fill="#7d8996" stroke="#4a5461" stroke-width="3"/><rect x="40" y="40" width="130" height="180" fill="#2b323b"/>';
+  for(var r=0;r<2;r++)for(var c=0;c<3;c++){var x=52+c*38,y=50+r*54;h+='<rect x="'+x+'" y="'+y+'" width="28" height="44" rx="2" fill="#e8e8e8" stroke="#555"/><rect x="'+(x+9)+'" y="'+(y+8)+'" width="10" height="14" rx="2" fill="#222"/>'}
+  h+='<rect x="52" y="156" width="104" height="42" rx="3" fill="#e8e8e8" stroke="#555"/><rect x="112" y="161" width="40" height="32" rx="2" fill="'+(n>=1?"#c0392b":"#2fa55a")+'"/>';
+  h+='<g class="lever'+(n>=1?" off":"")+(n===1?" new":"")+'"><rect x="124" y="166" width="16" height="10" rx="2" fill="#1d232b"/></g>';
+  var wire='M180 100 C215 100 225 130 262 130';
+  h+='<path d="'+wire+'" stroke="#222" stroke-width="6" fill="none"/>';
+  if(n<1)h+='<path class="flow" d="'+wire+'" stroke="#ffd23f" stroke-width="3" fill="none" stroke-linecap="round"/>';
+  h+='<rect x="262" y="106" width="52" height="52" rx="5" fill="#eee" stroke="#777" stroke-width="2"/><circle cx="278" cy="132" r="3.5" fill="#333"/><circle cx="298" cy="132" r="3.5" fill="#333"/><circle cx="270" cy="114" r="2" fill="#999"/><circle cx="306" cy="150" r="2" fill="#999"/>';
+  if(n<1)h+='<g class="fx"><rect class="sign" x="254" y="76" width="68" height="20" rx="4" fill="#d6342a"/><text x="288" y="91" text-anchor="middle" font-size="13" font-weight="800" font-family="Arial" fill="#fff">230 V</text><path class="flick" d="M322 112 l8 -8 l-3 8 l9 -4" stroke="#ffd23f" stroke-width="3" fill="none"/></g>';
+  if(n>=2)h+='<g class="lock'+(n===2?" new":"")+'"><path d="M67 170 v-6 a7 7 0 0 1 14 0 v6" fill="none" stroke="#555" stroke-width="3"/><rect x="62" y="170" width="24" height="16" rx="3" fill="#f2b705" stroke="#7a5a00" stroke-width="2"/><rect x="56" y="202" width="100" height="16" rx="2" fill="#fff" stroke="#b3261e" stroke-width="2"/><text x="106" y="214" text-anchor="middle" font-size="9" font-weight="700" font-family="Arial" fill="#b3261e">NE UKLJUČUJ</text></g>';
+  if(n>=3)h+='<g transform="translate(318 126)"><g class="tin'+(n===3?" new":"")+'"><rect x="-14" y="4" width="14" height="6" fill="#aaa"/><rect x="0" y="0" width="72" height="14" rx="7" fill="#2d6cb5"/><rect x="16" y="2" width="34" height="10" rx="2" fill="#1e2630"/><text x="33" y="10" text-anchor="middle" font-size="8" font-weight="700" font-family="Arial" fill="#7dffa3">0 V</text><circle class="led" cx="61" cy="7" r="3" fill="#46d36b" style="--p:1s"/></g></g>';
+  if(n>=4){var ed="M290 158 C312 190 268 214 290 250";h+='<g><path class="draw'+(n===4?" new":"")+'" pathLength="100" d="'+ed+'" stroke="#2f9e44" stroke-width="5" fill="none" stroke-linecap="round"/><path class="draw2'+(n===4?" new":"")+'" d="'+ed+'" stroke="#ffd23f" stroke-width="5" stroke-dasharray="6 6" fill="none"/><rect x="283" y="152" width="14" height="10" rx="2" fill="#888" stroke="#444"/><g stroke="#333" stroke-width="3"><line x1="276" y1="252" x2="304" y2="252"/><line x1="281" y1="258" x2="299" y2="258"/><line x1="286" y1="264" x2="294" y2="264"/></g></g>'}
+  h+='<rect x="372" y="40" width="90" height="190" rx="4" fill="#c5ccd4" stroke="#4a5461" stroke-width="3"/><g stroke="#c8832e" stroke-width="8" stroke-linecap="round"><line x1="392" y1="60" x2="392" y2="190"/><line x1="417" y1="60" x2="417" y2="190"/><line x1="442" y1="60" x2="442" y2="190"/></g>';
+  if(n<5)h+='<g class="fx"><path class="flick" d="M386 100 l6 -8 l-2 8 l8 -4" stroke="#ffd23f" stroke-width="3" fill="none"/><path class="flick" style="--d:-1.1s" d="M436 140 l6 -8 l-2 8 l8 -4" stroke="#ffd23f" stroke-width="3" fill="none"/></g>';
+  h+='<polygon points="417,196 436,228 398,228" fill="#ffd23f" stroke="#14213d" stroke-width="3" stroke-linejoin="round"/><path d="M420 204 l-7 12 h5 l-2 8 l8 -12 h-5 z" fill="#14213d"/>';
+  if(n>=5)h+='<g class="screen'+(n===5?" new":"")+'"><rect x="378" y="50" width="78" height="150" fill="url(#stp3)" stroke="#b3261e" stroke-width="3"/><rect x="190" y="262" width="272" height="8" fill="url(#stp3)" stroke="#b3261e"/></g>';
+  h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+cap+'</text>';
+  return SV(h,"Razvodni ormar, utičnica koja se mijenja i susjedni dio pod naponom; prikazano je koliko je pravila provedeno","");
+}
+
+/* ---------- scene: stanica 4 (požar) ---------- */
+function flameG(x,y,s,d){return '<g transform="translate('+x+' '+y+') scale('+s+')"><g class="fl" style="animation-delay:-'+d+'s"><path d="M0 0 C-22 -10 -26 -40 -8 -62 C-6 -46 4 -48 2 -78 C24 -52 32 -22 18 -4 C10 6 -10 6 0 0Z" fill="#f08a24"/><path d="M0 -2 C-12 -8 -14 -26 -4 -40 C-2 -30 4 -30 4 -46 C14 -30 16 -12 8 -4Z" fill="#ffd23f"/></g></g>'}
+function figSvg(shirt){return '<rect class="leg" x="-8" y="-62" width="9" height="62" rx="4" fill="#2f3b54"/><rect class="leg b" x="-1" y="-62" width="9" height="62" rx="4" fill="#26324a"/><rect x="-11" y="-118" width="22" height="58" rx="8" fill="'+shirt+'"/><rect class="arm a" x="-4" y="-114" width="8" height="46" rx="4" fill="#f0c9a0"/><circle cx="-2" cy="-132" r="14" fill="#f0c9a0" stroke="#b08a60"/><path d="M-16 -134 q14 -22 28 -2 l-2 -4 q-12 -10 -24 6z" fill="#2b2118"/><circle cx="-8" cy="-132" r="1.8" fill="#222"/>'}
+function sceneS4(ss,n){
+  var water=(ss==="water"),evac=(ss==="evac"),out=(ss==="ok"||n>=4),spray=(n>=3||ss==="ok"||water),ext=(n>=1||ss==="ok"||water);
+  var h='<defs><linearGradient id="smkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f333a" stop-opacity=".95"/><stop offset="1" stop-color="#2f333a" stop-opacity="0"/></linearGradient></defs>';
+  h+='<rect y="236" width="480" height="64" fill="#b9bfc7"/>';
+  h+='<rect x="396" y="96" width="64" height="142" fill="#8d99a6" stroke="#5c6672" stroke-width="3"/><rect class="sign" x="398" y="68" width="60" height="22" rx="3" fill="#1f8a4c"/><text x="428" y="84" text-anchor="middle" font-size="13" font-weight="800" font-family="Arial" fill="#fff">IZLAZ ➜</text>';
+  h+='<rect x="130" y="196" width="230" height="14" fill="#8a6a43" stroke="#5e4529" stroke-width="2"/><rect x="140" y="210" width="10" height="28" fill="#6f553a"/><rect x="340" y="210" width="10" height="28" fill="#6f553a"/>';
+  h+='<rect x="300" y="152" width="46" height="34" fill="#1e2630" stroke="#111"/><rect x="305" y="157" width="36" height="24" fill="#2a74c9"/><rect x="292" y="186" width="62" height="10" fill="#444"/>';
+  h+='<rect x="212" y="184" width="66" height="12" rx="3" fill="#eee" stroke="#777"/><g fill="#333"><rect x="220" y="187" width="8" height="6"/><rect x="234" y="187" width="8" height="6"/><rect x="248" y="187" width="8" height="6"/><rect x="262" y="187" width="8" height="6"/></g>';
+  var fl='<g class="flames'+(out?" fout":"")+(water?" flare":"")+'">'+flameG(245,186,1,0)+flameG(224,186,.7,.2)+flameG(268,186,.8,.35)+'</g>';
+  h+=fl;
+  if(!out||true)h+='<g class="fx"><circle class="smk" cx="245" cy="140" r="9" fill="#555b64"/><circle class="smk" style="--d:-1.1s;--sx:-14px" cx="240" cy="140" r="8" fill="#666d77"/><circle class="smk" style="--d:-2.2s;--sx:20px" cx="252" cy="140" r="10" fill="#4a5059"/></g>';
+  if(evac){h+='<g class="smkdown"><rect x="0" y="0" width="480" height="140" fill="url(#smkg)"/></g><g class="runr"><g transform="scale(-.95 .95)">'+figSvg("#2c8c5a")+'</g></g>'}
+  if(ext){
+    var aim=(n>=2||ss==="ok"||water)?11:-18;
+    h+='<rect x="64" y="150" width="34" height="90" rx="12" fill="'+(water?"#d32f2f":"#d32f2f")+'" stroke="#7a1313" stroke-width="2"/><rect x="74" y="136" width="14" height="16" fill="#333"/><path d="M70 140 h26 l6 -8" stroke="#333" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    h+='<path d="M88 150 C106 172 136 182 158 174" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/>';
+    h+='<g transform="translate(158 174)"><g class="'+(n===4?"sweep":"")+'" style="transform-origin:0 0;'+(n===4?"":"transform:rotate("+aim+"deg)")+'"><rect x="0" y="-4" width="22" height="8" rx="3" fill="#222"/>';
+    if(spray){for(var i=0;i<12;i++){h+='<circle class="spr" cx="22" cy="0" r="4.2" fill="'+(water?"#6db3f2":"#fff")+'" stroke="'+(water?"#2c6fb7":"#b9c4d0")+'" style="--d:-'+(i*.045).toFixed(3)+'s;--dx:'+(52+i*3)+'px;--dy:'+(i%3-1)*6+'px"/>'}}
+    h+='</g></g>';
+    if(n<1&&ss!=="ok"){}
+  }else{
+    h+='<rect x="64" y="150" width="34" height="90" rx="12" fill="#d32f2f" stroke="#7a1313" stroke-width="2"/><rect x="74" y="136" width="14" height="16" fill="#333"/><path d="M70 140 h26 l6 -8" stroke="#333" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M88 150 C106 172 136 182 158 174" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/><rect x="158" y="170" width="22" height="8" rx="3" fill="#222" transform="rotate(-18 158 174)"/>';
+  }
+  if(n>=1)h+='<circle class="pinout" cx="102" cy="140" r="4" fill="none" stroke="#f2b705" stroke-width="3"/>';
+  else if(!ext)h+='<circle cx="102" cy="140" r="4" fill="none" stroke="#f2b705" stroke-width="3"/>';
+  if(water)h+='<g class="fx"><path class="flick" d="M236 150 l8 -14 l-4 10 l12 -8" stroke="#ffd23f" stroke-width="4" fill="none"/><rect class="lightflick" width="480" height="300" fill="#fff"/></g><text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#b3261e">voda + napon = plamen se širi i struja prelazi na tebe</text>';
+  else if(out)h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">požar je ugašen: nastavi pratiti prostor</text>';
+  else if(evac)h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">dim se skuplja pod stropom: izlaz!</text>';
+  return SV(h,"Požar na razdjelniku u radionici i vatrogasni aparat","");
+}
+
+/* ---------- scene: stanica 5 (prva pomoć) ---------- */
+function sceneS5(kind,ss,sel){
+  var SK="#f0c9a0",SB="#b08a60",h="";
+  if(kind==="burn"){
+    var cool=(ss==="ok");
+    h+='<defs><radialGradient id="gHot5"><stop offset="0" stop-color="#ff7a3a" stop-opacity=".9"/><stop offset="1" stop-color="#ff7a3a" stop-opacity="0"/></radialGradient></defs>';
+    h+='<rect y="248" width="480" height="52" fill="#b9bfc7"/>';
+    h+='<rect x="70" y="150" width="210" height="52" rx="26" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/><ellipse cx="310" cy="176" rx="48" ry="34" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/>';
+    h+='<g fill="'+SK+'" stroke="'+SB+'" stroke-width="2"><ellipse cx="362" cy="152" rx="20" ry="9" transform="rotate(-18 362 152)"/><ellipse cx="366" cy="172" rx="22" ry="9"/><ellipse cx="362" cy="192" rx="20" ry="9" transform="rotate(16 362 192)"/></g>';
+    h+='<ellipse class="'+(cool?"fadeR":"glowp")+'" cx="352" cy="170" rx="18" ry="13" fill="#e0553d"'+(cool?'':' style="animation-duration:1.2s;opacity:.85"')+'/>';
+    if(!cool){h+='<g class="fx" fill="none" stroke="#c9d1da" stroke-width="3" stroke-linecap="round"><path class="smoke" style="--d:0s;--sx:4px" d="M350 150 c-4 -6 4 -10 0 -16"/><path class="smoke" style="--d:-1.4s;--sx:-4px" d="M360 150 c4 -6 -4 -10 0 -16"/></g>';
+      h+='<rect x="394" y="200" width="70" height="10" rx="4" fill="#555" transform="rotate(-8 394 200)"/><circle class="glowp" cx="396" cy="203" r="8" fill="url(#gHot5)"/>'}
+    if(cool){
+      h+='<rect x="320" y="30" width="44" height="16" rx="3" fill="#9aa1a9" stroke="#555"/><rect x="334" y="46" width="16" height="14" fill="#9aa1a9" stroke="#555"/>';
+      h+='<path class="strm" d="M342 62 V164" stroke="#6db3f2" stroke-width="6" fill="none" stroke-linecap="round"/><g class="fx"><ellipse class="ripple" style="--d:0s" cx="344" cy="176" rx="36" ry="9" fill="none" stroke="#fff" stroke-width="2"/><ellipse class="ripple" style="--d:-1.5s" cx="344" cy="176" rx="36" ry="9" fill="none" stroke="#fff" stroke-width="2"/></g>';
+      h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">mlaka do hladna tekuća voda, 10–20 min</text>';
+    }else h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">dodir vruće lemilice: opeklina na prstu</text>';
+  }else if(kind==="bleed"){
+    var pr=(ss==="ok");
+    h+='<rect y="248" width="480" height="52" fill="#b9bfc7"/>';
+    h+='<g'+(pr?' transform="rotate(-10 300 176)"':'')+'><rect x="70" y="150" width="210" height="52" rx="26" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/><ellipse cx="310" cy="176" rx="48" ry="34" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/>';
+    h+='<path d="M170 172 l16 6 l14 -6 l14 6" stroke="#b3261e" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    if(!pr){h+='<g class="fx"><circle class="bd" style="--d:0s" cx="190" cy="182" r="4" fill="#b3261e"/><circle class="bd" style="--d:-.45s" cx="204" cy="182" r="4" fill="#b3261e"/><circle class="bd" style="--d:-.9s" cx="196" cy="182" r="3.4" fill="#b3261e"/></g><ellipse class="growr" cx="196" cy="256" rx="30" ry="6" fill="#b3261e" opacity=".8"/>'}
+    else{h+='<rect x="160" y="146" width="72" height="60" rx="3" fill="#fff" stroke="#c9d1da" stroke-width="2"/><circle class="growr" cx="196" cy="176" r="9" fill="#b3261e" opacity=".7"/><g class="pressh"><ellipse cx="196" cy="120" rx="34" ry="22" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/><rect x="186" y="40" width="26" height="84" rx="12" fill="'+SK+'" stroke="'+SB+'" stroke-width="2" transform="rotate(14 196 100)"/></g>'}
+    h+='</g>';
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+(pr?"čvrst izravni pritisak, ruka podignuta":"rez od oštrog ruba lima: krvarenje")+'</text>';
+  }else if(kind==="eye"){
+    var rinse=(ss==="ok"),bad=(ss==="bad");
+    h+='<ellipse cx="240" cy="150" rx="226" ry="140" fill="'+SK+'"/><path d="M96 78 Q240 20 384 78" stroke="#4a3320" stroke-width="12" fill="none" stroke-linecap="round"/>';
+    h+='<path d="M96 150 Q240 56 384 150 Q240 244 96 150Z" fill="#fff" stroke="#7a5a3a" stroke-width="5"/>';
+    h+='<circle cx="240" cy="150" r="46" fill="#4a7fb0"/><circle cx="240" cy="150" r="21" fill="#111"/><circle cx="228" cy="138" r="7" fill="#fff" opacity=".85"/>';
+    h+='<g stroke="#d6342a" stroke-width="1.6" fill="none" opacity="'+(rinse?.25:(bad?1:.7))+'"><path d="M110 150 q30 -6 60 4 M118 164 q34 0 62 -10 M370 150 q-30 -6 -60 4 M362 164 q-34 0 -62 -10 M150 120 q18 8 32 26 M330 120 q-18 8 -32 26"/></g>';
+    if(!rinse&&!bad)h+='<g class="fx"><circle class="fly" cx="430" cy="64" r="6" fill="#ff9d2e"/><circle class="fly" style="animation-delay:-1.1s" cx="420" cy="50" r="4" fill="#ffd23f"/><circle class="drip" cx="150" cy="188" r="4" fill="#9ccfff"/></g>';
+    if(rinse)h+='<rect x="330" y="0" width="54" height="70" rx="10" fill="#2d9cdb" stroke="#1b5e9b" stroke-width="3" transform="rotate(32 357 35)"/><path class="strm" d="M336 74 Q300 120 200 160" stroke="#9ccfff" stroke-width="9" fill="none" stroke-linecap="round" opacity=".85"/><g class="fx"><circle class="drip" cx="190" cy="196" r="4" fill="#9ccfff"/></g>';
+    if(bad)h+='<g class="rub"><ellipse cx="240" cy="150" rx="52" ry="34" fill="'+SK+'" stroke="'+SB+'" stroke-width="3" opacity=".92"/><path d="M200 146 q40 -22 80 0" stroke="'+SB+'" stroke-width="3" fill="none"/></g>';
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+(rinse?"ispiranje obilnom čistom vodom":(bad?"trljanje oštećuje rožnicu":"iskra/čestica iz brusilice u oku"))+'</text>';
+  }else if(kind==="kit"){
+    h+='<rect y="220" width="480" height="80" fill="#b9bfc7"/>';
+    h+='<rect x="80" y="196" width="320" height="70" rx="8" fill="#1f8a4c" stroke="#145c33" stroke-width="3"/><rect x="226" y="208" width="28" height="46" fill="#fff"/><rect x="214" y="220" width="52" height="22" fill="#fff"/><path d="M80 196 L96 160 H384 L400 196Z" fill="#26a05c" stroke="#145c33" stroke-width="3"/>';
+    var items=[
+      function(){return '<rect x="-16" y="-18" width="32" height="30" rx="2" fill="#fff" stroke="#9aa5b1" stroke-width="2"/><path d="M-8 -6 h16 M-8 2 h16" stroke="#c9d1da" stroke-width="2"/>'},
+      function(){return '<path d="M-12 12 V-6 q0 -6 5 -6 q5 0 5 6 V-14 q0 -6 5 -6 q5 0 5 6 V-8 q0 -6 5 -6 q5 0 5 6 V12 Z" fill="#6db3f2" stroke="#1b5e9b" stroke-width="2"/>'},
+      function(){return '<polygon points="0,-20 22,12 -22,12" fill="#f4ecd8" stroke="#a69a78" stroke-width="2"/>'},
+      function(){return '<rect x="-18" y="-18" width="36" height="30" rx="3" fill="#e6c34a" stroke="#8a6a00" stroke-width="2"/><path d="M-10 -8 l8 6 l8 -8 l8 10" stroke="#fff" stroke-width="2" fill="none"/>'},
+      function(){return '<rect x="-18" y="-14" width="36" height="24" rx="4" fill="#fff" stroke="#9aa5b1" stroke-width="2"/><g fill="#d6342a"><circle cx="-8" cy="-4" r="3"/><circle cx="0" cy="-4" r="3"/><circle cx="8" cy="-4" r="3"/><circle cx="-8" cy="4" r="3"/><circle cx="0" cy="4" r="3"/><circle cx="8" cy="4" r="3"/></g>'},
+      function(){return '<rect x="-16" y="-12" width="32" height="22" rx="4" fill="#f2d24a" stroke="#8a7a00" stroke-width="2"/>'},
+      function(){return '<rect x="-9" y="-12" width="18" height="24" rx="4" fill="#7a4b1c" stroke="#4a2b0c" stroke-width="2"/><rect x="-5" y="-20" width="10" height="9" fill="#ddd" stroke="#888"/>'}
+    ];
+    items.forEach(function(f,i){var on=sel&&sel[i];h+='<g transform="translate('+(52+i*62)+' 118)"><g class="pick'+(on?" on":"")+'">'+(on?'<circle r="26" fill="#fff" fill-opacity=".6" stroke="#1f7a4d" stroke-width="3"/>':'')+f()+'</g></g>'});
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">označeno ide u kutiju prve pomoći</text>';
+  }
+  return SV(h,"Prizor prve pomoći","");
+}
+
+/* ---------- scene: stanica 6 (znakovi) ---------- */
+function signArt(k){
+  var R="#d6342a",ring='<circle r="50" fill="#fff" stroke="'+R+'" stroke-width="10"/>',slash='<line x1="-35" y1="-35" x2="35" y2="35" stroke="'+R+'" stroke-width="9"/>';
+  var tri='<polygon points="0,-54 58,46 -58,46" fill="#ffd23f" stroke="#14213d" stroke-width="6" stroke-linejoin="round"/>';
+  var blue='<circle r="50" fill="#1b5e9b"/>',green='<rect x="-52" y="-52" width="104" height="104" rx="8" fill="#1f8a4c"/>',red='<rect x="-52" y="-52" width="104" height="104" rx="8" fill="'+R+'"/>';
+  if(k==="water")return ring+'<path d="M0 24 C-14 16 -14 0 -4 -12 C-3 -4 3 -4 2 -16 C14 -4 16 14 8 22 C4 26 -4 26 0 24Z" fill="#111"/><g fill="#1b5e9b"><path d="M-30 -22 q4 8 0 10 q-4 -2 0 -10z"/><path d="M-18 -30 q4 8 0 10 q-4 -2 0 -10z"/><path d="M-6 -22 q4 8 0 10 q-4 -2 0 -10z"/></g>'+slash;
+  if(k==="smoke")return ring+'<rect x="-30" y="6" width="46" height="9" fill="#111"/><rect x="16" y="6" width="12" height="9" fill="#e08a2d"/><path d="M-12 0 q-6 -10 2 -16 q8 -6 0 -16" stroke="#111" stroke-width="3" fill="none"/>'+slash;
+  if(k==="volt")return tri+'<path d="M4 -22 l-16 28 h12 l-6 22 l22 -32 h-12 z" fill="#111"/>';
+  if(k==="hot")return tri+'<g stroke="#111" stroke-width="3.5" fill="none" stroke-linecap="round"><path d="M-14 24 q-6 -8 0 -14 q6 -6 0 -14"/><path d="M0 24 q-6 -8 0 -14 q6 -6 0 -14"/><path d="M14 24 q-6 -8 0 -14 q6 -6 0 -14"/></g><rect x="-26" y="28" width="52" height="7" fill="#111"/>';
+  if(k==="goggles")return blue+'<g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"><rect x="-36" y="-12" width="30" height="24" rx="9"/><rect x="6" y="-12" width="30" height="24" rx="9"/><path d="M-6 0 h12"/></g><path d="M-36 0 h-6 M36 0 h6" stroke="#fff" stroke-width="4"/>';
+  if(k==="helmet")return blue+'<path d="M-32 14 a32 32 0 0 1 64 0z" fill="#fff"/><rect x="-40" y="14" width="80" height="9" rx="3" fill="#fff"/><rect x="-6" y="-24" width="12" height="14" fill="#fff"/>';
+  if(k==="exit")return green+'<path d="M-36 0 H8 M-6 -14 L10 0 L-6 14" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="24" y="-28" width="20" height="56" fill="none" stroke="#fff" stroke-width="6"/>';
+  if(k==="aid")return green+'<rect x="-10" y="-34" width="20" height="68" fill="#fff"/><rect x="-34" y="-10" width="68" height="20" fill="#fff"/>';
+  if(k==="ext")return red+'<g fill="#fff"><rect x="-14" y="-4" width="28" height="44" rx="11"/><rect x="-6" y="-18" width="12" height="16"/></g><path d="M-10 -22 h18 l8 -8" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M6 -14 C22 -10 26 6 26 20" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>';
+  return "";
+}
+function signScene(card){return SV('<rect y="250" width="480" height="50" fill="#c9cfd8"/><g transform="translate(240 148) scale(2.05)"><g class="signpop">'+signArt(card.art)+'</g></g>',"Sigurnosni znak: "+esc(card.name),"")}
+
+/* ======== sadržaj stanica ======== */
+ST["3"]={name:"Pet pravila rada",next:"4",
+ recap:["1. Isključi napon na svim stranama odakle može doći.","2. Osiguraj od ponovnog uključivanja (lokot i oznaka).","3. Provjeri da nema napona ispitivačem koji si prethodno provjerio.","4. Uzemlji i kratko spoji (gdje je propisano).","5. Zaštiti od susjednih dijelova pod naponom (pregrada, pokrivanje, oznaka)."," Tuđoj tvrdnji da je „sve isključeno“ ne vjeruješ: napon utvrđuješ sam."],
+ steps:[
+ {key:"seq",type:"seq",title:"Priprema radnog mjesta",
+  scene:function(st){return sceneS3((st.seq.seq||[]).length)},
+  text:"Zadatak: u radionici trebaš zamijeniti oštećenu utičnicu. Prije nego dotakneš vodiče, pripremi siguran rad. Pritišći radnje redoslijedom kojim ih provodiš. Pozor, među ponuđenim radnjama ima i onih koje nisu dio pravila.",
+  items:[
+   {t:"Isključi napon (prekidač ili osigurač) sa svih strana odakle može doći",why:"Strujni krug se mora prekinuti potpuno, na svim mjestima napajanja."},
+   {t:"Osiguraj od ponovnog uključivanja (lokot, oznaka „Ne uključuj“)",why:"Netko bi mogao uključiti napon dok radiš. Tvoj lokot i oznaka to sprječavaju."},
+   {t:"Provjeri da nema napona (ispitivač napona na mjestu rada)",why:"Samo mjerenjem znaš da je beznaponsko. Prekidač može biti krivo označen ili krivo spojen."},
+   {t:"Uzemlji i kratko spoji (gdje je propisano)",why:"Ako se napon neočekivano pojavi, nastaje kratki spoj koji isključuje zaštitu, a ti ostaješ zaštićen. U laboratoriju to radiš prema uputi nastavnika."},
+   {t:"Zaštiti od susjednih dijelova pod naponom (pregrada, pokrivanje, oznaka)",why:"Dok radiš, ne smiješ slučajno dotaknuti dijelove koji su i dalje pod naponom."}],
+  decoys:[
+   {t:"Odmah počni mijenjati utičnicu da uštediš vrijeme",crit:1,why:"KRITIČNO: bez isključenja, osiguranja i provjere napona radiš na dijelu koji može biti pod naponom."},
+   {t:"Pitaj kolegu je li isključio i vjeruj mu na riječ",why:"Tuđa tvrdnja nije mjerenje. Napon utvrđuješ sam, ispitivačem."}]},
+ {key:"tester",type:"choice",title:"Ispitivač napona",max:2,
+  scene:function(){return sceneS3(3)},
+  text:"Ispitivač je na utičnici pokazao „0 V“. Ispitivač si posudio od kolege i nikad ga nisi koristio. Što činiš?",
+  opts:[
+   {t:"Provjerim ispitivač na poznatom izvoru napona (npr. ispravna utičnica) i tek tada vjerujem njegovom pokazivanju.",ok:1,why:"Točno. Neispravan ispitivač (prazna baterija, prekinut vodič) pokaže 0 V i na dijelu pod naponom. Zato ispravnost provjeravaš na poznatom izvoru, prije mjerenja i nakon njega."},
+   {t:"0 V znači da je sigurno pa počinjem raditi.",crit:1,why:"KRITIČNO: neprovjeren ispitivač može lažno pokazati 0 V."},
+   {t:"Dodirnem vodič prstom, pa ako me ne trzne, nema napona.",crit:1,why:"KRITIČNO: napon se nikad ne provjerava dodirom."}]},
+ {key:"lock",type:"choice",title:"Lokot i oznaka",max:1,
+  scene:function(){return sceneS3(2)},
+  text:"Dok radiš, kolega prolazi pokraj ormara i želi uključiti prekidač jer mu treba struja za laptop. Na prekidaču su tvoj lokot i oznaka „Ne uključuj“. Što je ispravno?",
+  opts:[
+   {t:"Kolega ne dira prekidač. Lokot i oznaku skida samo onaj tko ih je postavio, kad je rad gotov (ili ovlaštena osoba prema proceduri).",ok:1,why:"Točno. Lokot i oznaka znače: na ovom uređaju netko radi, ne diraj."},
+   {t:"Kolega može skinuti lokot, treba mu struja samo na minutu.",crit:1,why:"KRITIČNO: uključivanjem napona ugrožavaš osobu koja radi na utičnici."},
+   {t:"Oznaka je samo preporuka, bez lokota može uključiti.",why:"Oznaka je upozorenje koje se mora poštovati, a lokot je fizička prepreka. Zajedno štite onoga tko radi."}]}
+ ]};
+
+ST["4"]={name:"Gašenje požara",next:"5",
+ recap:["Prvo upozori druge i javi požar (112, vatrogasci 193); isključi napon ako je to sigurno.","Opremu pod naponom ne gasi vodom ni pjenom: CO₂ ili aparat sa suhim prahom.","Aparat: izvuci osigurač, uperi u podnožje, stisni ručicu, gasi pokrivajući s jedne na drugu stranu.","Požar gasiš samo dok je malen, a izlaz iza tebe slobodan; inače izlaziš, zatvaraš vrata i ideš na mjesto okupljanja."],
+ steps:[
+ {key:"first",type:"choice",title:"Prvi korak",max:2,
+  scene:function(st){return sceneS4(st.ss,0)},
+  text:"Tijekom vježbe zapalio se razdjelnik na klupi, a plamen se širi prema laptopu. Što činiš prvo?",
+  opts:[
+   {t:"Glasno upozorim sve u prostoriji, javim požar (alarm ili 112) i, ako mogu sigurno doći do prekidača, isključim napon.",ok:1,sc:"fire",why:"Točno. Najprije se upozoravaju ljudi i zovu vatrogasci, a tek onda se, ako je moguće bez rizika, pokušava gasiti."},
+   {t:"Polijem plamen vodom iz boce.",crit:1,sc:"water",why:"KRITIČNO: voda vodi struju. Oprema pod naponom ne gasi se vodom jer struja može prijeći na tebe, a plamen se širi."},
+   {t:"Sam gasim i nikome ništa ne govorim da ne izazovem paniku.",sc:"fire",why:"Drugi moraju znati da gori kako bi se mogli sigurno udaljiti, a vatrogasci pozvati što prije."},
+   {t:"Pobjegnem iz prostorije, a da nikome ništa ne kažem.",sc:"fire",why:"Drugi u prostoriji ne znaju za opasnost, a nitko nije pozvao pomoć."}]},
+ {key:"agent",type:"choice",title:"Odabir aparata",max:2,
+  scene:function(st){return sceneS4(st.ss==="water"?"water":(st.ss==="ok"?"ok":"fire"),0)},
+  text:"Požar je na električnoj opremi i napon se ne može odmah isključiti. Koji aparat uzimaš?",
+  opts:[
+   {t:"Aparat s ugljikovim dioksidom (CO₂)",ok:1,sc:"ok",why:"Točno. CO₂ ne vodi struju i ne ostavlja ostatke na opremi. Aparat sa suhim prahom također se smije koristiti na uređajima pod naponom, ali ostavlja prah koji šteti elektronici."},
+   {t:"Aparat sa suhim prahom (S)",ok:1,sc:"ok",why:"Točno. Suhi prah ne vodi struju. Prah ipak ostavlja ostatke koji oštećuju elektroniku, pa je CO₂ često bolji izbor za računala."},
+   {t:"Vodeni aparat",crit:1,sc:"water",why:"KRITIČNO: voda je vodljiva. Struja može putovati kroz mlaz do tebe."},
+   {t:"Pjenasti aparat",crit:1,sc:"water",why:"KRITIČNO: pjena sadrži vodu i vodi struju, zato nije za opremu pod naponom."}]},
+ {key:"pass",type:"seq",title:"Tehnika gašenja",
+  scene:function(st){return sceneS4("fire",(st.seq.pass||[]).length)},
+  text:"Uzeo si aparat. Pritišći radnje onim redoslijedom kojim ih izvodiš.",
+  items:[
+   {t:"Izvuci sigurnosnu iglu (osigurač)",why:"Aparat je osiguran od slučajnog aktiviranja. Bez izvlačenja igle ne možeš ga uključiti."},
+   {t:"Uperi mlaznicu u podnožje plamena",why:"Gori ono što je pri dnu. Sredstvo gasi izvor gorenja, a ne plamen u zraku."},
+   {t:"Stisni ručicu",why:"Sredstvo izlazi dok držiš ručicu. Drži aparat uspravno."},
+   {t:"Gasi pokrivajući požar s jedne strane na drugu",why:"Kretanjem mlaznice lijevo-desno pokrivaš cijelo podnožje požara."}],
+  decoys:[{t:"Uperi mlaznicu u vrh plamena",why:"Sredstvo se rasprši u zraku, a podnožje i dalje gori. Cilj je podnožje."}]},
+ {key:"leave",type:"choice",title:"Kada odustati",max:2,
+  scene:function(){return sceneS4("evac",0)},
+  text:"Plamen se brzo širi, prostorija se puni gustim dimom, a aparat je gotovo prazan. Što činiš?",
+  opts:[
+   {t:"Prestajem gasiti, zatvaram vrata za sobom i izlazim najbližim izlazom prema mjestu okupljanja. Dizalo ne koristim. Javljam nastavniku tko je gdje.",ok:1,why:"Točno. Gasi se samo dok je požar malen i dok je izlaz slobodan. Zatvorena vrata usporavaju širenje dima i vatre."},
+   {t:"Uzimam još jedan aparat i ostajem pokušavati.",crit:1,why:"KRITIČNO: požar je izvan kontrole, a dim je opasniji od plamena. Prioritet je život, ne oprema."},
+   {t:"Vraćam se po torbu i laptop.",crit:1,why:"KRITIČNO: stvari se mogu zamijeniti, a ti ne. Povratak u dim je životno opasan."},
+   {t:"Sakrijem se u ormar dok požar ne prođe.",why:"Skrivanje u zatvorenom prostoru ne sprječava gušenje, a vatrogasci te teško nalaze. Ideš prema izlazu."}]}
+ ]};
+
+ST["5"]={name:"Prva pomoć",next:"6",
+ recap:["Opeklina: hladi mlakom do hladnom tekućom vodom 10–20 minuta; bez leda, masti i probijanja mjehura.","Krvarenje: izravan, čvrst pritisak sterilnom gazom, podigni ud, dodaj slojeve, zovi pomoć.","Oko: ne trljati, ne vaditi zabodeno tijelo; ispiranje čistom vodom i liječnik.","Kutija prve pomoći: gaze, zavoji, rukavice, trokutasta marama, folija; bez lijekova i kućnih pripravaka."],
+ steps:[
+ {key:"burn",type:"choice",title:"Opeklina",max:2,
+  scene:function(st){return sceneS5("burn",st.ss)},
+  text:"Dotaknuo si vrh uključene lemilice. Prst je odmah pocrvenio i peče. Što radiš prvo?",
+  opts:[
+   {t:"Hladim opečeno mjesto mlakom do hladnom tekućom vodom najmanje 10, do 20 minuta.",ok:1,sc:"ok",why:"Točno. Hlađenje ublažava bol i smanjuje dubinu ozljede. Voda treba biti mlaka do hladna, ne ledena."},
+   {t:"Stavim led izravno na kožu.",sc:"burn",why:"Led izravno na kožu može dodatno oštetiti tkivo. Koristi tekuću vodu."},
+   {t:"Namažem maslacem ili kremom.",sc:"burn",why:"Masnoće zadržavaju toplinu u koži i povećavaju rizik od infekcije."},
+   {t:"Probušim mjehur da ne boli.",sc:"burn",why:"Mjehur štiti ranu od infekcije. Ne buši se."}]},
+ {key:"bleed",type:"choice",title:"Krvarenje",max:2,
+  scene:function(st){return sceneS5("bleed",st.ss)},
+  text:"Kolegi je rub lima razrezao podlakticu i krv curi. Što radiš?",
+  opts:[
+   {t:"Navučem rukavice ako ih imam, čvrsto pritisnem sterilnu gazu ili čistu tkaninu na ranu i držim, ruku podignem. Ako krv probije, dodajem slojeve. Pozovem pomoć.",ok:1,sc:"ok",why:"Točno. Izravan pritisak zaustavlja većinu krvarenja. Natopljenu gazu ne skidaš, nego dodaješ novu preko."},
+   {t:"Ispirem ranu pod slavinom i čekam da prestane krvariti.",sc:"bleed",why:"Ispiranje ne zaustavlja krvarenje. Prvo mora ići pritisak na ranu."},
+   {t:"Odmah stegnem ruku remenom što jače mogu.",sc:"bleed",why:"Podvez je krajnja mjera kod teškog krvarenja ako pritisak ne uspije. Prvi izbor je izravan pritisak."},
+   {t:"Kad se gaza natopi, skinem je i stavim novu.",sc:"bleed",why:"Skidanjem razaraš ugrušak koji se počeo stvarati. Novu gazu stavljaš preko stare."}]},
+ {key:"eye",type:"choice",title:"Oko",max:2,
+  scene:function(st){return sceneS5("eye",st.ss)},
+  text:"Kolega je brusio bez naočala i iskra mu je ušla u oko. Oko suzi i peče. Što radiš?",
+  opts:[
+   {t:"Ne dopuštam mu trljanje. Ispirem oko obilno čistom vodom (očna kupka ili bočica). Ako je predmet zabijen ili tegobe ne prolaze, ne vadim ga, lagano pokrijem oko i vodim kolegu liječniku.",ok:1,sc:"ok",why:"Točno. Ispiranje odstranjuje čestice, a zabodeno tijelo vadi samo liječnik."},
+   {t:"Neka snažno trlja oko da izbaci prašinu.",sc:"bad",why:"Trljanje može ogrebati rožnicu i zabiti česticu dublje."},
+   {t:"Pincetom izvadim komadić iz oka.",crit:1,sc:"bad",why:"KRITIČNO: vađenje predmeta iz oka može uzrokovati trajno oštećenje vida."},
+   {t:"Pustim ga da nastavi raditi, proći će samo od sebe.",sc:"bad",why:"Čestica u oku ostaje i oštećuje oko. Treba reagirati odmah."}]},
+ {key:"kit",type:"multi",title:"Kutija prve pomoći",max:2,
+  scene:function(st){return sceneS5("kit","",st.sel.kit||{})},
+  text:"Pripremaš kutiju prve pomoći za radionicu. Označi sve što pripada u nju (ima 4 točne stavke), pa pritisni „Provjeri“.",
+  items:[
+   {t:"Sterilne gaze i zavoj",ok:1,why:"Za pokrivanje rane i pritisak pri krvarenju."},
+   {t:"Rukavice za jednokratnu uporabu",ok:1,why:"Štite spasioca i ozlijeđenog od zaraze."},
+   {t:"Trokutasta marama",ok:1,why:"Za podupiranje ruke, povez i improviziran zavoj."},
+   {t:"Spasilačka (termo) folija",ok:1,why:"Sprječava gubitak topline kod ozlijeđenog."},
+   {t:"Tablete protiv bolova i antibiotici",why:"Lijekove propisuje liječnik. Prva pomoć ih ne daje."},
+   {t:"Maslac ili mast za opekline",why:"Mast zadržava toplinu. Opekline se hlade vodom."},
+   {t:"Alkohol za izlijevanje u ranu",why:"Alkohol peče i oštećuje tkivo rane. Rana se ispire čistom vodom."}]}
+ ]};
+
+(function(){
+ var C=[
+  {k:"zab",t:"Zabrana",d:"crveni obrub i prekrižena crta"},
+  {k:"upo",t:"Upozorenje",d:"žuti trokut s crnim rubom"},
+  {k:"obv",t:"Obveza",d:"plavi krug s bijelim simbolom"},
+  {k:"obj",t:"Obavijest",d:"zeleni pravokutnik"},
+  {k:"pro",t:"Protupožarni znak",d:"crveni pravokutnik"}];
+ var cards=[
+  {art:"water",cat:"zab",name:"Zabranjeno gašenje vodom",why:"Crveni krug s prekriženom crtom znači zabranu. Vodom se ne gase požari opreme pod naponom ni zapaljivih tekućina.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"},
+  {art:"smoke",cat:"zab",name:"Zabranjeno pušenje",why:"Zabrana: crveni obrub i crta. Žar cigarete pali zapaljive tvari.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"},
+  {art:"volt",cat:"upo",name:"Opasnost od električnog napona",why:"Žuti trokut upozorava na opasnost. Munja znači električni napon: ne dirati bez ovlasti i bez provedenih pet pravila.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"},
+  {art:"hot",cat:"upo",name:"Vruća površina",why:"Žuti trokut: upozorenje na opasnost od opeklina. Lemilica ili grijalo mogu biti vrući.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"},
+  {art:"goggles",cat:"obv",name:"Obvezne zaštitne naočale",why:"Plavi krug znači da moraš nešto napraviti. Naočale štite oči od iskri, prašine i prskanja.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"},
+  {art:"helmet",cat:"obv",name:"Obvezna zaštitna kaciga",why:"Plavi krug: obveza. Kaciga štiti glavu od padajućih predmeta i udaraca.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"},
+  {art:"exit",cat:"obj",name:"Izlaz u slučaju opasnosti",why:"Zelena boja označava put spašavanja i prvu pomoć. Strelica pokazuje smjer prema izlazu.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"},
+  {art:"aid",cat:"obj",name:"Prva pomoć",why:"Zeleni pravokutnik s bijelim križem pokazuje mjesto prve pomoći.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"},
+  {art:"ext",cat:"pro",name:"Vatrogasni aparat",why:"Crveni pravokutnik označava protupožarnu opremu: aparate, hidrante i alarme.",hint:"Nije to. Pogledaj znak još jednom: što ti govore njegova boja i oblik, i što znak poručuje?"}];
+ ST["6"]={name:"Sigurnosni znakovi",next:"sum",
+  recap:["Crveni krug s crtom: zabrana. Žuti trokut: upozorenje. Plavi krug: obveza.","Zeleni pravokutnik: spašavanje i prva pomoć. Crveni pravokutnik: protupožarna oprema.","Znak ne zamjenjuje razum: ako ne razumiješ znak, pitaj prije rada."],
+  steps:[{key:"sort",type:"sort",title:"Razvrstaj znakove",text:"Ovo su znakovi koje ćeš naći u radionici. Odredi kojoj vrsti pripada znak na slici.",cats:C,cards:cards,
+   scene:function(st){return signScene(cards[st.cardi])}}]};
+})();
+
+/* ======== stanice 7-8 i dopune ======== */
+function pictoArt(k){
+  var d='<polygon points="0,-58 58,0 0,58 -58,0" fill="#fff" stroke="#d6342a" stroke-width="9" stroke-linejoin="round"/>';
+  if(k==="flame")return d+'<path d="M0 32 C-18 24 -18 4 -6 -12 C-4 -3 3 -4 2 -22 C18 -6 20 20 10 29 C6 33 -3 33 0 32Z" fill="#111"/>';
+  if(k==="corro")return d+'<g fill="#111"><path d="M-30 -24 l12 -6 l8 16 l-12 6z"/><path d="M-8 -32 l12 -4 l6 16 l-12 4z"/><circle cx="-14" cy="-2" r="2.6"/><circle cx="4" cy="-8" r="2.6"/><rect x="-36" y="12" width="32" height="9"/><path d="M8 2 q10 -10 22 -2 l-2 22 h-18z"/></g>';
+  if(k==="toxic")return d+'<g fill="#111"><circle cx="0" cy="-10" r="17"/><rect x="-9" y="2" width="18" height="14" rx="3"/></g><circle cx="-6" cy="-10" r="4.5" fill="#fff"/><circle cx="6" cy="-10" r="4.5" fill="#fff"/><path d="M-28 22 L28 40 M28 22 L-28 40" stroke="#111" stroke-width="6" stroke-linecap="round"/>';
+  if(k==="excl")return d+'<rect x="-5.5" y="-32" width="11" height="38" rx="3" fill="#111"/><circle cx="0" cy="22" r="6.5" fill="#111"/>';
+  if(k==="env")return d+'<g fill="#111" stroke="#111"><rect x="-26" y="2" width="4" height="26" stroke="none"/><path d="M-24 8 l-14 -14 M-24 14 l14 -12 M-24 0 l12 -12 M-24 -4 l-8 -12" stroke-width="3" fill="none"/><ellipse cx="16" cy="20" rx="13" ry="7" stroke="none"/><polygon points="29,20 40,12 40,28" stroke="none"/></g><path d="M-36 34 q10 -6 20 0 t20 0 t20 0 t20 0" stroke="#111" stroke-width="3" fill="none"/>';
+  return d;
+}
+function pictoScene(card){return SV('<rect y="250" width="480" height="50" fill="#c9cfd8"/><g transform="translate(240 148) scale(2.05)"><g class="signpop">'+pictoArt(card.art)+'</g></g>',"Piktogram opasnosti","")}
+
+function sceneS7(kind,ss,sel){
+  var h="",SK="#f0c9a0",SB="#b08a60";
+  if(kind==="spill"){
+    var ok=(ss==="ok");
+    h+='<rect y="190" width="480" height="110" fill="#8a6a43"/><rect y="186" width="480" height="8" fill="#6f553a"/>';
+    h+='<ellipse class="spreadp" cx="250" cy="196" rx="120" ry="14" fill="#c9a23a" opacity=".85"/>';
+    if(ok)h+='<g class="growl" style="--d:.2s"><ellipse cx="250" cy="194" rx="124" ry="15" fill="#b8bcc2"/></g><g fill="#9aa1a9"><circle cx="190" cy="190" r="4"/><circle cx="230" cy="186" r="5"/><circle cx="276" cy="190" r="4"/><circle cx="310" cy="188" r="5"/></g>';
+    h+='<g transform="rotate(-80 150 170)"><rect x="120" y="140" width="46" height="70" rx="8" fill="#7a4b1c" stroke="#4a2b0c" stroke-width="3"/><rect x="132" y="120" width="22" height="24" fill="#3a3f46"/><rect x="124" y="156" width="38" height="30" fill="#f4ecd8"/></g>';
+    h+='<rect x="20" y="40" width="64" height="62" rx="4" fill="#fff" stroke="#9aa5b1"/><text x="52" y="64" text-anchor="middle" font-size="11" font-weight="700" font-family="Arial" fill="#14213d">FeCl₃</text><text x="52" y="80" text-anchor="middle" font-size="9" font-family="Arial" fill="#14213d">jetkanje</text>';
+    if(!ok)h+='<g class="fx" fill="#d9c04a"><circle class="smk" style="--d:0s;--sx:10px" cx="240" cy="180" r="9"/><circle class="smk" style="--d:-1.2s;--sx:-12px" cx="270" cy="180" r="8"/><circle class="smk" style="--d:-2.3s;--sx:4px" cx="300" cy="180" r="10"/></g>';
+    else h+='<polygon points="400,196 430,140 460,196" fill="#ffd23f" stroke="#14213d" stroke-width="4" stroke-linejoin="round"/><text x="430" y="188" text-anchor="middle" font-size="26" font-weight="900" font-family="Arial" fill="#14213d">!</text>';
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+(ok?"prolivena tekućina je upijena i označena":"prolivena je nagrizajuća tekućina za jetkanje")+'</text>';
+  }else if(kind==="solder"){
+    var f=(ss==="ok");
+    h+='<rect y="220" width="480" height="80" fill="#8a6a43"/>';
+    h+='<circle cx="90" cy="130" r="30" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/><path d="M62 124 q28 -34 56 0" fill="#4a3320"/><rect x="70" y="160" width="40" height="60" rx="10" fill="#3b6ea8"/><circle cx="82" cy="130" r="2.5" fill="#222"/><path d="M84 146 q8 4 16 0" stroke="#7a4b3a" fill="none"/>';
+    h+='<rect x="190" y="200" width="150" height="18" fill="#2f7d4f" stroke="#1d5a36" stroke-width="2"/><g fill="#d8dde3"><circle cx="210" cy="208" r="3"/><circle cx="250" cy="208" r="3"/><circle cx="300" cy="208" r="3"/></g>';
+    h+='<g transform="rotate(-24 330 180)"><rect x="260" y="168" width="110" height="10" rx="5" fill="#c0392b"/><rect x="240" y="171" width="24" height="4" fill="#999"/></g><circle class="glowp" cx="244" cy="194" r="9" fill="url(#gHot7)"/>';
+    h+='<defs><radialGradient id="gHot7"><stop offset="0" stop-color="#ff7a3a" stop-opacity=".9"/><stop offset="1" stop-color="#ff7a3a" stop-opacity="0"/></radialGradient></defs>';
+    if(!f)h+='<g class="fx" fill="#c9d1da"><circle class="smk" style="--d:0s;--sx:-90px;--t:3.2s" cx="248" cy="186" r="7"/><circle class="smk" style="--d:-1s;--sx:-110px;--t:3.2s" cx="248" cy="186" r="6"/><circle class="smk" style="--d:-2s;--sx:-80px;--t:3.2s" cx="248" cy="186" r="8"/></g>';
+    else{h+='<path d="M440 0 V70 Q440 90 410 100 L300 150" stroke="#8d99a6" stroke-width="12" fill="none" stroke-linecap="round"/><polygon points="296,128 326,164 282,176" fill="#aab3bd" stroke="#6c7783" stroke-width="3"/><g class="fx"><g class="wheel"><circle cx="304" cy="152" r="0" /><path d="M296 152 h16 M304 144 v16" stroke="#444" stroke-width="3"/></g><g fill="#c9d1da"><circle class="smk" style="--d:0s;--sx:30px;--t:1.8s" cx="250" cy="186" r="6"/><circle class="smk" style="--d:-.9s;--sx:30px;--t:1.8s" cx="250" cy="186" r="6"/></g></g>'}
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+(f?"odsis uklanja dim prije nego ga udahneš":"dim lemljenja ide ravno prema licu")+'</text>';
+  }else if(kind==="ozo"){
+    sel=sel||{};
+    h+='<rect y="250" width="480" height="50" fill="#b9bfc7"/>';
+    var tied=!!sel[3],loose6=!!sel[6];
+    // kosa
+    if(!tied)h+='<path d="M214 66 q-30 20 -22 90 l22 -10 z M266 66 q30 20 22 90 l-22 -10 z" fill="#4a3320"/>';
+    // nogavice/noge
+    h+='<rect x="220" y="176" width="18" height="60" rx="6" fill="#2f3b54"/><rect x="242" y="176" width="18" height="60" rx="6" fill="#2f3b54"/>';
+    if(sel[1])h+='<rect x="214" y="228" width="28" height="22" rx="6" fill="#3a3f46"/><rect x="238" y="228" width="28" height="22" rx="6" fill="#3a3f46"/><rect x="214" y="238" width="16" height="12" rx="4" fill="#f2b705"/><rect x="250" y="238" width="16" height="12" rx="4" fill="#f2b705"/>';
+    else h+='<rect x="216" y="240" width="26" height="8" rx="3" fill="'+SK+'" stroke="'+SB+'"/><rect x="238" y="240" width="26" height="8" rx="3" fill="'+SK+'" stroke="'+SB+'"/><path d="M222 240 l8 -6 M256 240 l-8 -6" stroke="#8a6a43" stroke-width="3"/>';
+    // torzo + rukavi
+    var sw=tied?0:14;
+    h+='<rect x="208" y="96" width="64" height="86" rx="12" fill="'+(tied?"#2c6fb7":"#7a5a8a")+'"/>';
+    h+='<rect x="'+(184-sw)+'" y="100" width="'+(30+sw)+'" height="'+(52+sw)+'" rx="12" fill="'+(tied?"#2c6fb7":"#7a5a8a")+'"/><rect x="'+(266)+'" y="100" width="'+(30+sw)+'" height="'+(52+sw)+'" rx="12" fill="'+(tied?"#2c6fb7":"#7a5a8a")+'"/>';
+    h+='<circle cx="198" cy="'+(164+sw/2)+'" r="9" fill="'+SK+'" stroke="'+SB+'"/><circle cx="282" cy="'+(164+sw/2)+'" r="9" fill="'+SK+'" stroke="'+SB+'"/>';
+    // glava
+    h+='<circle cx="240" cy="66" r="26" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/><path d="M214 60 q26 -34 52 0" fill="#4a3320"/>';
+    if(tied)h+='<circle cx="240" cy="30" r="9" fill="#4a3320"/>';
+    h+='<circle cx="231" cy="68" r="2.4" fill="#222"/><circle cx="249" cy="68" r="2.4" fill="#222"/><path d="M232 80 q8 5 16 0" stroke="#7a4b3a" fill="none" stroke-width="2"/>';
+    if(sel[0])h+='<rect x="218" y="60" width="44" height="16" rx="7" fill="#9ad7ff" fill-opacity=".6" stroke="#14213d" stroke-width="3"/>';
+    if(sel[2])h+='<path d="M212 62 q28 -44 56 0" fill="none" stroke="#14213d" stroke-width="5"/><rect x="204" y="54" width="14" height="24" rx="6" fill="#e0553d" stroke="#14213d" stroke-width="2"/><rect x="262" y="54" width="14" height="24" rx="6" fill="#e0553d" stroke="#14213d" stroke-width="2"/>';
+    if(sel[4])h+='<circle cx="198" cy="'+(164+sw/2)+'" r="12" fill="#e6c34a" stroke="#8a6a00" stroke-width="2"/><circle cx="282" cy="'+(164+sw/2)+'" r="12" fill="#e6c34a" stroke="#8a6a00" stroke-width="2"/>';
+    if(sel[5])h+='<path d="M222 90 q18 28 36 0" fill="none" stroke="#d4af37" stroke-width="3"/><circle cx="198" cy="'+(150+sw/2)+'" r="4" fill="none" stroke="#d4af37" stroke-width="3"/>';
+    if(sel[6])h+='<g class="fx"><g class="dang"><line x1="226" y1="98" x2="222" y2="140" stroke="#eee" stroke-width="3"/><circle cx="222" cy="142" r="3" fill="#eee"/></g><g class="dang" style="animation-delay:-.5s"><line x1="254" y1="98" x2="258" y2="140" stroke="#eee" stroke-width="3"/><circle cx="258" cy="142" r="3" fill="#eee"/></g></g>';
+    // oznake
+    [[0,330,60],[1,330,240],[2,330,40],[3,330,110],[4,330,170],[5,330,130],[6,330,100]];
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">tako izgledaš kad kreneš raditi: označeno se vidi na učeniku</text>';
+  }
+  return SV(h,"Prizor u radionici","");
+}
+function sceneS8(kind,ss){
+  var h="",ok=(ss==="ok"),SK="#f0c9a0",SB="#b08a60";
+  if(kind==="guard"){
+    h+='<rect y="230" width="480" height="70" fill="#b9bfc7"/><rect x="60" y="188" width="360" height="16" fill="#8a6a43" stroke="#5e4529" stroke-width="2"/><rect x="80" y="204" width="12" height="28" fill="#6f553a"/><rect x="388" y="204" width="12" height="28" fill="#6f553a"/>';
+    h+='<rect x="280" y="150" width="90" height="38" rx="4" fill="#555"/><circle cx="326" cy="146" r="34" fill="#9aa1a9" stroke="#555" stroke-width="3"/><circle cx="326" cy="146" r="8" fill="#444"/>';
+    if(!ok)h+='<path d="M292 126 q10 -34 50 -30" stroke="#777" stroke-width="5" fill="none" stroke-dasharray="14 10"/><g class="fx"><circle class="spk" cx="296" cy="150" r="2.4" fill="#ffb347" style="--dx:-60px;--dy:30px;--t:.9s"/><circle class="spk" cx="296" cy="150" r="2.4" fill="#ffb347" style="--dx:-80px;--dy:8px;--t:1.1s;--d:.3s"/><circle class="wheel" cx="326" cy="146" r="22" fill="none" stroke="#5a6068" stroke-width="2.5" stroke-dasharray="5 7"/></g>';
+    else h+='<path d="M292 146 A34 34 0 0 1 360 146" fill="none" stroke="#2f3b54" stroke-width="9" stroke-linecap="round"/>';
+    h+='<g transform="translate(170 120)"><line x1="0" y1="0" x2="0" y2="22" stroke="#444" stroke-width="2"/><rect x="-44" y="22" width="88" height="44" rx="4" fill="'+(ok?"#fff":"#fff")+'" stroke="'+(ok?"#1f7a4d":"#b3261e")+'" stroke-width="3"/><text x="0" y="40" text-anchor="middle" font-size="11" font-weight="800" font-family="Arial" fill="'+(ok?"#1f7a4d":"#b3261e")+'">'+(ok?"ISKLJUČENO":"OŠTEĆEN")+'</text><text x="0" y="56" text-anchor="middle" font-size="11" font-weight="800" font-family="Arial" fill="'+(ok?"#1f7a4d":"#b3261e")+'">'+(ok?"IZ UPORABE":"ŠTITNIK")+'</text></g>';
+    h+='<rect x="400" y="50" width="62" height="40" rx="4" fill="#fff6c9" stroke="#c9bf8a"/><text x="431" y="68" text-anchor="middle" font-size="11" font-family="Arial" font-weight="700" fill="#14213d">ROK</text><text x="431" y="83" text-anchor="middle" font-size="11" font-family="Arial" font-weight="700" fill="#b3261e">DANAS!</text>';
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+(ok?"oprema je isključena i prijavljena":"štitnik je slomljen, a posao se mora predati danas")+'</text>';
+  }else if(kind==="report"){
+    h+='<rect x="140" y="20" width="200" height="250" rx="6" fill="#fff" stroke="#9aa5b1" stroke-width="3"/><text x="240" y="48" text-anchor="middle" font-size="13" font-weight="800" font-family="Arial" fill="#14213d">EVIDENCIJA OZLJEDE</text>';
+    var rows=[70,100,130,160,190];
+    rows.forEach(function(y,i){h+='<line x1="160" y1="'+(y+16)+'" x2="320" y2="'+(y+16)+'" stroke="#c9d1da"/>'+(ok?'<rect class="growl" style="--d:'+(i*.18)+'s" x="160" y="'+(y+6)+'" width="'+(90+((i*37)%60))+'" height="6" rx="3" fill="#14213d"/>':'')});
+    if(ok)h+='<g class="stamp"><rect x="190" y="212" width="130" height="34" rx="6" fill="none" stroke="#1f7a4d" stroke-width="4"/><text x="255" y="236" text-anchor="middle" font-size="16" font-weight="900" font-family="Arial" fill="#1f7a4d">PRIJAVLJENO</text></g>';
+    else h+='<g transform="translate(70 150)"><ellipse cx="0" cy="20" rx="34" ry="26" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/><path d="M-12 14 l10 -4 l8 6" stroke="#b3261e" stroke-width="3" fill="none" stroke-linecap="round"/><circle class="bd" cx="-4" cy="18" r="3" fill="#b3261e" style="--d:0s"/></g>';
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+(ok?"ozljeda je zabilježena":"mala porezotina na prstu")+'</text>';
+  }else if(kind==="quake"||kind==="after"){
+    var q=(kind==="quake"),crouch=(ss==="ok");
+    h+='<g class="'+(q?"quake":"")+'">';
+    h+='<rect y="236" width="480" height="64" fill="#b9bfc7"/>';
+    h+='<rect x="20" y="90" width="110" height="10" fill="#6f553a"/><rect x="26" y="100" width="6" height="140" fill="#6f553a"/><rect x="118" y="100" width="6" height="140" fill="#6f553a"/>';
+    h+='<rect x="30" y="56" width="34" height="34" fill="#c79a5b" stroke="#6d4c25" stroke-width="2"/><rect x="72" y="62" width="30" height="28" fill="#d0a566" stroke="#6d4c25" stroke-width="2"/>';
+    h+=q?'<g class="fall"><rect x="104" y="64" width="26" height="26" fill="#b98d4f" stroke="#6d4c25" stroke-width="2"/></g>':'<rect x="86" y="214" width="34" height="22" fill="#b98d4f" stroke="#6d4c25" stroke-width="2" transform="rotate(12 100 225)"/>';
+    h+='<g class="'+(q?"swing":"")+'"><line x1="240" y1="0" x2="240" y2="40" stroke="#555" stroke-width="3"/><ellipse cx="240" cy="46" rx="26" ry="10" fill="#fff6c9" stroke="#c9bf8a" stroke-width="2"/></g>';
+    h+='<rect x="190" y="170" width="200" height="14" fill="#8a6a43" stroke="#5e4529" stroke-width="2"/><rect x="200" y="184" width="10" height="52" fill="#6f553a"/><rect x="370" y="184" width="10" height="52" fill="#6f553a"/>';
+    h+='<rect x="400" y="96" width="60" height="140" fill="#8d99a6" stroke="#5c6672" stroke-width="3"/><rect class="sign" x="402" y="68" width="56" height="22" rx="3" fill="#1f8a4c"/><text x="430" y="84" text-anchor="middle" font-size="12" font-weight="800" font-family="Arial" fill="#fff">IZLAZ ➜</text>';
+    if(q){
+      if(crouch)h+='<g><circle cx="290" cy="214" r="14" fill="'+SK+'" stroke="'+SB+'"/><path d="M276 208 q14 -18 28 0" fill="#4a3320"/><rect x="266" y="222" width="48" height="16" rx="8" fill="#3b6ea8"/><path d="M296 202 q-14 -2 -18 12" stroke="'+SK+'" stroke-width="7" fill="none" stroke-linecap="round"/></g>';
+      else h+='<g transform="translate(290 236) scale(1.0)"><rect x="-8" y="-62" width="9" height="62" rx="4" fill="#2f3b54"/><rect x="1" y="-62" width="9" height="62" rx="4" fill="#26324a"/><rect x="-14" y="-118" width="28" height="58" rx="8" fill="#3b6ea8"/><circle cx="0" cy="-134" r="14" fill="'+SK+'" stroke="'+SB+'"/><path d="M-15 -138 q15 -22 30 0" fill="#4a3320"/></g>';
+    }
+    h+='</g>';
+    if(q)h+='<g class="fx" fill="#c9bf9a"><circle class="smk" style="--d:0s;--sx:6px;--t:2s" cx="240" cy="60" r="6"/><circle class="smk" style="--d:-1s;--sx:-8px;--t:2s" cx="180" cy="70" r="5"/></g>';
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+(q?"potres: radionica se trese":"potres je prestao: prostor je zatrpan, mogući su naknadni udari")+'</text>';
+  }
+  return SV(h,"Prizor u radionici","");
+}
+function sceneFrac(ss){
+  var SK="#f0c9a0",SB="#b08a60",ok=(ss==="ok"),h='<rect y="248" width="480" height="52" fill="#b9bfc7"/>';
+  h+='<g'+(ok?' transform="rotate(-6 150 190)"':'')+'><rect x="60" y="160" width="130" height="48" rx="24" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/><g transform="rotate(10 190 184)"><rect x="180" y="160" width="130" height="48" rx="24" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/><ellipse cx="330" cy="186" rx="42" ry="30" fill="'+SK+'" stroke="'+SB+'" stroke-width="2"/></g>';
+  h+='<ellipse class="glowp" cx="190" cy="186" rx="34" ry="24" fill="#7b3f8a" style="opacity:.55"/>';
+  if(ok)h+='<g class="lock new"><polygon points="70,150 330,150 340,240 140,250" fill="#f4ecd8" stroke="#a69a78" stroke-width="3" opacity=".95"/><circle cx="70" cy="146" r="9" fill="#f4ecd8" stroke="#a69a78" stroke-width="3"/></g><g class="tin new"><rect x="156" y="164" width="68" height="40" rx="6" fill="#6db3f2" stroke="#1b5e9b" stroke-width="3"/><path d="M190 172 v24 M178 184 h24" stroke="#fff" stroke-width="3"/></g>';
+  h+='</g><text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">'+(ok?"ruka učvršćena maramom, oteklina se hladi":"podlaktica je pod teretom, otekla i boli")+'</text>';
+  return SV(h,"Ozlijeđena podlaktica","");
+}
+
+/* nagnječenje i lom u stanici 5 */
+ST["5"].steps.splice(3,0,{key:"frac",type:"choice",title:"Nagnječenje i lom",max:2,
+  scene:function(st){return sceneFrac(st.ss)},
+  text:"Kolegi je teška kutija pritisnula podlakticu. Podlaktica je otekla, boli, a on je ne može micati i izgleda krivo. Što radiš?",
+  opts:[
+   {t:"Ozlijeđeni dio ne pomičem i ne namještam. Učvrstim ruku u položaju u kojem je (npr. trokutastom maramom), na oteklinu stavim hladnu oblogu preko tkanine i vodim ga liječniku.",ok:1,sc:"ok",why:"Točno. Ozlijeđeni ud se imobilizira u položaju u kojem je pronađen, hladi se (ne izravno ledom) i ozlijeđeni se vodi liječniku."},
+   {t:"Pokušam kost namjestiti na mjesto.",crit:1,sc:"bad",why:"KRITIČNO: namještanje kosti može oštetiti živce i krvne žile. To radi samo liječnik."},
+   {t:"Neka razgiba ruku da vidimo je li slomljena.",sc:"bad",why:"Micanje ozlijeđenog uda pogoršava ozljedu i bol."},
+   {t:"Čvrsto zamotam zavojem i pustim ga da nastavi raditi.",sc:"bad",why:"Rad s ozlijeđenom rukom je opasan, a ozljedu mora pregledati liječnik."}]});
+ST["5"].recap.splice(3,0,"Nagnječenje i lom: ne micati i ne namještati, učvrstiti u zatečenom položaju, hladiti obloge preko tkanine, liječnik.");
+
+ST["6"].next="7";
+
+ST["7"]={name:"Opasne tvari i zaštitna oprema",next:"8",
+ recap:["Piktogrami: plamen zapaljivo, nagrizajuće, lubanja otrovno, uskličnik nadražujuće/štetno, drvo i riba okoliš. Pročitaj sigurnosni list prije rada.","Prolijevanje: upozori druge, osobna zaštita, upij i označi; ne briši golim rukama.","Lemljenje: odsis ili prozračivanje, ne udisati dim, oprati ruke prije jela.","Oprema i odjeća prilagođava se poslu. Rukavice, prstenje, široki rukavi i razvezane vezice mogu se zahvatiti u strojeve."],
+ steps:[
+ {key:"pic",type:"sort",title:"Piktogrami opasnosti",text:"Na bočicama s kemikalijama nalaze se piktogrami. Odredi što znači svaki.",
+  cats:[{k:"fla",t:"Zapaljivo",d:""},{k:"cor",t:"Nagrizajuće",d:""},{k:"tox",t:"Otrovno",d:""},{k:"irr",t:"Nadražujuće / štetno",d:""},{k:"env",t:"Štetno za okoliš",d:""}],
+  cards:[
+   {art:"flame",cat:"fla",name:"Zapaljivo",why:"Tvar se lako pali: drži je podalje od izvora topline, iskri i lemilice.",hint:"Nije to. Razmisli što pokazuje simbol u sredini i što bi ta tvar mogla učiniti."},
+   {art:"corro",cat:"cor",name:"Nagrizajuće",why:"Nagriza kožu, oči i metale. Tipično za kiseline i otopine za jetkanje pločica. Obavezno naočale i rukavice.",hint:"Nije to. Razmisli što pokazuje simbol u sredini i što bi ta tvar mogla učiniti."},
+   {art:"toxic",cat:"tox",name:"Otrovno",why:"Već mala količina može biti smrtonosna udahnuta, progutana ili preko kože.",hint:"Nije to. Razmisli što pokazuje simbol u sredini i što bi ta tvar mogla učiniti."},
+   {art:"excl",cat:"irr",name:"Nadražujuće ili štetno",why:"Nadražuje kožu i oči ili je štetno pri udisanju. Manje opasno od otrovnog, ali se ne dira bez zaštite.",hint:"Nije to. Razmisli što pokazuje simbol u sredini i što bi ta tvar mogla učiniti."},
+   {art:"env",cat:"env",name:"Štetno za okoliš",why:"Ne smije u kanalizaciju ni u prirodu. Odlaže se kao opasni otpad.",hint:"Nije to. Razmisli što pokazuje simbol u sredini i što bi ta tvar mogla učiniti."}],
+  scene:function(st){return pictoScene(ST["7"].steps[0].cards[st.cardi])}},
+ {key:"spill",type:"choice",title:"Prolijevanje",max:2,
+  scene:function(st){return sceneS7("spill",st.ss)},
+  text:"Pri jetkanju pločice prolila se tekućina na radnom stolu, a s bočice je piktogram nagrizajuće tvari. Što činiš?",
+  opts:[
+   {t:"Upozorim ostale da se udalje, ne udišem pare, stavim zaštitne naočale i rukavice, prolivenu tekućinu upijem upijajućim sredstvom, označim mjesto i javim nastavniku.",ok:1,sc:"ok",why:"Točno. Najprije upozorenje i osobna zaštita, zatim upijanje i označavanje. Sigurnosni list govori kako se tvar zbrinjava."},
+   {t:"Brzo obrišem papirnatim ručnikom golim rukama.",crit:1,sc:"bad",why:"KRITIČNO: izravni dodir s nagrizajućom tvari uzrokuje kemijsku opeklinu."},
+   {t:"Isperem sve u sudoper i nastavim raditi.",sc:"bad",why:"Opasne tvari ne idu u kanalizaciju. Upija se i zbrinjava kao opasni otpad."},
+   {t:"Nikome ništa ne kažem jer je manja količina.",sc:"bad",why:"Svaki incident prijavljuje se, jer i mala količina može ozlijediti sljedećeg korisnika."}]},
+ {key:"solder",type:"choice",title:"Dim lemljenja",max:2,
+  scene:function(st){return sceneS7("solder",st.ss)},
+  text:"Lemiš sat vremena u maloj zatvorenoj prostoriji. Dim s kalafonijom diže se ravno prema licu. Što je ispravno?",
+  opts:[
+   {t:"Uključim odsis ili prozračim prostoriju, držim glavu podalje od dima, ne jedem i ne pijem uz rad, a na kraju operem ruke.",ok:1,sc:"ok",why:"Točno. Dim iz lema nadražuje dišne puteve, a lem može sadržavati olovo, pa se pere ruke prije jela."},
+   {t:"Zadržim dah dok lemim i nastavim.",sc:"bad",why:"Ne možeš dugo zadržavati dah, a dim se i dalje skuplja u prostoriji. Treba odsis ili prozračivanje."},
+   {t:"Pojedem sendvič uz radni stol, ruke ću oprati poslije.",crit:1,sc:"bad",why:"KRITIČNO: hrana uz lem unosi olovo i druge tvari u organizam."}]},
+ {key:"ozo",type:"multi",title:"Zaštitna oprema i odjeća",max:2,
+  scene:function(st){return sceneS7("ozo","",st.sel.ozo||{})},
+  text:"Brusit ćeš i bušiti lim na stolnoj bušilici i brusilici. Označi sve što je ispravno (ima 4 točne stavke), pa pritisni „Provjeri“.",
+  items:[
+   {t:"Zaštitne naočale",ok:1,why:"Štite oči od iskri i čestica."},
+   {t:"Čvrsta zaštitna obuća",ok:1,why:"Štiti stopala od padajućih predmeta i vrućih čestica."},
+   {t:"Zaštita sluha pri radu s brusilicom",ok:1,why:"Brusilica je glasna, a oštećenje sluha je trajno."},
+   {t:"Vezana kosa i uska radna odjeća",ok:1,why:"Dugu kosu i široku odjeću stroj može zahvatiti."},
+   {t:"Rukavice pri radu na stolnoj bušilici",why:"Rotirajući svrdlo može zahvatiti rukavicu i povući ruku. Na bušilici se rukavice ne nose."},
+   {t:"Prsten i lančić",why:"Nakit se može zahvatiti, a metal vodi struju."},
+   {t:"Široki rukavi i razvezane vezice",why:"Vise i mogu se zahvatiti u rotirajuće dijelove."}]}
+ ]};
+
+ST["8"]={name:"Propisi i hitne situacije",next:"sum",
+ recap:["Radnik ima pravo i obvezu ne raditi na opremi koja ugrožava život i zdravlje te mora odmah obavijestiti odgovornu osobu.","Svaka ozljeda i događaj „zamalo nesreća“ prijavljuje se odmah.","Potres: čučni, zaštiti glavu i vrat, drži se uz čvrst stol; nakon prestanka isključi opremu ako je sigurno i izađi stubištem, ne dizalom.","Znaj gdje su izlaz, aparat i kutija prve pomoći, a neispravnu opremu odmah prijavi."],
+ steps:[
+ {key:"right",type:"choice",title:"Prava i obveze",max:2,
+  scene:function(st){return sceneS8("guard",st.ss)},
+  text:"Štitnik na brusilici je slomljen, a rad se mora predati danas. Kolega kaže: „Radi i bez štitnika, brže ćeš gotov.“ Što činiš?",
+  opts:[
+   {t:"Ne radim s brusilicom bez štitnika. Odmah javim nastavniku ili voditelju radionice i tražim ispravnu opremu.",ok:1,sc:"ok",why:"Točno. Radnik ne radi na opremi koja ugrožava život i zdravlje i o tome odmah obavještava odgovornu osobu. Rok nije opravdanje."},
+   {t:"Radim bez štitnika, ali pažljivo.",crit:1,sc:"bad",why:"KRITIČNO: rotirajući kotač bez štitnika može pući ili zahvatiti ruku, a iskre i krhotine lete prema licu."},
+   {t:"Radim, a nastavniku kažem tek nakon što završim.",sc:"bad",why:"Opasnost se prijavljuje odmah, prije nego netko drugi dođe do iste brusilice."},
+   {t:"Samo je zalijepim ljepljivom trakom i radim.",sc:"bad",why:"Improvizirani popravak štitnika nije siguran. Oprema se popravlja ili zamjenjuje prema propisu."}]},
+ {key:"rep",type:"choice",title:"Prijava ozljede",max:2,
+  scene:function(st){return sceneS8("report",st.ss)},
+  text:"Pri radu si se malo porezao po prstu. Rez je plitak i krvarenje je stalo. Što činiš?",
+  opts:[
+   {t:"Očistim i previjem ranu, odmah obavijestim nastavnika ili voditelja radionice, i ozljeda se evidentira.",ok:1,sc:"ok",why:"Točno. Svaka ozljeda na radu prijavljuje se i evidentira, pa i ona mala."},
+   {t:"Zalijepim flaster i nikome ništa ne kažem.",sc:"bad",why:"Bez prijave nema evidencije ni pomoći ako se rana upali, a uzrok ozljede ostaje."},
+   {t:"Prijavit ću kasnije ako se pogorša.",sc:"bad",why:"Prijavljuje se odmah, jer kasnije je teže dokazati kako je ozljeda nastala."}]},
+ {key:"quake",type:"choice",title:"Potres",max:2,
+  scene:function(st){return sceneS8("quake",st.ss)},
+  text:"Dok radiš u radionici počinje potres: oprema se trese, a s police pada kutija. Što činiš?",
+  opts:[
+   {t:"Čučnem uz čvrst stol, zaštitim glavu i vrat i držim se dok potres ne prestane.",ok:1,sc:"ok",why:"Točno: čučni, zaštiti se, drži se. Čvrst stol štiti od padajućih predmeta."},
+   {t:"Nastavim lemiti da završim spoj.",crit:1,sc:"bad",why:"KRITIČNO: vruća lemilica i oprema pod naponom u trešnji su opasne. Prekini rad."},
+   {t:"Trčim stubištem prema izlazu dok se trese.",sc:"bad",why:"U trešnji se lako padne, a s zidova i stropova padaju predmeti. Prvo zaštita, a izlazak nakon prestanka potresa."},
+   {t:"Stanem uz visoku policu da se držim za nju.",sc:"bad",why:"Visoki predmeti mogu pasti na tebe. Zaklon traži čvrst stol, a ne polica."}]},
+ {key:"after",type:"choice",title:"Nakon potresa",max:2,
+  scene:function(){return sceneS8("after","")},
+  text:"Potres je prestao. Kutije su pale, a na tlu leže kablovi. Što činiš?",
+  opts:[
+   {t:"Provjerim ima li ozlijeđenih, isključim opremu ako je to sigurno, ne diram oštećene kabele i izlazim stubištem prema mjestu okupljanja pazeći na naknadne udare. Dizalo ne koristim.",ok:1,why:"Točno. Nakon potresa mogući su naknadni udari. Opremu isključuješ samo ako je sigurno, a dizalo je opasno."},
+   {t:"Odmah uključim sve uređaje da provjerim rade li.",crit:1,why:"KRITIČNO: oštećeni kabeli i oprema mogu biti pod naponom ili uzrokovati požar."},
+   {t:"Vraćam se skupljati laptope i alat.",sc:"bad",why:"Stvari mogu čekati. Prvo sigurnost ljudi i izlazak iz zgrade."}]},
+ {key:"rules",type:"multi",title:"Pravila u radionici",max:2,
+  scene:function(){return sceneS8("after","")},
+  text:"Označi sve što pripada sigurnom ponašanju u radionici (ima 4 točne stavke), pa pritisni „Provjeri“.",
+  items:[
+   {t:"Znam gdje su izlaz, aparat za gašenje i kutija prve pomoći.",ok:1,why:"U hitnoj situaciji nema vremena za traženje."},
+   {t:"Neispravnu opremu odmah prijavim i ne koristim.",ok:1,why:"Neispravna oprema je čest uzrok ozljeda."},
+   {t:"Radim samo uz dopuštenje i prema uputi nastavnika.",ok:1,why:"Samostalno isprobavanje nepoznate opreme je rizično."},
+   {t:"Na radnom mjestu držim red i slobodan prolaz.",ok:1,why:"Zakrčeni prolazi uzrokuju spoticanja i sprječavaju bijeg."},
+   {t:"Jedem i pijem za radnim stolom da ne gubim vrijeme.",why:"Hrana i piće uz opremu i kemikalije opasni su zbog zaraze, prolijevanja i unosa štetnih tvari."},
+   {t:"Zaobiđem zaštitu na uređaju ako me ometa.",why:"Zaštitni uređaji ne smiju se zaobilaziti ni uklanjati."},
+   {t:"Kolega smije raditi sam ako je nastavnik izišao na minutu.",why:"Rad bez nadzora na opremi koju ne poznaje nije dopušten."}]}
+ ]};
+
+/* ======== stanica 9: zaštita od električnog udara ======== */
+function personG(x,y,hand){ // stoji na tlu u (x,y), ruka prema hand=[hx,hy]
+  return '<g transform="translate('+x+' '+y+')"><rect x="-9" y="-70" width="8" height="70" rx="4" fill="#2f3b54"/><rect x="1" y="-70" width="8" height="70" rx="4" fill="#26324a"/><rect x="-13" y="-128" width="26" height="62" rx="8" fill="#3b6ea8"/><circle cx="0" cy="-146" r="15" fill="#f0c9a0" stroke="#b08a60"/><path d="M-15 -150 q15 -24 30 0" fill="#4a3320"/><circle cx="-4" cy="-146" r="2" fill="#222"/>'+(hand?'<path d="M-4 -118 L'+(hand[0]-x)+' '+(hand[1]-y)+'" stroke="#f0c9a0" stroke-width="9" stroke-linecap="round"/>':'')+'</g>';
+}
+function sceneS9(kind,ss){
+  var h="",ok=(ss==="ok"),G="#2f9e44",Y="#ffd23f";
+  if(kind==="pe"){
+    h+='<rect y="240" width="480" height="60" fill="#b9bfc7"/>';
+    // dovodi
+    h+='<path d="M0 130 H214" stroke="#8a5a2b" stroke-width="5" fill="none"/><path d="M0 150 H214" stroke="#2c6fb7" stroke-width="5" fill="none"/>';
+    // uređaj
+    h+='<rect x="200" y="96" width="124" height="126" rx="8" fill="#9aa5b1" stroke="#4a5461" stroke-width="3"/><rect x="214" y="110" width="96" height="66" rx="3" fill="#2b323b"/>';
+    h+='<path d="M214 130 H270 L300 124" stroke="#8a5a2b" stroke-width="4" fill="none"/><path d="M214 150 H262" stroke="#2c6fb7" stroke-width="4" fill="none"/><rect x="258" y="144" width="12" height="12" rx="2" fill="#555"/>';
+    h+='<text x="262" y="196" text-anchor="middle" font-size="12" font-weight="800" font-family="Arial" fill="#14213d">UREĐAJ</text><text x="262" y="212" text-anchor="middle" font-size="10" font-family="Arial" fill="#14213d">metalno kućište</text>';
+    h+='<g class="fx"><circle class="flick" cx="302" cy="122" r="14" fill="url(#gArc2)"/></g>';
+    h+='<defs><radialGradient id="gArc2"><stop offset="0" stop-color="#fff9c4"/><stop offset="1" stop-color="#8fd0ff" stop-opacity="0"/></radialGradient></defs>';
+    h+=personG(388,240,[326,150]);
+    if(!ok){
+      h+='<path class="flow" d="M300 124 L322 150 L376 128 L388 142 L388 220 L390 240" fill="none" stroke="'+Y+'" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>';
+      h+='<rect class="sign" x="330" y="36" width="130" height="22" rx="4" fill="#d6342a"/><text x="395" y="52" text-anchor="middle" font-size="12" font-weight="800" font-family="Arial" fill="#fff">230 V kroz tijelo!</text>';
+      h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#b3261e">bez zaštitnog vodiča kućište je pod naponom, a struja ide kroz čovjeka</text>';
+    }else{
+      h+='<path d="M262 222 V246 H70" stroke="'+G+'" stroke-width="6" fill="none"/><path class="draw2 new" d="M262 222 V246 H70" stroke="'+Y+'" stroke-width="6" stroke-dasharray="8 8" fill="none"/>';
+      h+='<path class="flow" d="M302 124 L302 176 L262 222 V246 H70" fill="none" stroke="'+Y+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+      h+='<g stroke="#333" stroke-width="3"><line x1="40" y1="238" x2="40" y2="262"/><line x1="48" y1="244" x2="48" y2="256"/><line x1="32" y1="244" x2="32" y2="256"/></g>';
+      h+='<rect x="60" y="100" width="70" height="60" rx="4" fill="#e8e8e8" stroke="#555" stroke-width="2"/><g class="lever off new"><rect x="86" y="108" width="18" height="12" rx="2" fill="#1d232b"/></g><text x="95" y="150" text-anchor="middle" font-size="10" font-weight="700" font-family="Arial" fill="#1f7a4d">ISKLJUČENO</text>';
+      h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">struja kvara teče kroz zeleno-žuti vodič u zemlju, zaštita isključuje</text>';
+    }
+  }else if(kind==="fid"||kind==="both"||kind==="test"){
+    var trip=(ss==="ok"),both=(kind==="both"),test=(kind==="test");
+    h+='<rect y="240" width="480" height="60" fill="#b9bfc7"/>';
+    // dovodi
+    h+='<path d="M0 110 H150" stroke="#8a5a2b" stroke-width="5" fill="none"/><path d="M0 150 H150" stroke="#2c6fb7" stroke-width="5" fill="none"/>';
+    h+='<path d="M230 110 H330 L420 70" stroke="#8a5a2b" stroke-width="5" fill="none"/><path d="M230 150 H300 Q330 150 350 110 L420 76" stroke="#2c6fb7" stroke-width="5" fill="none"/>';
+    // FID
+    h+='<rect x="150" y="66" width="80" height="130" rx="6" fill="#f4f4f4" stroke="#555" stroke-width="3"/><circle cx="190" cy="130" r="22" fill="none" stroke="#555" stroke-width="5"/>';
+    h+='<g class="lever'+((trip||test)?" off new":"")+'"><rect x="178" y="74" width="24" height="12" rx="2" fill="#1d232b"/></g>';
+    h+='<rect x="166" y="160" width="48" height="26" rx="3" fill="#fff" stroke="#999"/><circle class="'+(test?"pressh":"")+'" cx="178" cy="173" r="7" fill="#d6342a"/><text x="178" y="177" text-anchor="middle" font-size="9" font-weight="800" font-family="Arial" fill="#fff">T</text><text x="200" y="177" text-anchor="middle" font-size="8" font-weight="700" font-family="Arial" fill="#14213d">30 mA</text>';
+    // lampa
+    h+='<line x1="420" y1="0" x2="420" y2="52" stroke="#555" stroke-width="3"/><path d="M396 78 q24 -36 48 0z" fill="'+((trip||test)?"#8d99a6":"#fff6c9")+'" stroke="#c9bf8a" stroke-width="2"/>';
+    if(!(trip||test))h+='<circle class="glowp" cx="420" cy="84" r="26" fill="url(#gHot9)"/>';
+    h+='<defs><radialGradient id="gHot9"><stop offset="0" stop-color="#ffe9a0" stop-opacity=".9"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient></defs>';
+    // čovjek
+    if(both)h+=personG(330,240,[330,112]);else h+=personG(330,240,[330,112]);
+    if(both)h+='<path d="M342 -118 L360 -108" stroke="#f0c9a0" stroke-width="0"/>';
+    // očitanje
+    var iL=both?"5,00 A":"5,00 A",iN=both?"5,00 A":"4,97 A",dI=both?"0 mA":"30 mA";
+    h+='<rect x="10" y="30" width="126" height="64" rx="6" fill="#1e2630"/><text x="18" y="48" font-size="11" font-family="Consolas,monospace" fill="#7dffa3">I(L) = '+iL+'</text><text x="18" y="63" font-size="11" font-family="Consolas,monospace" fill="#7dffa3">I(N) = '+iN+'</text><text x="18" y="82" font-size="12" font-weight="700" font-family="Consolas,monospace" fill="'+(both?"#ffd23f":(trip?"#7dffa3":"#ff8a80"))+'">ΔI = '+dI+'</text>';
+    if(both&&!trip){
+      h+='<path class="flow" d="M336 110 L330 140 L330 190 L345 150 L350 110" fill="none" stroke="'+Y+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+      h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#b3261e">struja ide iz faze u nulu kroz tijelo: razlike nema, FID ne reagira</text>';
+    }else if(test){
+      h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">tipka T stvara umjetnu struju curenja: FID mora isključiti</text>';
+    }else if(!trip){
+      h+='<path class="flow" d="M330 112 L330 190 L330 240 H30" fill="none" stroke="'+Y+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+      h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#b3261e">dio struje curi kroz tijelo u zemlju: u nul se vraća manje nego što je ušlo</text>';
+    }else{
+      h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#1f7a4d">FID je u djeliću sekunde isključio strujni krug</text>';
+    }
+  }else if(kind==="ip"){
+    h+='<rect y="250" width="480" height="50" fill="#c9cfd8"/>';
+    var code=(ss==="ip2")?"20":(ss==="ip4"?"44":"44");
+    h+='<g class="fx">';
+    for(var i=0;i<8;i++)h+='<circle class="dust" style="--d:-'+(i*.4)+'s" cx="'+(20+(i*13)%60)+'" cy="'+(90+i*14)+'" r="'+(2+i%3)+'" fill="#b39b6e"/>';
+    for(var j=0;j<14;j++)h+='<line class="rain" style="--d:-'+(j*.06).toFixed(2)+'s" x1="'+(300+j*13)+'" y1="20" x2="'+(296+j*13)+'" y2="38" stroke="#6db3f2" stroke-width="3" stroke-linecap="round"/>';
+    h+='</g>';
+    h+='<rect x="150" y="70" width="180" height="120" rx="14" fill="#1e2630" stroke="#111" stroke-width="3"/><text x="190" y="140" text-anchor="middle" font-size="46" font-weight="900" font-family="Arial" fill="#fff">IP</text>';
+    h+='<g class="digp"><rect x="218" y="92" width="44" height="76" rx="8" fill="#9a6b2f"/><text x="240" y="146" text-anchor="middle" font-size="46" font-weight="900" font-family="Arial" fill="#fff">'+(ss==="q"?"?":code[0])+'</text></g>';
+    h+='<g class="digp" style="animation-delay:-.7s"><rect x="268" y="92" width="44" height="76" rx="8" fill="#1b5e9b"/><text x="290" y="146" text-anchor="middle" font-size="46" font-weight="900" font-family="Arial" fill="#fff">'+(ss==="q"?"?":code[1])+'</text></g>';
+    h+='<text x="240" y="214" text-anchor="middle" font-size="12" font-family="Arial" fill="#14213d" font-weight="700">1. znamenka: krute čestice i prašina · 2. znamenka: voda</text>';
+    h+='<text x="40" y="236" font-size="11" font-family="Arial" fill="#14213d" font-weight="700">prašina</text><text x="400" y="236" text-anchor="middle" font-size="11" font-family="Arial" fill="#14213d" font-weight="700">kiša</text>';
+  }else if(kind==="wall"){
+    h+='<rect y="250" width="480" height="50" fill="#b9bfc7"/><rect x="0" y="0" width="480" height="250" fill="#c9bfa8"/><g stroke="#b3a88f"><line x1="0" y1="60" x2="480" y2="60"/><line x1="0" y1="120" x2="480" y2="120"/><line x1="0" y1="180" x2="480" y2="180"/></g>';
+    h+='<g class="fx">';
+    for(var k=0;k<24;k++)h+='<line class="rain" style="--d:-'+(k*.05).toFixed(2)+'s" x1="'+(10+k*20)+'" y1="10" x2="'+(5+k*20)+'" y2="30" stroke="#5d9bd6" stroke-width="3" stroke-linecap="round"/>';
+    h+='</g>';
+    h+='<rect x="200" y="100" width="80" height="26" rx="6" fill="#e8e8e8" stroke="#777" stroke-width="3"/><circle cx="240" cy="130" r="22" fill="#fff6c9" stroke="#c9bf8a" stroke-width="3"/><rect x="214" y="152" width="52" height="20" rx="4" fill="#fff" stroke="#777"/><text x="240" y="167" text-anchor="middle" font-size="13" font-weight="900" font-family="Arial" fill="#14213d">IP ??</text>';
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">vanjska svjetiljka izložena kiši</text>';
+  }else if(kind==="check"){
+    h+='<rect y="230" width="480" height="70" fill="#8a6a43"/>';
+    h+='<rect x="40" y="130" width="90" height="70" rx="10" fill="#f4f4f4" stroke="#777" stroke-width="3"/><rect x="58" y="146" width="14" height="38" fill="#c8c8c8" stroke="#777"/><rect x="88" y="146" width="14" height="38" fill="#c8c8c8" stroke="#777"/><rect x="73" y="108" width="24" height="22" rx="3" fill="'+"#2f9e44"+'"/><rect x="77" y="108" width="6" height="22" fill="#ffd23f"/><rect x="87" y="108" width="6" height="22" fill="#ffd23f"/>';
+    h+='<path d="M130 166 C190 166 190 210 250 200 S330 180 400 210" stroke="#222" stroke-width="9" fill="none" stroke-linecap="round"/><g class="fx"><path class="flick" d="M286 196 l6 -10 l-2 8 l9 -6" stroke="#ffd23f" stroke-width="3" fill="none"/><circle class="flick" cx="290" cy="196" r="10" fill="url(#gArc2)"/></g>';
+    h+='<defs><radialGradient id="gArc2"><stop offset="0" stop-color="#fff9c4"/><stop offset="1" stop-color="#8fd0ff" stop-opacity="0"/></radialGradient></defs>';
+    h+='<text x="12" y="290" font-size="12" font-family="Arial" font-weight="700" fill="#14213d">utikač sa zaštitnim kontaktom i kabel s oštećenom izolacijom</text>';
+  }
+  return SV(h,"Prizor zaštite od električnog udara","");
+}
+ST["8"].next="9";
+ST["9"]={name:"Zaštita od električnog udara",next:"sum",
+ recap:["Neizravni dodir: kućište je zbog kvara pod naponom. Štiti zaštitni (PE) vodič uz automatsko isključenje.","Zeleno-žuti vodič je samo zaštitni: ne odspaja se, ne koristi kao radni i ne prekida.","FID (RCD) 30 mA uspoređuje struju u fazi i u nuli i isključuje kad curenje dosegne 30 mA. Ne štiti od dodira faze i nule istodobno i ne zamjenjuje osigurač.","FID se ispituje tipkom T i nikad se ne premošćuje.","IP + dvije znamenke: prva za krute čestice i prašinu, druga za vodu. IP44 je prskanje, a IP65 mlaz vode i prašinonepropusno."],
+ steps:[
+ {key:"pe",type:"choice",title:"Neizravni dodir",max:2,
+  scene:function(st){return sceneS9("pe",st.ss==="ok"?"ok":"")},
+  text:"U metalnom kućištu uređaja olabavila se izolacija i fazni vodič dodiruje kućište. Čovjek dodirne kućište. Kakav je to dodir i što ga sprječava?",
+  opts:[
+   {t:"Neizravni dodir. Sprječava ga zaštitni (PE) vodič uzemljenja uz zaštitu koja automatski isključuje napajanje.",ok:1,sc:"ok",why:"Točno. Kućište je došlo pod napon zbog kvara. Zaštitni vodič preuzima struju kvara, a zaštita (osigurač ili FID) isključuje."},
+   {t:"Izravni dodir. Sprječava ga deblja izolacija na vilici.",sc:"bad",why:"Izravni dodir je dodir dijela koji je normalno pod naponom, a ovdje je kućište došlo pod napon zbog kvara pa je to neizravni dodir."},
+   {t:"Sigurno je jer je kućište od metala.",crit:1,sc:"bad",why:"KRITIČNO: metal vodi struju, pa kućište pod naponom smrtno ugrožava svakoga tko ga dodirne."}]},
+ {key:"gy",type:"choice",title:"Zeleno-žuti vodič",max:2,
+  scene:function(st){return sceneS9("pe","ok")},
+  text:"Nakon popravka uređaj radi i kad zeleno-žuti vodič nije spojen. Kolega kaže da ga možeš odspojiti ili iskoristiti kao fazni jer je „višak“. Što je ispravno?",
+  opts:[
+   {t:"Zeleno-žuti vodič je isključivo zaštitni (PE). Ne odspaja se ni ne koristi kao radni, a uređaj bez ispravnog PE vodiča ne koristim.",ok:1,why:"Točno. Uređaj radi i bez njega, ali kad dođe do kvara nema zaštite, pa sljedeći dodir kućišta može biti smrtonosan."},
+   {t:"Odspojim ga jer uređaj radi i bez njega.",crit:1,why:"KRITIČNO: bez zaštitnog vodiča uređaj radi „normalno“, ali kućište nije zaštićeno u slučaju kvara."},
+   {t:"Iskoristim ga kao fazni vodič jer je isto bakar.",crit:1,why:"KRITIČNO: zeleno-žuta boja rezervirana je za zaštitni vodič. Tko ga kasnije dodirne, očekuje da je bez napona."}]},
+ {key:"fid",type:"choice",title:"Što radi FID",max:2,
+  scene:function(st){return sceneS9("fid",st.ss==="ok"?"ok":"")},
+  text:"Strujni krug štiti zaštitna strujna sklopka (FID) od 30 mA. Dio struje curi kroz čovjeka koji je dodirnuo fazni vodič. Što FID radi?",
+  opts:[
+   {t:"Uspoređuje struju koja ulazi u uređaj sa strujom koja se vraća. Ako se razlikuju za 30 mA ili više (struja curi npr. kroz tijelo), u djeliću sekunde isključuje.",ok:1,sc:"ok",why:"Točno. Struja koja ne ode natrag nulom teče nekim drugim putem, a FID to prepoznaje po razlici."},
+   {t:"Mjeri napon mreže i isključuje kad je prenizak.",sc:"bad",why:"To radi zaštita od podnapona. FID mjeri razliku između struje faze i nule."},
+   {t:"Isključuje tek kad struja dosegne nazivnu vrijednost osigurača (npr. 16 A).",sc:"bad",why:"To je osigurač. Struja od 30 mA je daleko ispod toga, a već je opasna po život."}]},
+ {key:"both",type:"choice",title:"Granice FID-a",max:2,
+  scene:function(st){return sceneS9("both","")},
+  text:"Dok radiš „samo sekundu“ pod naponom, istodobno dodirneš fazni i nulti vodič iza FID-a. Što će FID napraviti?",
+  opts:[
+   {t:"Možda neće reagirati jer sva struja ide iz faze u nul kroz tijelo i razlike nema. Zato se i dalje radi bez napona (pet pravila), a FID je samo dodatna zaštita.",ok:1,why:"Točno. FID ne štiti od dodira faze i nule istodobno. Pri radu se nikad ne oslanjaš samo na njega."},
+   {t:"FID će sigurno isključiti, pa mogu mirno raditi pod naponom.",crit:1,why:"KRITIČNO: FID ne reagira kad struja prolazi iz faze u nul kroz tijelo, a dovoljno je tek nekoliko desetaka mA da bude smrtonosno."},
+   {t:"FID tada isključuje samo osigurač u istom ormaru.",why:"FID i osigurač su zasebne zaštite. Osigurač reagira na preopterećenje i kratki spoj, a ne na ovakvu struju."}]},
+ {key:"test",type:"choice",title:"Provjera FID-a",max:1,
+  scene:function(){return sceneS9("test","")},
+  text:"Kako provjeravaš radi li FID?",
+  opts:[
+   {t:"Pritisnem tipku T u redovitim razmacima (npr. jednom mjesečno). FID mora odmah isključiti.",ok:1,why:"Točno. Tipka T stvara umjetnu struju curenja i tako ispituje ispravnost mehanizma."},
+   {t:"Ako često isključuje, premostim ga da ne smeta.",crit:1,why:"KRITIČNO: čest rad FID-a znači da negdje curi struja. Treba tražiti uzrok, a ne ukloniti zaštitu."},
+   {t:"Ne treba ga provjeravati, radi sam.",why:"Mehanizam se može zaglaviti. Zato se redovito ispituje tipkom T."}]},
+ {key:"ipread",type:"choice",title:"Oznaka IP",max:2,
+  scene:function(){return sceneS9("ip","ip4")},
+  text:"Na svjetiljci piše IP44. Što to znači?",
+  opts:[
+   {t:"Zaštita od krutih tijela većih od 1 mm i od prskanja vode iz svih smjerova.",ok:1,why:"Točno. Prva znamenka (4) govori o krutim tijelima i prašini, a druga (4) o vodi: prskanje iz svih smjerova."},
+   {t:"Uređaj radi na naponu od 44 V.",why:"IP ne govori o naponu. Znači zaštitu kućišta (engl. Ingress Protection)."},
+   {t:"Uređaj se smije potopiti u vodu.",crit:1,why:"KRITIČNO: potapanje traži znamenku 7 ili 8 (npr. IP67). IP44 štiti samo od prskanja."}]},
+ {key:"ipsel",type:"choice",title:"Odabir IP-a",max:2,
+  scene:function(){return sceneS9("wall","")},
+  text:"Postavljaš svjetiljku na vanjski zid radionice, izloženu kiši. Koju oznaku smiješ odabrati?",
+  opts:[
+   {t:"IP44",ok:1,why:"Točno. Zaštita od prskanja vode (druga znamenka 4) obvezna je za vanjsku uporabu pod kišom. IP65 bi bio još bolji izbor."},
+   {t:"IP65",ok:1,why:"Točno. Prašinonepropusno i zaštita od mlaza vode. Skuplja je, ali pouzdanija."},
+   {t:"IP20",sc:"bad",why:"IP20 štiti samo od dodira prstom i krutih tijela većih od 12,5 mm, a od vode ne štiti uopće. Za suhe unutarnje prostore."}]},
+ {key:"check",type:"multi",title:"Pregled prije uporabe",max:2,
+  scene:function(){return sceneS9("check","")},
+  text:"Što radiš prije uporabe električnog uređaja? Označi sve što je ispravno (ima 4 točne stavke), pa pritisni „Provjeri“.",
+  items:[
+   {t:"Pregledam kabel i utikač: ako su oštećeni, ne koristim uređaj.",ok:1,why:"Oštećena izolacija je najčešći uzrok udara."},
+   {t:"Uređaj sa zaštitnim vodičem priključujem samo u utičnicu s ispravnim zaštitnim kontaktom.",ok:1,why:"Bez zaštitnog kontakta nema zaštite od neizravnog dodira."},
+   {t:"Uređaj niskog IP stupnja ne koristim na kiši ni uz vodu.",ok:1,why:"Kućište nije predviđeno za vlagu."},
+   {t:"Kod neispravnosti odmah odspojim uređaj i prijavim kvar.",ok:1,why:"Neispravna oprema ne radi dok je ne pregleda osposobljena osoba."},
+   {t:"Odrežem zaštitni kontakt s vilice da stane u dvopolnu utičnicu.",why:"Time se gubi zaštita. Uređaj tada nema zaštitni vodič."},
+   {t:"Kad FID često isključuje, premostim ga.",why:"FID štiti život. Treba pronaći uzrok curenja."},
+   {t:"Dodirnem utikač mokrim rukama jer žurim.",why:"Mokra koža dramatično smanjuje otpor tijela, pa struja kroz tijelo raste."}]}
+ ]};
+
+$("#startBtn").onclick=function(){
+  var n=$("#ime").value.trim();
+  if(!n){$("#ime").focus();$("#ime").style.borderColor="var(--bad)";return}
+  S.name=n;S.razred=$("#razred").value.trim()||"1. TE";
+  S.s1=newS1();S.s2=newS2();S.st={};
+  $("#who").textContent=S.name+" · "+S.razred;
+  updBadges();go("1");
+};
+buildNav();
+})();
+
+(function(){var b=document.getElementById("animbtn");if(!b)return;b.onclick=function(){var off=document.body.classList.toggle("noanim");b.textContent="Animacije: "+(off?"isključene":"uključene");b.setAttribute("aria-pressed",off?"false":"true")}})();
+</script>
+</body>
+</html>
