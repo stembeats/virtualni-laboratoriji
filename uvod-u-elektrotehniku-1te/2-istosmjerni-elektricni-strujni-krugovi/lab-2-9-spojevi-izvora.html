@@ -2142,6 +2142,98 @@ SC.caps=function(mode){return function(host){
 G.WB.scenes=SC;
 })(window);
 
+/* ===== Automatska shema spoja iz ciljnog spoja (cvorna shema) ===== */
+(function(G){'use strict';
+var WB=G.WB,PT=WB.PT;
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function sub(lab){lab=String(lab).replace(/<sub>(.*?)<\/sub>/g,'\u0001$1\u0002').replace(/<[^>]*>/g,'');return esc(lab).replace(/\u0001(.*?)\u0002/g,'<tspan font-size="8" dy="2">$1</tspan><tspan dy="-2"> </tspan>').replace(/<tspan dy="-2"> <\/tspan>$/,'');}
+WB.schema=function(bench){
+  var parts=bench.parts||[],tg=(bench.targets||[bench.target||[]])[0]||[];
+  var par={};function f(x){while(par[x]!==undefined&&par[x]!==x)x=par[x];return x;}
+  function add(x){if(par[x]===undefined)par[x]=x;}
+  tg.forEach(function(net){for(var i=0;i<net.length;i++){add(net[i]);if(i)par[f(net[i])]=f(net[0]);}});
+  var size={};Object.keys(par).forEach(function(k){var r=f(k);size[r]=(size[r]||0)+1;});
+  function nid(k){if(par[k]===undefined)return null;var r=f(k);return size[r]>=2?r:null;}
+  /* simboli */
+  var S=[];
+  parts.forEach(function(p){
+    var ty=p.type,id=p.id,lab=p.lab||id;
+    function two(a,b,kind,l,v,extra){var A=nid(id+'.'+a),B=nid(id+'.'+b);if(!A||!B||A===B)return;S.push({kind:kind,a:A,b:B,lab:l,val:v,x:extra||{}});}
+    if(ty==='res')two('a','b','res',lab,p.R!=null?WB.si(p.R,'Ω'):'');
+    else if(ty==='amm')two('p','m','amm',lab);
+    else if(ty==='vm')two('p','m','vm',lab);
+    else if(ty==='galv')two('p','m','galv',lab);
+    else if(ty==='psu')two('p','m','src',lab||'U');
+    else if(ty==='bat'||ty==='bz')two('p','m','src',lab,p.E!=null?WB.si(p.E,'V'):'');
+    else if(ty==='fgen')two('p','m','ac',lab);
+    else if(ty==='cap')two('a','b','cap',lab,'',{pol:!!p.pol});
+    else if(ty==='nl')two('a','b',p.kind==='lamp'?'lamp':'res',lab);
+    else if(ty==='sw')two('a','b','sw',lab);
+    else if(ty==='isrc'||ty==='iz')two('n','p','isrc',lab);
+    else if(ty==='pot'){var A=nid(id+'.1'),B=nid(id+'.2'),C=nid(id+'.3');if(A&&B&&A!==B)S.push({kind:'pot',a:A,b:B,lab:lab,val:p.R!=null?WB.si(p.R,'Ω'):'',x:{w:C}});}
+    else if(ty==='wm'){two('i1','i2','wmi',lab+' (I)');two('u1','u2','wmu',lab+' (U)');}
+    else if(ty==='dmm'){two('v','com','vm',lab);two('a','com','amm',lab);}
+    else if(ty==='sp'){two('c','a','sw',lab);two('c','b','sw',lab);}
+    else if(ty==='scope'){two('a','g','osc',lab||'KA');two('b','g','osc',lab||'KB');}
+  });
+  if(!S.length)return null;
+  /* poredak sinova: BFS od + izvora */
+  var nets=[];S.forEach(function(s){[s.a,s.b].forEach(function(n){if(nets.indexOf(n)<0)nets.push(n);});});
+  var src=S.filter(function(s){return s.kind==='src'||s.kind==='ac';})[0]||S[0],top=src.a,bot=src.b;
+  var dist={};dist[top]=0;var q=[top];
+  while(q.length){var u=q.shift();S.forEach(function(s){var o=s.a===u?s.b:(s.b===u?s.a:null);if(o&&dist[o]===undefined){dist[o]=dist[u]+1;q.push(o);}});}
+  nets.sort(function(x,y){if(x===bot)return 1;if(y===bot)return -1;return (dist[x]==null?99:dist[x])-(dist[y]==null?99:dist[y])||nets.indexOf(x)-nets.indexOf(y);});
+  var row={};nets.forEach(function(n,i){row[n]=i;});
+  S.forEach(function(s){s.r0=Math.min(row[s.a],row[s.b]);s.r1=Math.max(row[s.a],row[s.b]);});
+  S.sort(function(x,y){var sx=(x.kind==='src'||x.kind==='ac')?0:1,sy=(y.kind==='src'||y.kind==='ac')?0:1;return sx-sy||x.r0-y.r0||x.r1-y.r1;});
+  var cols=[];S.forEach(function(s){var c=0;for(;;c++){cols[c]=cols[c]||[];if(!cols[c].some(function(o){return !(s.r1<=o.r0||s.r0>=o.r1);}))break;}cols[c].push(s);s.col=c;});
+  var RH=58,CW=74,X0=46,Y0=26,W=X0+cols.length*CW+20,H=Y0*2+(nets.length-1)*RH;
+  var svg='',ext={};
+  S.forEach(function(s){s.x0=X0+s.col*CW;[s.a,s.b].forEach(function(n){var e=ext[n]=ext[n]||{a:1e9,b:-1e9,c:0};e.a=Math.min(e.a,s.x0);e.b=Math.max(e.b,s.x0);e.c++;});});
+  S.forEach(function(s){if(s.kind==='pot'&&s.x.w!=null){var e=ext[s.x.w]=ext[s.x.w]||{a:1e9,b:-1e9,c:0};e.a=Math.min(e.a,s.x0+26);e.b=Math.max(e.b,s.x0+26);e.c++;}});
+  var ST='stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"';
+  nets.forEach(function(n){var e=ext[n],y=Y0+row[n]*RH;svg+='<line x1="'+(e.a-(e.c>1?0:0))+'" y1="'+y+'" x2="'+e.b+'" y2="'+y+'" '+ST+'/>';});
+  function sym(s,tpos){ // tpos: s.a gore?
+    var x=s.x0,ya=Y0+row[s.a]*RH,yb=Y0+row[s.b]*RH,flip=ya>yb,yt=Math.min(ya,yb),yd=Math.max(ya,yb),o='';
+    var bd=[yt];nets.forEach(function(n){var r=Y0+row[n]*RH,e=ext[n];if(r>yt+1&&r<yd-1&&x>e.a&&x<e.b)bd.push(r);});bd.push(yd);
+    var bg=0,ym=(yt+yd)/2;for(var bi=0;bi<bd.length-1;bi++){if(bd[bi+1]-bd[bi]>bg){bg=bd[bi+1]-bd[bi];ym=(bd[bi]+bd[bi+1])/2;}}
+    var hs=18; // pola visine simbola
+    o+='<line x1="'+x+'" y1="'+yt+'" x2="'+x+'" y2="'+(ym-hs)+'" '+ST+'/><line x1="'+x+'" y1="'+(ym+hs)+'" x2="'+x+'" y2="'+yd+'" '+ST+'/>';
+    var k=s.kind,y1=ym-hs,y2=ym+hs;
+    if(k==='res'||k==='pot')o+='<rect x="'+(x-7)+'" y="'+y1+'" width="14" height="'+(2*hs)+'" fill="var(--panel,#fff)" '+ST+'/>';
+    else if(k==='amm'||k==='vm'||k==='galv'||k==='osc'||k==='wmi'||k==='wmu'){var L={amm:'A',vm:'V',galv:'G',osc:'⎍',wmi:'W',wmu:'W'}[k];
+      o+='<circle cx="'+x+'" cy="'+ym+'" r="14" fill="var(--panel,#fff)" '+ST+'/><text x="'+x+'" y="'+(ym+4.5)+'" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor">'+L+'</text>';}
+    else if(k==='lamp'){o+='<circle cx="'+x+'" cy="'+ym+'" r="14" fill="var(--panel,#fff)" '+ST+'/><path d="M'+(x-9.9)+' '+(ym-9.9)+'L'+(x+9.9)+' '+(ym+9.9)+'M'+(x+9.9)+' '+(ym-9.9)+'L'+(x-9.9)+' '+(ym+9.9)+'" '+ST+'/>';}
+    else if(k==='ac'){o+='<circle cx="'+x+'" cy="'+ym+'" r="14" fill="var(--panel,#fff)" '+ST+'/><path d="M'+(x-8)+' '+ym+'q4 -9 8 0t8 0" '+ST+'/>';}
+    else if(k==='cap'){o+='<line x1="'+(x-12)+'" y1="'+(ym-5)+'" x2="'+(x+12)+'" y2="'+(ym-5)+'" '+ST+'/><line x1="'+(x-12)+'" y1="'+(ym+5)+'" x2="'+(x+12)+'" y2="'+(ym+5)+'" '+ST+'/>'+
+      '<line x1="'+x+'" y1="'+(ym-5)+'" x2="'+x+'" y2="'+y1+'" '+ST+'/><line x1="'+x+'" y1="'+(ym+5)+'" x2="'+x+'" y2="'+y2+'" '+ST+'/>'+ (s.x.pol?'<text x="'+(x-26)+'" y="'+(flip?ym+16:ym-8)+'" font-size="12" font-weight="700" fill="currentColor">+</text>':'');}
+    else if(k==='src'){ // dugacka crta prema + (a=p)
+      var pTop=!flip; // s.a je p/izvor plus; flip=true znaci a je dolje
+      var yl=pTop?ym-5:ym+5,ys=pTop?ym+5:ym-5;
+      o+='<line x1="'+(x-14)+'" y1="'+yl+'" x2="'+(x+14)+'" y2="'+yl+'" '+ST+'/><line x1="'+(x-8)+'" y1="'+ys+'" x2="'+(x+8)+'" y2="'+ys+'" '+ST+' stroke-width="4"/>'+
+        '<text x="'+(x-26)+'" y="'+(pTop?ym-2:ym+13)+'" font-size="13" font-weight="700" fill="currentColor">+</text>';}
+    else if(k==='sw'){o+='<circle cx="'+x+'" cy="'+y1+'" r="2.5" fill="currentColor"/><circle cx="'+x+'" cy="'+y2+'" r="2.5" fill="currentColor"/><line x1="'+x+'" y1="'+y2+'" x2="'+(x+11)+'" y2="'+(y1+5)+'" '+ST+'/>';}
+    else if(k==='isrc'){o+='<circle cx="'+x+'" cy="'+ym+'" r="14" fill="var(--panel,#fff)" '+ST+'/><path d="M'+x+' '+(flip?ym+9:ym-9)+'V'+(flip?ym-9:ym+9)+'M'+(x-4)+' '+(flip?ym-4:ym+4)+'L'+x+' '+(flip?ym-9:ym+9)+'L'+(x+4)+' '+(flip?ym-4:ym+4)+'" '+ST+'/>';}
+    if(k==='pot'){ // klizac
+      var wr=s.x.w;o+='<path d="M'+(x+26)+' '+(ym)+'H'+(x+9)+'M'+(x+13)+' '+(ym-4)+'L'+(x+9)+' '+ym+'L'+(x+13)+' '+(ym+4)+'" '+ST+'/>';
+      if(wr!=null&&row[wr]!=null){var yw=Y0+row[wr]*RH;o+='<path d="M'+(x+26)+' '+ym+'V'+yw+'" '+ST+' stroke-dasharray="0"/><circle cx="'+(x+26)+'" cy="'+yw+'" r="3" fill="currentColor"/>';}}
+    var tx=x+(k==='pot'?32:(k==='src'?22:17));
+    o+='<text x="'+tx+'" y="'+(ym-1)+'" font-size="12" font-weight="700" fill="currentColor">'+sub(s.lab||'')+'</text>';
+    if(s.val)o+='<text x="'+tx+'" y="'+(ym+12)+'" font-size="10.5" fill="currentColor" opacity=".8">'+esc(s.val)+'</text>';
+    return o;
+  }
+  S.forEach(function(s){svg+=sym(s);});
+  /* mostici na prelazu okomica preko tudjih sina + tocke spoja */
+  S.forEach(function(s){
+    var ya=Y0+row[s.a]*RH,yb=Y0+row[s.b]*RH;
+    [s.a,s.b].forEach(function(n,i){var y=Y0+row[n]*RH,e=ext[n];if(e.c>=3||(s.x0>e.a&&s.x0<e.b))svg+='<circle cx="'+s.x0+'" cy="'+y+'" r="3.2" fill="currentColor"/>';});
+    nets.forEach(function(n){var r=row[n];if(r>Math.min(row[s.a],row[s.b])&&r<Math.max(row[s.a],row[s.b])){var e=ext[n],y=Y0+r*RH;if(s.x0>e.a&&s.x0<e.b){
+      svg+='<path d="M'+(s.x0-6)+' '+y+'a6 6 0 0 1 12 0" fill="var(--panel,#fff)" stroke="var(--panel,#fff)" stroke-width="5"/><path d="M'+(s.x0-6)+' '+y+'a6 6 0 0 1 12 0" '+ST+'/>';}}});
+  });
+  return {vb:'0 0 '+W+' '+H,svg:function(){return svg;},w:W};
+};
+})(window);
+
 /* ===== Ljuska stranice: Priprema / Zadaci / Zakljucak ===== */
 (function(G){
 'use strict';
@@ -2207,6 +2299,7 @@ Shell.prototype.pageTask=function(pane,i){
   var self=this,cfg=this.cfg,t=cfg.tasks[i],T=G.TEACH&&G.TEACH[cfg.id];
   var sec=el('section',{id:'lab'});
   var hostCard=el('div',{class:'bench2'});
+  if(!t.fig&&!t.scene&&t.bench&&WB.schema){try{t.fig=WB.schema(t.bench)||undefined;}catch(e){}}
   var fig=t.fig?'<div class="figcard"><div class="figt">Shema spoja</div><svg class="figsvg" viewBox="'+t.fig.vb+'" role="img" aria-label="Shema spoja">'+t.fig.svg()+'</svg></div>':'';
   hostCard.innerHTML=t.scene?(t.hint?'<p class="hint">'+t.hint+'</p>':''):(t.hint?'<p class="hint">'+t.hint+'</p>':'<p class="hint">Povuci vodič od jednog priključka (crni/crveni kružić) do drugog, ili dodirni jedan pa drugi priključak. Vodič obrišeš klikom na njega i gumbom „Obriši označeni“. Spoj provjeri gumbom „Provjeri spoj“.</p>');
   var host=el('div',{class:'wbhost'});hostCard.appendChild(host);
