@@ -1,0 +1,1270 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorij 3 – Zaštita transformatora i prenaponi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap">
+<style>
+[hidden]{display:none!important}
+[hidden]{display:none!important}
+.vals .miss b{font-family:var(--f-body);font-size:.8em;font-weight:400;opacity:.75}
+/* Layout: radni stol. Lijevo shema objekta s točkama za mjerne kabele, desno instrument i kontrolna lista; zapisnik kao kartice po krugu. */
+:root{
+  --bg:#EEF2EC; --surface:#FFFFFF; --surface2:#E3EADD; --ink:#1B2A2F; --ink2:#506058; --line:#C6D1C0;
+  --accent:#3D8A1B; --accent-ink:#FFFFFF; --accent-soft:#DCEEC8;
+  --warn:#8A5A00; --warn-bg:#FFF0C7; --bad:#B42318; --bad-bg:#FCE3DF; --good:#25702A; --good-bg:#DDF0DB;
+  --lcd-bg:#CDE2B0; --lcd-ink:#18240F; --lead1:#D6382B; --lead2:#1B2A2F;
+  --f-body:"Trebuchet MS","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-lcd:"Share Tech Mono","Consolas","Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11191C; --surface:#1A2529; --surface2:#243137; --ink:#E7EFE8; --ink2:#A6B5AC; --line:#34454C;
+    --accent:#8CC63F; --accent-ink:#11191C; --accent-soft:#273B22;
+    --warn:#F2C14E; --warn-bg:#3A2F10; --bad:#FF8F80; --bad-bg:#40201C; --good:#86D487; --good-bg:#1D3A21;
+    --lcd-bg:#B9D29C; --lcd-ink:#15200E; --lead1:#FF6B5B; --lead2:#E7EFE8; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11191C; --surface:#1A2529; --surface2:#243137; --ink:#E7EFE8; --ink2:#A6B5AC; --line:#34454C;
+  --accent:#8CC63F; --accent-ink:#11191C; --accent-soft:#273B22;
+  --warn:#F2C14E; --warn-bg:#3A2F10; --bad:#FF8F80; --bad-bg:#40201C; --good:#86D487; --good-bg:#1D3A21;
+  --lcd-bg:#B9D29C; --lcd-ink:#15200E; --lead1:#FF6B5B; --lead2:#E7EFE8; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;margin:0;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:clamp(1.35rem,3.4vw,1.9rem);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-size:1.15rem;margin:0 0 8px;text-wrap:balance}
+h3{font-size:1rem;margin:0}
+p{margin:0}
+a{color:var(--accent)}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;border-bottom:3px solid var(--accent);padding-bottom:12px}
+.top .sub{color:var(--ink2);font-size:.9rem;margin-top:4px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 16px;border-radius:6px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.lab{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.lab{grid-template-columns:minmax(0,1fr)}}
+.picker{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer;position:relative}
+.pill.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.pill .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-left:6px}
+.plate{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.92rem;color:var(--ink2);margin:10px 0}
+.plate b{color:var(--ink)}
+.schema{width:100%;height:auto;display:block;touch-action:manipulation}
+.schema text{font-family:var(--f-body);fill:var(--ink)}
+.s-stroke{stroke:var(--ink);fill:none;stroke-width:2.2}
+.s-box{fill:var(--surface2);stroke:var(--ink);stroke-width:2}
+.s-lbl{font-size:13px;fill:var(--ink2)}
+.s-ter{fill:var(--surface);stroke:var(--ink);stroke-width:2.4}
+.term{cursor:pointer}
+.term:hover .s-ter,.term:focus-visible .s-ter{stroke:var(--accent);stroke-width:4}
+.term .hit{fill:transparent}
+.term.sel1 .s-ter{fill:var(--lead1);stroke:var(--lead1)}
+.term.sel2 .s-ter{fill:var(--lead2);stroke:var(--lead2)}
+.term text{font-weight:700;font-size:14px}
+.lead{fill:none;stroke-width:4;stroke-linecap:round}
+.lead1{stroke:var(--lead1)} .lead2{stroke:var(--lead2)}
+.jack{fill:var(--surface);stroke-width:4}
+.lamp-off{opacity:.3}
+.volt-badge{font-size:12px;font-weight:700}
+.side{display:flex;flex-direction:column;gap:14px}
+.seg{display:flex;gap:0;border:2px solid var(--ink);border-radius:6px;overflow:hidden;align-self:flex-start}
+.seg button{font:inherit;font-weight:700;border:0;background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button+button{border-left:2px solid var(--ink)}
+.checks{display:flex;flex-direction:column;gap:6px;background:var(--surface2);border-radius:6px;padding:10px 12px}
+.checks label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:.95rem}
+.checks input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+.inst{background:var(--surface2);border:2px solid var(--ink);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.inst-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:700;font-size:.9rem;text-transform:uppercase;letter-spacing:.05em}
+.lcd{background:var(--lcd-bg);color:var(--lcd-ink);border-radius:6px;border:2px solid var(--ink);padding:10px 14px;font-family:var(--f-lcd);position:relative;min-height:104px;display:flex;flex-direction:column;justify-content:center}
+.lcd .val{font-size:clamp(2.2rem,8vw,3.2rem);line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lcd .unit{font-size:1.4rem;margin-left:8px}
+.lcd .sub{font-size:.95rem;margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.buzz{position:absolute;top:8px;right:12px;font-family:var(--f-body);font-size:.8rem;font-weight:700;opacity:.25}
+.buzz.on{opacity:1;animation:blink .5s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){.buzz.on{animation:none}}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:inherit;font-weight:700;border:2px solid var(--ink);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:6px;cursor:pointer}
+.btn:hover{background:var(--accent-soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.testbtn{flex:1;min-width:140px;font-size:1.05rem}
+.testbtn.run{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.vsel{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vsel button{font:inherit;font-weight:700;border:2px solid var(--ink);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer;font-family:var(--f-lcd);font-size:1.05rem}
+.vsel button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.warnbar{background:var(--bad);color:var(--surface);font-weight:700;border-radius:6px;padding:8px 12px;text-align:center}
+.msg{border-radius:6px;padding:10px 12px;font-size:.95rem;min-height:44px;border:1px solid var(--line);background:var(--surface)}
+.msg.good{background:var(--good-bg);color:var(--good);border-color:var(--good)}
+.msg.warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.msg.bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.hint{font-size:.88rem;color:var(--ink2)}
+.doc{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.doc ol,.doc ul{margin:6px 0 0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+th{background:var(--surface2)}
+.zhead{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:700;color:var(--ink2)}
+.field input,.field select{font:inherit;font-weight:400;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+.cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.card{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface);display:flex;flex-direction:column;gap:10px;min-width:0}
+.card header{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.card .meta{font-size:.85rem;color:var(--ink2)}
+.vals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.vals div{background:var(--surface2);border-radius:6px;padding:6px 8px;font-size:.88rem;min-width:0}
+.vals b{display:block;font-family:var(--f-lcd);font-size:1.15rem;font-variant-numeric:tabular-nums;font-weight:400}
+.vals .miss b{color:var(--ink2)}
+.res{display:flex;flex-direction:column;gap:2px;font-size:.88rem}
+.res .ok{color:var(--good)} .res .no{color:var(--bad)}
+.score{font-weight:700}
+.sticky-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+/* --- zajednički dodaci za sve laboratorije --- */
+:root{--live:#D6382B;--dead:#6B7C85;--earth:#2E9E3A;--copper:#B87333;--ceramic:#D8CFC0;--steel:#8895A0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--live:#FF6B5B;--dead:#8A9BA4;--earth:#6CD16F;--ceramic:#CFC6B5}}
+:root[data-theme="dark"]{--live:#FF6B5B;--dead:#8A9BA4;--earth:#6CD16F;--ceramic:#CFC6B5}
+.pill.done::after{content:"✓";margin-left:6px;color:var(--accent);font-weight:900}
+.pill.on.done::after{color:var(--accent-soft)}
+.taskcard{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface2);display:flex;flex-direction:column;gap:8px}
+.taskcard h3{font-size:1.02rem}
+.badge{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:999px;border:1.5px solid var(--ink2);color:var(--ink2);white-space:nowrap}
+.badge.on{border-color:var(--live);color:var(--live)}
+.badge.off{border-color:var(--earth);color:var(--earth)}
+.badge.bad{border-color:var(--bad);color:var(--bad)}
+.log{max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:.86rem;display:flex;flex-direction:column}
+.log div{padding:4px 8px;border-bottom:1px solid var(--line)}
+.log .t{font-family:var(--f-lcd);color:var(--ink2);margin-right:8px}
+.log .event{background:var(--bad-bg);color:var(--bad);font-weight:700}
+.log .block{background:var(--warn-bg);color:var(--warn)}
+.log .verify{color:var(--good)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.86rem;color:var(--ink2);margin-top:8px}
+.legend i{display:inline-block;width:22px;height:6px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.scorebox{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;background:var(--surface2);border-radius:8px;padding:10px 14px}
+.scorebox b{font-size:1.4rem}
+.items{display:flex;flex-direction:column;gap:2px;font-size:.9rem}
+.items .ok{color:var(--good)} .items .no{color:var(--bad)}
+.qrow{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:10px}
+.qrow .qq{font-weight:700}
+.qrow select,.qrow input{font:inherit;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0}
+.toggle{display:flex;gap:10px;align-items:center;font-size:.92rem}
+.toggle input{width:20px;height:20px;accent-color:var(--accent)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem}
+.kv dt{color:var(--ink2)} .kv dd{margin:0;font-weight:700}
+.devrow{display:grid;grid-template-columns:minmax(0,1.3fr) auto auto auto;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.devrow:first-child{border-top:0}
+.devrow .nm{font-size:.92rem;min-width:0}
+.devrow .nm small{display:block;color:var(--ink2);font-size:.78rem}
+.btn.sm{padding:6px 10px;font-size:.9rem}
+.relay{background:#16201c;color:#9be37a;border:2px solid var(--ink);border-radius:8px;padding:10px 12px;font-family:var(--f-lcd);display:flex;flex-direction:column;gap:6px}
+.relay .lc{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:1.05rem}
+.leds{display:flex;gap:12px;flex-wrap:wrap;font-family:var(--f-body);font-size:.75rem;color:#d4e8cf}
+.leds span{display:inline-flex;align-items:center;gap:5px}
+.leds i{width:11px;height:11px;border-radius:50%;background:#2b3a33;display:inline-block;box-shadow:inset 0 0 0 1px #000}
+.leds i.g{background:#3fe05a;box-shadow:0 0 6px #3fe05a}
+.leds i.r{background:#ff4a3a;box-shadow:0 0 8px #ff4a3a}
+.leds i.a{background:#ffb02e;box-shadow:0 0 8px #ffb02e}
+.flash{animation:flashbg .8s ease-out 1}
+@keyframes flashbg{0%{box-shadow:0 0 0 6px var(--bad)}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion: reduce){.flash{animation:none}}
+
+/* --- crtež: tokeni materijala (svijetla i tamna tema) --- */
+:root{--cav:#D5DEDC;--steel1:#CBD4D8;--steel2:#98A6AD;--cu1:#F2B781;--cu2:#B66A33;--ep1:#EDE2CE;--ep2:#C6B598;--glass:#A9CDDD;--rubber:#5A676E;--flow:#FFF3C4;--ctc:#5877A0;--panel:#EFF3F1}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--cav:#1A252A;--steel1:#53636B;--steel2:#34424A;--cu1:#E2A875;--cu2:#9E5A2B;--ep1:#BDAF96;--ep2:#8B7E67;--glass:#5E8396;--rubber:#5B676E;--ctc:#7392B8;--panel:#2A383E}}
+:root[data-theme="dark"]{--cav:#1A252A;--steel1:#53636B;--steel2:#34424A;--cu1:#E2A875;--cu2:#9E5A2B;--ep1:#BDAF96;--ep2:#8B7E67;--glass:#5E8396;--rubber:#5B676E;--ctc:#7392B8;--panel:#2A383E}
+.cellwrap{overflow-x:auto;border-radius:8px;background:var(--cav)}
+.cellsvg{display:block;width:100%;min-width:620px;height:auto}
+.cellsvg text,.benchsvg text{font-family:var(--f-body);fill:var(--ink)}
+.t13{font-size:13px;font-weight:700}.t12{font-size:12px;fill:var(--ink2)!important}.t11{font-size:11px;fill:var(--ink2)!important}
+.cu{fill:url(#gCu);stroke:var(--dead);stroke-width:3}
+.rub{fill:var(--rubber);stroke:var(--dead);stroke-width:3}
+.cu.pL,.rub.pL{stroke:var(--live)}.cu.pD,.rub.pD{stroke:var(--dead)}.cu.pE,.rub.pE{stroke:var(--earth)}
+.cu.pL{filter:drop-shadow(0 0 2px var(--live))}
+.ep{fill:url(#gEp);stroke:var(--ink2);stroke-width:1.5}
+.steel{fill:url(#gSteel);stroke:var(--ink2);stroke-width:1.5}
+.glass{fill:var(--glass);stroke:var(--ink2);stroke-width:1.5;opacity:.85}
+.flow{stroke:var(--flow);stroke-width:3;stroke-dasharray:4 10;stroke-linecap:round;fill:none;animation:flowdash .55s linear infinite}
+@keyframes flowdash{to{stroke-dashoffset:-14}}
+@media (prefers-reduced-motion: reduce){.flow{animation:none}}
+.arcO{fill:none;stroke:#FF9A2E;stroke-width:9;stroke-linejoin:round;stroke-linecap:round;opacity:.55}
+.arcI{fill:none;stroke:#FFFFFF;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.lampv{stroke:var(--ink);stroke-width:1.5}
+.sign{fill:#F2C21B;stroke:#222;stroke-width:1.5}
+.mim{stroke-width:5;stroke-linecap:round;fill:none}
+.mim.pL{stroke:var(--live)}.mim.pD{stroke:var(--dead)}.mim.pE{stroke:var(--earth)}
+.hot{cursor:pointer}
+.hot:hover .hl{stroke:var(--accent);stroke-width:3}
+.benchwrap{border-radius:8px;overflow:hidden;background:var(--cav)}
+.benchsvg{display:block;width:100%;height:auto}
+.mat td,.mat th{text-align:center;font-size:.88rem;padding:6px 6px}
+.mat td:first-child,.mat th:first-child{text-align:left}
+.mat .y{color:var(--good);font-weight:700}.mat .n{color:var(--bad);font-weight:700}.mat .u{color:var(--ink2)}
+.tasknav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.goal{display:flex;flex-direction:column;gap:3px;font-size:.92rem;margin-top:6px}
+.goal .g{display:flex;gap:8px}.goal .g i{font-style:normal;font-weight:900;width:1.1em;color:var(--ink2)}.goal .g.ok i{color:var(--good)}
+.warnbar.soft{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+.sub2{font-size:.85rem;color:var(--ink2)}
+.gh{font-weight:700;background:var(--surface2);padding:4px 8px;border-radius:4px;margin-top:8px}
+.arow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+@media (max-width:640px){.arow{grid-template-columns:minmax(0,1fr)}}
+.arow select,.arow input{font:inherit;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0;width:100%}
+.arow .rs{font-size:.84rem;min-width:1.4em}
+.arow .rs.ok{color:var(--good);font-weight:700}.arow .rs.no{color:var(--bad)}
+.simv{font-weight:700}
+
+/* ---- laboratorij 3 ---- */
+.stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.srow label{font-size:.92rem}
+.sin{display:flex;align-items:center;gap:6px}
+.sin input,.sin select{font:inherit;font-family:var(--f-lcd);text-align:right;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:6px;padding:6px 8px}
+.sin input{width:5.6em}
+.sin select{text-align:left;font-family:var(--f-body);max-width:14em}
+.sin span{min-width:1.4em;font-size:.88rem;color:var(--ink2)}
+.kvg{display:flex;flex-direction:column;gap:6px}
+.c11{font-size:15px;fill:var(--ink2)!important}.c12{font-size:16px;font-weight:700;fill:var(--ink2)!important}
+.grp-t{font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin:10px 0 4px}
+.lamps{display:flex;gap:14px;flex-wrap:wrap}
+.lamp{display:flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;letter-spacing:.04em}
+.lamp i{width:16px;height:16px;border-radius:50%;background:var(--surface2);border:2px solid var(--ink2);display:inline-block}
+.lamp i.a{background:#ffb02e;border-color:#ffb02e;box-shadow:0 0 10px #ffb02e}
+.lamp i.r{background:#ff4a3a;border-color:#ff4a3a;box-shadow:0 0 10px #ff4a3a}
+.lamp i.g{background:#3fe05a;border-color:#3fe05a;box-shadow:0 0 8px #3fe05a}
+.sample{background:var(--surface2);border-left:4px solid var(--accent);border-radius:6px;padding:10px 12px;font-size:.92rem}
+.sample dl{margin:6px 0 0;display:grid;grid-template-columns:auto 1fr;gap:2px 12px}
+.sample dt{color:var(--ink2)}.sample dd{margin:0;font-weight:700}
+.tf-body{fill:url(#tSt);stroke:var(--ink2);stroke-width:2}
+.pipe{fill:none;stroke:var(--steel2);stroke-width:12;stroke-linecap:round;stroke-linejoin:round}
+.pipe-in{fill:none;stroke:var(--steel1);stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+.hvl{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.hvl.pL{stroke:var(--live)}.hvl.pD{stroke:var(--dead)}
+.gtick{stroke-width:4;stroke-linecap:round}
+.arrbar{height:14px;border-radius:7px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.arrbar i{display:block;height:100%;width:0;background:var(--good);transition:width .15s linear}
+.cat td,.cat th{text-align:center;font-size:.88rem;padding:6px}
+.cat td:first-child,.cat th:first-child{text-align:left}
+</style>
+<style>.logo{display:inline-flex;align-items:center;gap:10px;background:#0b0e0f;border-radius:10px;padding:6px 12px;color:#fff;text-decoration:none;font-size:13px;align-self:flex-start}.logo img{height:34px}
+.nb{display:flex;gap:10px;flex-wrap:wrap}.nb a{font:600 13px/1 system-ui,Arial,sans-serif;text-decoration:none;color:var(--accent);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px}.nb a:hover{border-color:var(--accent)}
+.sig{font-size:13px;color:var(--ink2);margin-top:8px}</style>
+</head>
+<body>
+<div class="wrap">
+<a class="logo" href="https://www.youtube.com/@STEM_Beats" target="_blank" rel="noopener"><img alt="STEM Beats" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIUAAACMCAYAAABS1Wr0AABm3klEQVR42u29d3hcxb0+/s6cul2r1ar3asmSbFnu3cbGppsOhlBSSCCEkkYgxSGEQBJILrlAAiQQEqqBYAwYDDbuFfeiYsmyJatLq+27p8/vD8lgSHLv9/6uZSA38zz7rHa1u+fMzDufXgj+bw16yjMHgIw805G/GQDrUw9z5DvW/5VFIv/iAOABCCMPGVKeA7VjXFJ+eUpKepZL9jickEWZ50WOcqAAhWGYpqkqqh5X4pHgYCzecSyMxsYIeg7FAcQBaAD0EbBY/4pgIf+CQBAAiIDslRdfnO8fN63UX1JQ6s3JKvP4PHl2tzPdLkopAs/ZOI4TCWEEjIGMLIUFBlAK07IMwzAUVTOjyXhsMBJOdIX7+o4OHO9oGWw4fDS44d3jaD88ACA5AhRjhNL8GxSfg8ENgwAuTDwrJ+esc8eW1NdNyCzIn+D1pZRLdjHNAuU0VUvqmjagxJODyVisT4lFBwxFj+pJNanpqg5rmE0QgRNssmwTbJKTt9tTbW5Put0mpYuylCZJgodylOi6HotEYscHO/sOHG84vKt1/QcHzJUvHwfUoVNA8m9QfAb3LQCQkDYmK+fGr42rmDFlQW5xwSx3mqeEEcLrSaUnMjDU2t/Tf7i35Vhjf0vLscH9B3vRtCeIcEdihAWcKjuwkd8lp8gcPJAio7raI1VPTMssLytILykqzS7MGZOa7q+yuZ0FPCVyPJ7oHejs3nlsz+H3D766fAe2rmwHEDnlGv8GxSjfrwTAiYmLi2q+dOP88mn1F2Xk+Os4QvlQIHysp+3Eto5DBze2bf5gv/HOGz1AMgJAOQ3knZxCleyompmedfbissIJE2bkVlbM9Gf6qjmeOiPhWFvbocbVh1aueiv4l4cPAAgCUE8RWP8NitM4BAAp/LwryyZef925YybWXupK81Ykk8n+7uMn1hzdtnNt899W7cOulScAxEZAYIwy2xIA2JBdk+5bctmYMfNmzy6qKF2cmuGt0FU92NF89P0PV779cv9/LtsHYHAEnCb+Pf7XgwdgR0H9mPonXv/xDQ09rXcOJNgNDb3Hpr645hHHJTfPA5Byior5WQq5DpTPrx3z8LN3XLb9yOY7+qL6NzuDkbNX7fiL54pbFwDwjVAa8u9t/f9PxRwACkuWPf7VpXuP77xjIMG+1NDVOulPb/6Un3PVRADuU2wPn6f7luHJLy776RPXX7atcc0dfXHjpuOBvhkvvPcwaudOAeAdoTL/Hv9D6pAmn3P9jPPe2fn87T0R7evtQ0OzXtnwMGZdPnkEDNwXANQ2SOnF5b/84y1LD7Tv/s6Qwq7d37anbNmjNwDIB2D/HIL6cys7ZFTd9+TXbmrsbv1uf5JdvPHw6syvLzt3ZBG/iBRPROW8sdOfX/3QLR1DQ9/uiybOen3Dkxg7eRwA57+3/J+NZaAAXCiaUjtn+bpH7+yLxb7eMtgz4fHX7kFacdmI1jEaG0bOoD0l3X/zzy65dEfL2u8GNHbVvrbN6TfcdRGAtBFZ49/jU+wiRVp0/dwlG/a/972Awi7edmSD74Z7LhgRIulp5/nweuB2p8LtTh1hR9IZIuUy8sdXTX5+ze9u7Y3Gbzra31n+4FM3A8gEYPs3FD6W2n3+m35y+Q2HOg9+uz9uzPzbpqdQVFs+CtSBR2apHzVTazD+7OmYfO48TL5gPuoXzsCYadXIzvadIVmFA5Bact8fv3ZDS2/nt/uiiWl/XfVLOAsqR4kifuEohK/0h4/d+I3Wvq7buiLRiY+/dg+A3FE6tY6Ma74zd/a6I9sv3d95+Kp9nQ1X7etquuJgd+PU9w6ts51z1cQRHn+mhD+P96YfLr72QMeuHwRVtmDltj8jraj8/zLFEACkVtz75Ddu7QgFbz4+1Fv2sz/cNMIuRul69izbV350yTc6wtFHVJPdFVCNuweT5n1xnX29J6Z7f/TEVwHkwFfhOoPrIPJzL52yZPOh9+4Ja+y8VTtfhq+w4rNUWbnPkEKkVvzs6QvPuvHyXytJLfrOk3+589jPv/Uqht3Tp9/bmJUlgxNTSGV9wdR5M84/EdMSz72+6e0Pt+zd1A/ZqhuTld8TMSJ9b6/cY/OLzBjKVICBM2F9NK3jjf1Ne5o+9NTUpY+bXHNFyoz5niPvrN2HxFDis7CAnnlQzJnDo73dnf+9X5+z+KtXPZRUjcS7j//xe12/+f7bABKj5n6WcmRwukccOzFv3Nzp5+mGZex//a1V1q6Nh5IOjzGmtnyizW73NZ8IHbK6OqKWrOqIDSXP0KpY6D02dGTbzoOu8VMyquvHXi1PmOI+tmrtbqjh5JkGBnfGhcr2dm/qjffMvuj2r//KJFR87w9/vr3rtz94e4RCjJ6twOaVIMItVtQV1M6eeo5mmnrDxq1rxdhQINrTG/DWTKieMCaruJ/zcD3btx4WLUM3Oa+KZOBMucEZhnpDLZv27EubNquoZlLtFWRMDel47ZXDgBk/k95W7gxrGU7n4i+NXbLs+7+WPY781c+v+GH7z299ZZQBMQwKOUUGz1xCRV1e7Zyp5+gW0w+8t+5dfqB70OrpDsV9OdrYypJpeTnpBUdUuTe2f3u3JBiGGbapQMQ4YxQj1B1pbgs050ycOG5sXdVF8Zzq/r7Vrx7GsKeV/auBQkJGbdG5j/zmp9lFuTO3vfXBfYfvuPrPAEJnxKoouWXwcHEVddnj5kw7RzdM48C6DW+hu6WXAkrg0KEeq6ouc1p17hhbVk55W8Q6mtzyZoctw0eMSEA7gyTcQvvhQGcELcVTp0wvHFexoEd3HIzuXHccw/EZ/zKg4AGkT/3DX++omTHxmgPb9z69+eoFvwQwdIbQTyF7ZAjEKY6pz62ZPfU8w7TUg+9tWC10H+81TFPhIoHkiZ6hdlpcXT2jJquI5BSVdxvOE4ntGwbl/EzeEEUT8bh5hu7XUg/v6BmyZfaWT6m/MKu6oubg4fYdaG8KnAlwcmeIbbhLlz129sxLz/tJT2fvzrfvvOMe9B7rPIN8ksDvsoET3UJxbf74udMXGcw0Gj7Y/J7V1dZPk3pck6jKOloTvWHzmJlbXDGlOqfcVlwxoc+dPxDbsWlA4l2i6fAS5GcYGDgzWkl463t95tiZRlV99dW+0jG2lueW7wLUURc8zwQoZH7aRTWL7/rOA4TjHO8/+vS342/9afsZDlMjcDptIHaXUDEud/zsqYtNy9IPrt+yGp1HezidJQx1MCFLdj2xY23viThptTJLyifX5JTmlpdMixbW2QPNzb0s3GPYdMIbbruBSORMACPZs3HrMe+8s8srxo+5MJiW3RtYs7JpJA6UfVFBIQLwznn0z98uryk9Z8c7G3975MdfeWVE9cQZBYXHI4NITqG0Oq9mzggo1m58D51H+1XocZDjUSPhV+GygzQeCHecGDwcSitIryvLqphQmVfHqicV9enOSLLpYBgMBFK6hWRAH3WNRAmp/Qmrv3LWrPm55SUTWlr7N2qtBwIYxeDg0QZFSu6t9y2Yc8WF9/S0d+957+tfvRfR/p7PIJh1mFJIkksoqc2pmz1lkWkx4/D6TWtZz/E+yzTiODGYQGLAAO+zJAnM6jkS6z10pKXblk792RmFs2pySr3lVZMD/iItsnXjcaghAr+XIhLRRlnOMNWG3QGzcrpYO7luCU3P1Nteeno7hkMOv3Cg4JA5Nv+s++691+115ax++rll0dXPbTlTEvTfyTVOp02wRDdXPi5v/OypiwzGjIPrtqxlgc4B0dQVA4aJtDQGQbeMqMUEm0SRSCoDO7c2Ho3RLs2VljmuPLMgb0zJVKVmhr+vvfsYjjQkUZDDIxg0RpnP672HjvRmzptfW1BRvLBHt++M7Fx3ZLTAyI2icGkfe+9/LqmbN+UbrfubX9hzy2W/x3DYOz4TUDjSHZwoumnpuLy6OVPONizTOLh+y3ra3x+0EnHL1EwC0ykBRHBwhE9SAsGCKUvESBzc29nS2Lp3QE6z8vL8ZXW1hbV85YSK/gTXqTcdScDnZ/Cn6BgaMkeNjYR7kzFf8VDZ1PrL3FnZzqY//2UtoGmjQXW5UbNJlE8pnf/dO37EOGJf/dhTP1L3bWkAPsOEofQUOycILlpYkzd+9uSFumXphzZt38QNDcbcE6dmGZ4su3lknwGb7JLSPDYiSRQ6TAuaLnOcYvV3hHrWrz/UyfuCjoys8pnjcsrFkqrxXap1nO3eFrBJxNJDIW0UWaMe3rJpyLd4SUVxZeGiPsF7KLx59bHRkC24UYpmSim9+4HLx82c9KXGDw+9dOTur/x1RGLGZ0YpPB4HR2xuWladM27WlIW6yYyGTR9uNXt64rnX33xl1dVX3uyYvTgvmZpvj/UPmCQcZqLLRi2NmaYaNQhlhuSRWHDTB22dCanHnp1fPq82q5DPLi4/NhBr1ltawqbPpSIcVkeRi6hxT55RPnXyRQ5/mrf5rXc3IxEKn24gcqMSWZQ3Lm/+Xd+7S5R4+5rHnrhfPbC98bPNlKriIWh2zmZz0uLqYUphwmzcsX+HGQ9p6dOm114yp3xadUn2+OLampmu8dMq4v4CFmxpDpihLpOTfZRIxLSSliW5HTTZ1jh0Isz65ZzC8pk12cWR1PyMo9s3b5Mj0aQRDaoYvXwTK7b/aCLrvPMqSsqLzupMkJ2Rbe+fdmoxKoEsxTd+dWJefsbErqMdayPP/XbfZ54AU9UAmyxRMIGAMMIYwGARcJwo2Ow2keNkI2GwvV3hQY+NihfMr5h+1dcv/8nM3/z+V6lfWXa+RnifFY7beV6SoRMmcGIyvmXV7jWvvvtC44lIZEpd0fTiG28/Vxnsc8CTbxtVAV5t7zu8fsvroEQYf+5Z552S8/K5BQUHeDwV06efb5qMHdyw/U0MZ0Z9ttnYGghsAM8sSgmlhBICgFEwjgkiTzhCqcST5qb2Q08+tfLp1z9o3p5Q9OTZM4snXn7z5T+e+Ls/3COdd91k1SQpTKAiLMtycmIy+M7yLevX736DEwU6btbEy7k5l+RDi9uQkSGP4mzUtuee+7C/q39fblH+QsdFXyk53cHHpx0U0pIrS/2leXO6uwZ2d/z+0e2jnLqH/3GsFyOEMICjZNgjwxgxAVgEEEwjNvTeG1u2/fIXj73wH08/sPKd/WuJBeuyhTWLL7rz5l9kf+2285Om6OZFwqmGasicHj361t/WNB0dOFZSlFGcs/jCOTA1BzivPIrUwsLRLZ0tu/a9LjvtGVXnnj93OBD58wkKCkAec/65k+0up//4wcNvYuDwID5HQ9f1T0X2U1BKCCxQkwGwmEGMRNymRQfZhte371r2vV+99sdXH9q6p6t1XGGq/8ovnX9L+R13X58UbCm8RSgnyBzpPhZqOXBkp9PGkbL66hlIL0mRoduBgtEMp1MbV762MR5NdBeMH7sA3uLU0wlCelpN2lJ6WkFV5Wwtlgy2rt+8+TMwZ/8TNICAUkYIsaxhiYKBgTALFIQSMMYYABCmmoN9QcTCQ9DUgF2PDQwtf3rd6v949NevvH9gnZPn5QvPm3p5wbW3nBMzEiLjRV6UOa7/aMtRNaJohVmpRVx1faaiayIylNE0DGqxt//W1t/ZvSsty1/jv/iKMaczCvx0gkKwLz63LC3TNy7YFzgU+sszzZ8f1lEAmCaFAEIBUDZCJzhCAAqwYZmHMmZBSSgsFgmb0XDEioUDHIv00T0fHNjzm/sfe+29XSs4nnJnnTfr2vTzr51uGLDxDp8j3h+IJhNa3OOQvLaCwnQwgUJ3jWbCswUkg22HWneKsuwumD512unMnjudoJByZ8wf53TY03uOte8A+iOfk3I/BJpGGWOEtyQKRoZ5B2Gw6PD6EgICNnKzhsE0M2lQllCVQDzCx7UhziRh+0BPz8FHf/XMmo0N7+dlOtyTL1h8hZWe6+dkl9NQEqaSNBRJEGTZ63dBjRCY2mj7lZTjWzbvVxPJUF5F2TTAc9qSrenpTMPPrSwbbxqGfmLfwQOfvwouMkBMBgAWIQAjoBY9SS4YBUAIIQAgE8o4XdfhMtWEEogiFhxQjWTAFe4ePPzcsy80NPV11IzJqsycf/Ysg+NkixHOME0LBAQiN0wdXNaopyRGN7zXEewJtPrS/ZX8zAX+zxsoeGRWOTJyssYko8muvk3r2j4HxTnIR6UQLYsQQhnAgyOEgVkgjA2zEkIoYRYZ/gIhYBxlzCKU5y10dhro61NjVjjJJfqiJi8mlN2bjh3cd+QDh8ST6rqx9abD6+IFnjc5jtdMU2fxeBKSeGbC9roODQ50du2XHVJm7vQZBacrH/V0gUJwTJmXbve48iOBoUZj78aez1WluD6AMYsMp9dY4ABGCYFFGDm5DOxUtfVjDY8BYOjr08VIJGlqibgscUb3rp0HgwOxWGm2N1vwZ/o4u0MSZcEWSWoJpbc3DJlaZ8j1F+9rbd8PjuOzKisqTlc+7GkDha+6MocXRc9g32AT1HDoc8Q+KGARZhgcTMoxC/RkeURKKUAIAciIlkoIIACiRZhlnUr6LVEUdaJqqiCILHns6GDvULTP45KdTp/PZUv1eZ12wR6JKkNKR/uQRKkFPnEmhGx1oLn5iKIaidScnPIRNPOfB1AQAGJqTm4epaBD3T0to5rU8z+r5TVcvMxj5yHwHCcKPDg6zFLIx3K8dRITFATMooyxk6CgIw82wPOWohkm4XnDCvbFg8FYgJdEKrrs9rTS4iK3W+Z7+4PHzMZ9/YR3GhCEMxHkq4caD/ao8cSgy+cugCvHidxc7vMACg6ALTUzLY9Zlh491t75GdaRPLXKrgS/34bcXIfNLdt5wS4zziZRwgnD6sawNROUghAMS5gWCHiewOIps+wjgKj6hMBIDJNBVYxEUokZjIG5XL7SMYVjlKTOuppbdyPSGVNMaOjrOxOgsPQdm4NKPNljs8uZKBnrR2cndzpC7//3GyFmy44UT7ah6rHQ8Y7AZxJuBxDk5kpIJARIkmjjnJJFiQgnz1HObaNOm4sTnE4QXgTI8A1SnqP8sMBJABBGCDiOiLCgMIsABQAacFJYtTGZMEo48BwMxqAbhmXPyS+rKUjNPt4V7O5av26v5Emx1FDsTJVIZEAwmYzG+z1p3gpbWWVact97nwtQEKSl2GS7LcPQzEiwvS1y5jWMKg6lmmzXRbvpTLUxyZQNjZOZjZNBJZETXRIEm2xR3gYYlgVmEYBxAGXgKBgYY4BFCXhGqSpwhMkmRZZG0VPKABCfEaRxp0GZzBGOE3hJFByGBVTnpvj8Mi++39CyIfnhxk7J67UQ7tMQPmPal6FEI4OcwDvcGZmpydOgBvOn5bb8BQ7Bbks1dT2C9uPJM1p1NzVVtrtgFzSbPawmbOCYyJXWZaaNm1rmKiwosTttHo7nRVVR9EggEBhSLE5jDCZjhBHCLAvD6ikZ1kEYx4hoWTRpWRSGQZGrDNu0OIOTeIOjJuH0lDSnO9WRkipYVk6GJB/ujAy0rFmzXhBMhVONJPr6zmSlXUuNxgKEEMGZ5nX1nabMrf89+0jx2jiBdyiR2CAGuowzVlwsO9spOXwe3WDOhMPjTZl/w9jiWdPnlZTl12Wme7I8DsnuFHgQAIYFxBXF6IlqcZ9TlHuHdNXSDJ3oqk4IsQCAEIAQwlRmEcAOWAkC0yQAYJp2ntjcIgEThIKiVJ/b4R/jEPjmkGbu3nHw3ejW95pkiVNiWuhMV9e1ktFoGJRAcLmd+JyAgnAutwBKRF3XEkBIPyMxl558u+hJTVXjiluYsrBkxtLrr6uvK5udnuV2DYUU1h+IdLe19R7WkkrEBAMvSna30+bzp3myvDZJPMHihBiqykxFYWDmSYnQsAgnSRwlhDBQOvy2YVBTThVFSbDrqiFk1NZVlaU5UxRGsaWp+9CxFX9928mSYaJEYkgm9TOseVnJWCLBLAuCLNtOh/JwWtgHZ5Mp4XjOMiz1DJBNCp/PJqV5PWo46Ey77tuzzr7yklunVueW9Abi2gebm7e3bN/5fu/ubYf1o0f7kQxoYByF3WOjWXmprtLKvLwpk+od2VnlMtMSkVgiyZhlWQAYA+FEgRMsk1JT4GyWRQKWRTx2O0/sVKA8lYzcqvTausrp+R6Jrm4e7Nv37qpnUnoPdlsO6EqCqbDbz3iLB103VAYwiPxpqeZ7emQKyyKMMQLTMke5XhRBbq5ks9ncRjzq8i+9Y+p5N1xzV325L3Pnge6ja9/5YHn3m6/t4APHB0TKJ0UGHRxlAIOQjHDWicageeLIiZYNb+11lI5J4UwNxNA5YjLTGg60YTAti4mMMMmkJu/kvBxHRUA0HA5ZNQw5f9G5M2qL08sb+qLxfR9sfNb2wR92ffni2vI//3VvX1DTDHR2nmnzPqPMGrkmx31uKAUsiwHMAkdHuz42D9N0JPvDknPR1SUzll7+7fISX+a7W9p2bXjij39IfvjBUY8oRE2eJIx4PMERRSFJzmLMIqrACYznecbJgk0WHPqxIwnm9aYQ07SBmMZwbwfGiK4YhEqMWYyYmsbLNhuF0+mgyaScNveCwmkzaxfA0o2dO/a81fTYL1Y+c2fRdGLFlKYD/XFvMTNPaRNxxjQwwsBRAGwY258LmQJmImYw09Q5nsqAzA8Xqx+F4fdLksvvUgk81Uuvv7Z2bE7ph/u7Gj94+KEH9AObOmS7Q1MiAxEuoSiKBgWyooNSBgIgqXGwPNRlhHnFn6LJRGRUNSRYnMTAUcYAAspALItQ0wKnWUyWOYcsSxCYUy4pz5qx5OyLij3wHD24f33zc4+9cPs5cvq0Cu7ih//a+kO7nTNp2LI+C0sub5NFQgigqfrpOJSng9QzMxxSiMkUSZYccGVJoyZc8l7ZSsbtaRdcPrFmfMlZwVAisWXlO38yNr9/zMNLMSscGhT1aDQBRwwpUNDXp8PhMMFxDDxvQYwbUVHV+KSRsJLxhGUlNRCL8QzDJI4xBouaxLRMQgjz8jrPuYiDt4nuhZcsPGt8nr3a6m872vHOK6/7AgeTN19TeodpqEPPvtR6wplBmCiK5mcACmZ3uWwghLOSavx0aD709JTkCaqmosRlUXDD7xstvzFno5asM8mRM2PGrLx0d0rrke7D/W8t3yumpeiJZCySTAxGo/buGAYaNLS3D6vGrToBxzEIggVKGShlnKga1FR0ojETAASB4yQ6EoNlKEwQBCIKAufiXXYrEbWde96sifXl/tmuWG+od+u61b171nf/9ofzr8jx22bvPdi3MaLCcnPU6vH2fBZ9xIjscqQwC6YaipyWwKbT4xCLDCjJhBLkBMHD55WOVng7TXJUgC/TkVmQUyYQoOfYiSaE+lUKogksriAQ0NCKU05r1Qh/Mwl0nY64RhkzTcqYRUAMZnKUt9tlN2WAFo0nbAJhgqASn5vaVSsqz50/vmTe9KILMsWY3Newd2vz5o3Nt15WPHlSfd41kWCk661N7XszMmVL05IGGj4TzzAnuJxpumFq4cDgaXEx/O9BUQULg33JRDzex9tltzs/N2VUtI6MjGGbvsfDOx02t6IYCA0MDfI8T4huWJFh+8CpLSEJoP09fzUMaooib9ltAgN4kppu92ek5SZimhXt7e5220WW4hBlUN05rjYn87Lz664uzOALQu1H9+9av2V3pjtpXzQtb4nscdna2wd3btpjBnwOu5VMivpn5BmWJE9Kpq7rkWh7R//piIv934OiARa0gBoKhk9wArWl5hd7R0EtHTEkKYBhGmDMogSgPCcYHEeYYFI4ndzft8BqZR9RCkoZDIO6JL9oQpY5yWHXVYV3TZxWkpXlye0aiAyGWw8e86ZQahN1e7aHem+5oe66mvKUWYlA94m1a7asSSYiybpSPs+fnlpsDIWN/Yf6tqtM1mIxXfd4PJ9FEzkKT7nL5nRka4oyoDYfGvi8yBQMgBLo6GnXTfCewtzcUSkh3CNaskYtDA0qoWCkX7Tx8OVkZcMwYImiiCSVRq5LPwZHKUGuSWBZBIoigPPYdJE4ObsrBTa7J5mel1o9e8ZiT4osHDlyfIfQvK3T5ZbsTi4q3/2Vmqsm1xdfypJDiY3rP3y7o7N/CGrErC9zjbX50xyhvq4T723q2O90cpquK3qrKLLPgFLwfN3kdJvDlpmIxbvRtj/4+RE0ASV67OhRy7TUtNzMMgwXHD/N9op2k4qyhkB34sSRo4cjisHyyovqUDYhlWlMFFPTPEgvcsFXIQNZApDLISPKI5nkPYok2nm3TXLZXNTu9UJypobAuytvuOXKiePzJ7a2Dw22ffDu2+lCQteTMXLzpdkLps6qvVKiTNy/a//K9zcda7QD8AoxqbDQVwsOaG/r2L31kNrPiKmpqqihoeGzYB2if1xNsdMppcUDwTYgmfh8yBTDp0Pv27KlO6EovY70tGpIntRRYCFGAgkFDkk5sXrV+pZjA8cqy9KLqq/72rUJYvNyDG6HLy1N8klpckmqz5ZrS7XxLq+ckpkCT0oKTU/1Sh6vj/BcqubPzRl/x4+vu/DcaZeaumntXr/jJeeHK1uZzsjVM62qhfNrb7SlptiPHNi3/o+vHl5jEwQrmlDV6WPt+WlZmUVaX6e2fXfHJkBWkqqpDg1HWVmfQcM4OaeyrFwWeGGgo7v9dPVBPU0bV2rg4LZwNBBsdXk9FY75FxSOQi4lAyFJm2DFkjtXHdn93sbngsG4umDB+Etrlj389WR+ZV7ctLxEdGaKNk8GSU1LJ26/nzrcaZpN8ikK540QwScvvGzSgrvvuXPpOZMul2HRLRv2/i3w6u/ekRx2Ul8UT7/ywpqbUgoL0roP7T7y9Mu7n43pssJxxLI0hdaNzai3ZaRLg50dTSvXdh20222GHapW2uf6TFRRAI7MksJxmmqo3Ycbj59ySD8HZm60GgCig20d+4uK887KnH1W3dF3ntuJ0x2W196uJVNTo3JKCnfs9w++9UGq1z//ghlfvvCiyZfnFWePO7L34Ma+QwcOJ9uP9+rRQAImYaIsirw/25lZXVNRUFc7pXps0eTKHJez40Qksm79jr8NLv/965mIGGli0HH70rIbc6qrxoaPHh5c/vqOx7YeTh73uginmJQrzpezCkvyJsG0cORI+6bDHeaQz80ZoRC1Ogp0gnbQU07pmQAIw5j5vpSs9OpIONE5uGn9sdNlYudPVwU3AHr7wUONUxfOMEtqqiYeBZ7H6W/TYGFoKK44nZwkaGLTL37wtBr7QWDy2fNumDkut3x6VU55d3BmZDCcHFSiiSjPAKdTstkcktfjcficbokGAkn17fVHth1Z/8Gb5pbX92a5TdBohL/ny1mXVtTXLlACAWXde/sff/KNyA5fqh2KQohhaPKss1OrPNmF+fG+QGzrrs69Gak23rJMnhBRyjVNkkhNNTiOsyilrE+WTbS366PtB/Gfs7jIlerObz/Q8iYObBw4XUXm+NO5YQObNrREbry6I7s0tw5j5qShacPAKAScmOhwxlV3hCDDZh37zbLXB/fuOdq2+PyzSyoL69J8KbmFmZ4iOd9PBAIYmomooqqdfeGu9h3dh499uGdzaM2K3WnGQDTbK0hGIi7cucQxZdLMiZcJgkT2rNv8t2WPdazyeByJWEI1ZQqZY3G5trKyTvSlc127drUePo6I32t3JTQwIpk8NOim6TR1TrOoRi1/IqmFct064E52dnYqowQMqWhKfR3leKntUNM2QI2frtxd/jQ2WdGNbau7Tpzo21tWXXJhwYXnl7c3bWgenSikBg0RREEKLClTtpQPVn744YZ3Gj8sGuNzVtVme7ML0m0ulxMioAZVLR7sDYWPtvTpRw502pXBqDdVstwyRDUaxcVT+bLFZ026yZaZbzu+dcOOnz3W8kdTliOJhKGoRGW6IbNp1Xx2dmHuWDOhsIaDzXuGYjEQJrjUhEKIRhyWZZq6ZpiqCTM6RPRwwlA1TUvCaXG5uUBn52mv90VhS03LLSucEY0k+jvXrNmJ4Zpi1ucLFD3ZOtATa962a2NxTeklhdOmzG8HPsDoVek3EG6PqqLfcFBXgspWnB3bH1JbDnSc0DQCXWPQdAZRhOAQqCi5LJdMLeoQDbeliETVrNKUiOP6S+be6B1Tmzl4+GDnk8/t/o99baw7xc4lo8mYKoom13o8RH90Y8EYT1pmjhGL6qVF6ZW//E5ODrMMw7IMk4GZHOFAQMGYZTKmmzzHWQTgDjToq5d+d+3yEYH+dBq2hLQrbxrnSffV9TQfXx9795kWnEbX9GlkH7t1AErHytf2DF58bktORenZqD/nCex+JzxK5JMBMDEwEI9jQEFWVgyKTYCcFByQOaQIQFwYboydAIMYBRczqc0t2gXeJJw6IN1z88SvFYyrmZJoPxJ/c+XWR55+O34wTeQSnTEjxsUMU0rTRJ+LOCfUpi8UvHYK5hEr5udOG1Y8DYDpgGkChAMYA3QLEFMBhDGwd2N7Y8vxP45S71NP6XmLzhN43t2yc8+aESqhfw5BAQBQsPvdEyf2N707fsHUb1V/7aa5h3a/04LRbWDCABjo6TFHrsPFAQIUEKCdASAoKIA/muCpi9rdIsRkPOr43fcqLq2eNvViM5FkO9ft+ONtDzW9XZybqQwNheJhRBS4wHAEuGBRpRCPWJ2t69a+aTCBAJAYswRKGIXFiGmaJsAgIGHPys2odI690BVubR14/uWDP7nviaOH/H4/GxgYOJ1zl/h5V5aOqa08Px6ItbS/9tLOEVmCfV5BoQKItK5e/VbVzAnXltePu/xQ5tg16D3cegbKL7MR+cUcPpnt5KP329t5y+cT0iTOlozH7XctzZk756xZN4nOFK5x49qV336w4blUp1cZHAxGuoVoAu0wAVC/328dOhIYnP613nsd1LC5XKbsdsuyx2FzeJzU4XQITsnOSVAi3C1X5F5alDfWnuw+pK5bve3xH//hxM6CAj9rbx843T4Rb+3l1yz0+335O9dsfcTY/V7nF6BkYpY69NzvjnS3dGzIzc+cmv/1W8/6DPpsslM8pgRZEPx+4tR1zXH+JL5kyZIp37Dll7i6Dh5ofPjJPU/0x8Qwx7FEN/Uk0I6TXYD0gYEB9ViCxCSXK+rx2IOCIA8qitCfBOlXmBAklE8SXWfXnJszd9y8+Qtggu5dt/XFO355aEVemj0py1b8NFfz4VGzoLBi6rgl4Ug0tP/NN9eNyBLm5xwUPSqgxA+seu8Nppta/dlzr0JWffYZbAD7iVFQALHYluHkeebJTzUzvnFd/Tf8Y2sKI63Ngy+/vvvx3W38gMPHGUNDqgq50/o7ttTXp4SdHXFK+8KRiBCKxRIRLa7HWVxTw0NxfeEkR830hfOWSJ4MoWXXjtXff+jDJ0SHNxI1rGhmc+B0N2wRq77ylbnZeenjjx1ofie04oWm0WDNo7FRJvx+pffZR3YfbWpfV1xWML3i1m/OwWmsyfQ/OVmm6bY7HJzXNBOen95edU355Inz1b52be27m59d/v7AIbeNB29YnN9mCqlDqVJGBmwogDhipicATDRAa22F1tfXpyVl3mBJRjrCUX16LV9wznkzrnHklTu79+9qfOjJPb9vHrIFSCwR6eyMRDecXirBoWJ6Xs386VdGE8mBvS+/+jyi3YOjUd56dE7vwICCYOfgrjdWvpTUjOT4xbNvRP74/DPsMCJZWVmi2+1wGoaS8uOvVlwwaf68pQDH9mzYvvKJv3VsTPXZBVE0JYcDTj5F9rpcZqpp2t0Iuu0ZGRlSaeknXPE0KwtClsnbkozK9YU089or6m7yVtVkBpv39P71+e2/XLVNbU3n5eiRnlh0FGQo57jv/+CyjJzM8Yd3Hnxl8PmHdyErK/lFquJvAT4Sb2lRpcnTMirGVS5Kpub29L390u4RcnomfANCZibckYjmuf4cT+211y24y5lb7m3f+UHj8ysOvSFLPJMFi3dIluRLEdx+H0nJSZNS0n2QS9NFW7qPJx09UTUe/whgksMBhz1F9nmkmP/B70+6tWLWjLmJrs7oylc3/uYXz3ZtTEuTQuEjgWDk9Iez8/LC6yfM/voN96txJbzugd88pLfubUcsNip1QPjR25NAAiod+PCpp54pqiqfPmHhtK+2nXvDuuiqP+89ExX9s7Ig9ERidG6p03/90km3ppRNytSD3ZbH70+747Yl3wR0xgCLEIsBHEc4HoRyDKZuITaI9VsDD1z57e5XAdCCggKq23SbU/ak6MlIykM/GHd15bSpF+rRuLV9w46nf/CbprfdaY5wd/dQODAKgACQMfXOW77i83kLNr/69j2Jd58+jNJSBa2t1hetMxBDqouZe7dEzKqZtHJSzRI5N9dx9NVXt8FQoqNMLYjDAbHQl+n+z2Xj76moSV/EmAiOUmLzZTqcab5UZ6o31ZXq9jlTXGnOFHeq0+NOdbjTfY7c8Wl6rBcvrdj37NaW0KDP5WM2RREcLs6dTIZTfvjl0kVnL5l7i+xNkxo2bXrz1p9ufVyBY0jXEe7pUWOneV4EgDf/J/952cwLF32n82jn9g13fuvXCKsBDHWPWnM5flSPa19fEh6PcPjBH7+RV1k2a0x9zWUdP//d5qbvXvcXDHtQrdG7NMzpE1NcPQHaEljT+pBuNIISjicckSglHDMZJTBgWZZlwQLRVbGuvmSRb9zirO7O/q2rt/YHqtK9dgUKtRFRCvTF7N+4MqXs3CWTbrHnFjpPbN2w777f7fr9UMgW0mFFu7ujsVGYj11ecHnlrCuW3GYaZmLHX1/4Hdr39o322uEMlUnPcF3znfNubAn0fLl14IT3hh+ci2ED9KhqHh4PUgBkAsgDUAigJNWJqpwcobakxF5fPcY1bXq9Z159vfvse2/JuC3WfktI7fuh8ewDVd8pLfXUjR+fVlZX5S8tKfGO/dJ5aeee2HnpLsZ+x/oPfLlj2U1ZS30+saKgAJmnq1Th35W1ziytWrhm72t3Bk02+dlV9wHIQm6u7V+hWa0FZDHt4AYlllWpjp02/tyMMWMqDjd070BHQ3gULZ2WqsL0+/2W3y8YDoeoZzhETRKEpN3jTNopNEmywZsmisw0uK9dVnJR6ZT6+t6jzc2/+f2Ov1jEoXMiIUTgHHmeZPp935/+3ZJps2bGOtpCLz+/7mcP/bl7Z4qPj7S1GcERW8HpPki+uv98/pa6OZO+0ri78d1Nt97yOGL9fYhE4vgXGQTu3FQ4cmumvbLxqe+FDHb26t0rkFlWOeos7JOFVrmRh+Dz+VxVxd786ZMyJ157vmdJz96lR5j2C7b++el/nlyTMmverOzpM6dkTJlZ5zhr+0tznzciDzC17x7tzcfqf5XuRU1VsZw/SrYXCiCt9P4/3/mN7lji8gMnDkoLrjkLQMaZakNOz5jZOdIZBQn1bvvpj548uKthdc3kmotmPPan20bIO3+GzN4nfSO60xnQNapYkYiOeZP85b7cssJEbyT24a7OXQ6nJMg8LyejceF7Xy5bNH7etMsopTi4becrP3hk/ysZaZ74QFQZGgUtigLwZn7vN+fMvubCH6pxJbzhib88oK55/hAyMmJnqkIOPaMNFjIzIzi268T79937YEdb1476OZO+Pv6Zd24FkHaGKMZHQ9NAbUQUeWji+NqCSUJamjDYfax556Fwl8cpS6qpcEvP9U2cu2jyjZIvXWz7cPum+3+3588J3RYOqwgODJz2WqEcAJf3Kz9ZMP/GpT8nPC9semHFff2P/XAz/P44+voSZ7Lu5Jkbra0aPJ6IueG15rfvf/Bng72Dh2efP+e74/745u2AnHMGgUGEhEcyBU6eMFbIyivNncSUOJobju6LGLwpiKZcX0pLrrpi8i3usoq03v07jvzm0S0PH2zVugSFDXV0hE+3pkEAeD1fvmvBOd/5xi/cKc6MjS+ufLB12VdXwVMQwcDAGS1Wy+FMj1jMgK8C+p4NsRMR61BBfX19xfiKi5TqWaRvxfJGwIyNtrpVVQXRJju8pqF4vnxxzuy6WZMvTA50hd54a/+KUISLpXmQ+s3rJ36lcNqs2tDRpv5nnl73i6dX9Oyxi3zItMXDQ0On1VXNAfCm3/bAOefcdvMD3hRX3pa/rf55453Xv4yskggG28JfdPXz//1keIs9AHI8S2+/5OoDJw58azBpTn11w5Nwl5SOStohTq194nfWV/vGzJkoLTi0etEaxh5mTWvO3nrjRVlfue5i/3W7V8xdxRIPs2TP3dqrD9f+xOHA2NIcW+4oCJY8gPTCn/z+69e1DHbf0hON1z7y4k8AFMPtTj3TLPWzoxQnhxI0UFBA1M0bAm390f3+qqrSmsk1F9mnzyk41tJ5FF0tIYxOZyGa66EuyYG0eZPdY8+5aM41AuXlTau3rjrUGu360vk5s6YuXnQxqMjtfm/987cs2/7XTJcUGVSUoUTitLa/kgF3ftXvnv/y7KVLfsJzlKx/+c37Gu685iW4c8OIDEQ+q85K3GdILRjCYRWlhUzf/WG0pbFtj7t8bFr1pLEXZk2bXttruDuVvRuHTlcq3KmnMzODeinM1K9eUXl+1fTpM8NdbX2vvb531eRaT9GiJbOvk9OybM1bN669+8HNj+mqPBAKJoa6h3C6TNgcAA/KZpTMfOLp78w8f/Zt8UhiYM3TL/6s7cffeQdufwiRzsjnqkvjZ8JKMjIcANJRMqV+ykvr/njrQFy9sW2wp+S3L/4QcJeezhaLGRlwlOZJJZfMlRa171h6kFl/YPvfXbzuV7f57g0cXNrJ2H+wzu2XHPraxSkXFma7KsZkw3caybgAIMPzpe9fctHWlk3fjpjs4p1HP0y97u7LAOTCk+/9rFjG53NkZDiQlpaFlLJxZQ88fc+XjwY6b+mPm3Pf272cu+Cr84HTsjk0K8uZ5vOJFY/fU3hTouuupNb/U+21h0ufOb7pkoOM/Z6Fmr7W88CtOdcVpKKyuNiRXnV6TNgUQApK6ifU/v5v99/UHuj+Zl/SnPPG9ucw+cJ5kOU8eApSPmPK/bkdEjKK0wFXuXzt969avP7A2m8OJNhVzT3HKx5d/iPkjRsLIBX//zdKLimR87L9GL/ntVl/YeovWdeOy44eeGv6JqY+xhK9P4w/96uqZble1JSV2XIKCv7XFIoCcAEoyLzj19dfsO3IltuHNHbNkb5jJb988R6ImVWw2zNHKCH59/b/VyTWW+yB7M1Ddm3dmEeXL/tSS9/x2wMKu2hn6/bcHz3+HeSMHQfA8z+kHKSgACmVxa6yG853XdC376qjVvSnrGvD5OPJwZ8mjdADbP1fZjxZWchPqS33FGVk/K8cdgTDwcq5tituXzLzjV2vfr0rmvhWX1yd/86u5dJ5X1swzC48KaPkTPvCCpr4pw40JajDyFDhiKiDK95sbTravUv2Z7Gi8uKZY6aNPzt9/jnVSv44GunqUzHUpX2i39d/Mdcsjz0lqWnem68sWFQ3c9r5LNFr2H1ZLsmdKR3auPbtux7e9idVl/vjA5GBzsH/cXI0GTnxbqSWFTqv/NrkiT/+5TdmXXPpt/PLcif1dPbv++C5v/1q/113/NU8sO04MirDCHTEPgcN+P5pW6XP6+DhKXCCam5wDl/a0q9Mqrvw3ItLq4tn6yBC97Gu3a3b9qw68s4bW/D+6+2AGgEQxXAexKc1Frm+VMoBVbNeePzc+8pnnztXDXdqkidNPLFr097v/uT9uw8dN04oUWGwrS8+9P8o/Z9sJyUAcKNkak7G5VdNHzN75uKSquJpDocjtburv+HAmk2vtjz11Go0rzuB/PwYOjrin2H3pC88KIYXvqBAhCq4kIy44EhzZy39yqSqhfPOLxxTOMvhsHsjwUhHy5HjO1u27d7av/qd3fhwZQeGc1j1kyptsRcOySnknjMrpeonP73yUU/p2elgUQSPfNDz2H+s+s4jL/TsykxzRKxj8WDDf71hJ0FgA+BEdlWaY9El5cWzpk4uG181NyM7fRwlhPR09R1o2Lbnnaa/Pvcetn/QCYctCjeNoadH+bxbKL9Iwg2HjAwZlNowlHAiNcuXsviSsWMWLZ5XNLZ0ZorfU6SYFgsGw62Btvadnc1H9w0cbmyP7f+wQ4ocC5XbdcuMDaQ9+J3iJedde93d1DMZia53k28tf+eB7z/U+qZDlob62oLBwLDnk5ziZqenFFiT4Sqy81NnZWZMmjQmt7aqNrekoN6T7quSHDZ3PBIb6Gnr2tm8cduGjjff2oPD20+AT0QgywkMDSW+KLaHL6LEyyErS0KUOcAxBwzejbFTM3POmlVZMGni5KyygompqZ5CSRREPaHG+4ci3cd27V5h/vG7L2eKQd9jP5uyrGzu9dO1wRZry+q3n/3Bb4/9VRM9scM9mqZHLB0QAZddQlq2A76sFHtOVqo7OyfdnZmZ7s/NyvVk+ou8ad5Cl1NKl3iexiKJwZ7OvsZj+xs3H127Zqf2/jvHkOiJwu5OQHIlEWw7mfzLvigL/EU0lJjo6UkO8+TcGHLdEXTtH+p6fE1rV0Jeg/oZWf6Zs8pKxldX5BTlVvFeT6FMDDOUUIT5MzxlmUXlNVA60bjjg5UPPN7wEkfcsXjN2emLHrj5W3abaAcBIbxo4yXOLglSisMmu0SRsxGe45KqbiRVdSgyFG7vaux9t+vw0Yb2PTuPaTu3d6GnKQCHU4HbkUQiNY5Ej47EgPFFAsMXGRQfp/Sh00AnVAAxZNQKcBkSjuwMDexde3RAVd6DM1VwjRuXku8IU5FY/LQpBeNdfrfr+J5tO+9/fN8fQ3Fnf2ywP24vrZvsy0yr9YmUJAHCLMvQdTORjEa6Az19wWgwHAj0BnsHjx87PtB0sEPbe6gH7QcDQDQJu10HdZtw+DUE29QRqmACX2QT87/W4FAAAUoGl6q7OMYChOd5my9LcKfLWsZLj83+veSwpT30H5u/veKDeCMEfiigWIpeOCUt4UzPNhgnm5QRxFQdkUgC4d4kQlEViYgBmjCgGRqcvArBqyOp67BrGnp6ToLgX8a9/a9mZzeHywj0kSH0kZFEHtLe0k+/dVdZnUxN/8o3m37zyupQo02UwuF4MsLpdrV/z0YVuhiAJAhgIgXVTVDVBMeZkAQDRtwEpRacdhMOh4nW1uGwvvAXjzX8XwQFPmXIYoqi6IKQVCbU5kzZ3xh56qa7dr9eUpmihuNqpKMjnADCGoazuqJIfBTge6ohzPwiygX/ahbN0zri8Ti95tJpvjR/Stp3l+38K7W4eFQVor29weSnKsBYpwT3WqeUO2Sf6p3+7/GvAPyzz65Kra8vTxsxQ0v/4DAQfLI2FfkHD/zfiWX4vzFH8t/4R8inWM/J99g/+d+/9OD/H2z7n15Q9l/4AOh/U4+KfSo5h368aQUAzJFrdZ5KytmnTiz7H1Sy5U75zn+1qewUKyb5FCg+PfdPrwH5B2v1X333vzug7P8xAp986t7x3+wT/dS9/dP7+SeUYg4Pf4MMQZBgSMPA4RQTCcGEnKKh78BJhxOHjAwBiiQixSnZRIFDIk6SskRAKANRGBgj0HUDmmRACwyn1xkOHqbOwe/joKs8ZJkM96QfGapmwWAatCEVQ9KwadincTCcHCjHEIyawIDyX5iNKVAqwBcUgTSADjEMSCaQYQC7/5FBiQMgFBR4ZJvN4gzDQSkljFLCLCtCeD7FisWiTBQ5U1GG9M7Oj2wRBACflQXeZvMKhmFRp5ORyHBXTgIAfIJaPE+teDxo9PV95Iv5NKi43FwIuj68cX19MEYcZqd+TsjKgnDyOna7RS2LERojH30mwVNLFMNmPA6jp+ejVEYKQCj2QtAc4CzLRWgsypICdGcAevs/cB6SfxgBFY/bEdOd8GSmIC1dhiAAg0MaBrtiQDQBR7rmdLmtWG8rGebRog2CX4ZHFsAYgcB//LuGaSFhmEgEVPgzdMnthtp5FFAjBEgVYLcJEDgOgkDAeALoQFIxkIhokLiELT1TSyqKhViMIhkQAIkiNU+HnEiiOyUKNGj/oMOxA84MB/p6BChBDoCBjGINNPmPHFKkoKBAUtWAq7c3ZgMgiqdQPO2TWojh9/s1j8dMKIpdN02TiGJCbG8Pn2xAI56kGOLHblBzBLzJkZxT5VMeUrGgwGMfGAjbEolhWSctzW6mWHK8ddhfYo7IQSKGnXACAFkEOIgj1xn+NUsb/qwKQMt2waQeMF0H39cHCkBMFeGwO8Al4jCHNCQBJEbu5xNdCsmnYt+d0Ggaqib5a67+0sLS2vLJqW53JijlEslkdCgQPNFx5PietnffPqBue69zzN33Ty+aUL+AWYqumQwA4QkoIWBUoBw1QRhjFuM5nhqMsZb1G1Yff+HPDWO+8+MF6aVFlTIMDZTjCCOUMZMSQggIAUcpwIMcP9C6p+H+ZavAJfW8pTdVFS5YcHkyGOrf9+BDLxuxE4PgzQDa2qKf3ORcG/IcXjD4cpd+deKYs+YvGOrqO3J42W3PqaFECNHu8KcoDA/Afvm5BcW33DjhSzaXw22ZnMUMiwGMmQyEo8zSVC3RcrS78cXX9+5bdyDRW5yVoSf5uBU6YYr/cfeEueMm5s6yLI4B4ChlhFqEmIwRjnAWpcTiRNE81ti7/pJvvb3ylGBkUlqa6urqGnL/4q6JM2ZNG7tAiSvqU89vf/Wt9e1HKEXEbofR3g7u1d+dvbBgTOZCywSYyURGLEIskzGLAZQnHAfLNHVToDxLJo3Ifz625cUPmweSlqrR73yjbtyUGZUzvWkpZTwv2XXdUqKhoc6jDZ2bn31p/7ZVO4Y6Ty1vwJ9SRk5Ge8TrvvFrky+49abvT6ksqudlikhIsVTGTF7gBJdThHXW1Os2TJu07fVrjv0orbR80oJF9dfaDCBpDR8pJwEyBGBAB1QyfBUbBwQNoOdEdx90tGfXVM2+5qyaxUmNQQMBTz92R1ojzxoPrDA4e4OafA8iOCm3sPLShdOujSlJs6d3MNb121+slAVRV7Ky9BFfCANAkU9lEN6Dsgllc6647DuX1ReOfXV/5+498L4NSUsgo5QbMT4NU4AC8GiHlO4xM+qnT7vRlV3uRXIIICPnhY2ILwLBtJjKFp07fd8rL7z38C//1LQjM9NjDVn9pKLCN2nKOed/AyYBmPHJqsuEDj+oCYIPeABvnlzy0lKImkYdpdlIP/+CuTeXTlgwB4ghoZrmi6+1P15aYLcULpEEYFVWZs6sWjD7Fli2UzRoAaA2QB8CrBFNWuAQ6jo+6Hp+29rCHKr++ufX3141efq5thSHbMYiMHXL5HiJ45w8JsyI3DhtVvnePzy54au/eLJp76cFTYJQSEZhUeq5X7/xposmlNTvaB88vnHD7jd6W1uatISiur2pruyK4orK8ZWLLE0LoK+tv/3DnZte1ZVB3rBM3bSkRCLJ182evPiSmoJxb+9u2dlxsHE7xzNFopxiUo4M7N5zGB43pZZuyADe3du2r2X3vnWcjbd4IjAQMGYZpkCpRnjJ6mtqOiamO1UtFJMACw5DM8d5bFzjeWctfXHnh0fMXZsMMIeCAlhohwoUiDJNdSvRsKPumqULFo/NrSoEYKMAbHYZcZGDrp8qBCJDAaen2iRKTJkR2UwOdSbWvP7C07GEOMhzlDEGg6O85fYI6bV1Nefm18ytu/o6+91bdj96W/MxozclRaBgJgMT0Nu8q2HHpn1v8BIPWAAjzCLgLEqpyVOK5uNDu/1+8AMD0IapdKoUDg/a7ry1pj63qHxSvPdQQnKmy7X1485eOP2tV5v7TYOZDpbtosaa9UfWHO8KxAljPIMpWrrOTZ0/56K0wqriXatf/9vx9vg+UaAcx3NWPKYmPtzTO/jwL8+9tH7e+ZckwoHItjfffPXggeMfRoKRuDvFwxcVpmeMqc5fSAnsSjgycOqafEwpwrrsuWxxeX1J7sTBiKI//+zfnun9/aPrQZUItHiiL6KxFoFbu33WeW/IDt5ECh868fhd60/EsQ6AHVklqUgSV+Xbb07QAQT7Brv3/uL+txHq6kWoazj1Lb/KBdmVSgkhAgA1Fund9/Cv18AhawjHE2BRDYqqIxxVoQWiAJiUXy4BkMAYsRgjAd0w5pdmlbZfc9WFmw/s7ZWEeFQNpKrIEDhYDpdJDbc877yKOXMmXyBwBAEGcAAHl90GzeBgmOSTbdr9RBAiPMcTiRJQZsDcvKVlzzubo62WYSiKSUyJ43mJ1+VrLjrYffMPCn7qyympnDezYMy+1uZBj52XwMCDUMTjav9td695y5nGG/E40akBM5zQ9aEY1BGZIpmV9RExpLqu2FMlOBcsmHyRnCLbN7/66qtFldVjMkprx95wzYyzbv3R2lecqURjTmLefv/2DwEccIlwZebwHrtmOFbOmDID1Cxubenad923d690OaHrGgyHE3yGB86Kqpp5ENz4cP3zr91214rnLPCRhGYokTDUwSiS44vx4vwZpc7fvNw9eKrG9DGlAKO8yy3zPJU0RpiiGzqIweBwi4LTaZFUXdM4XlP3rj2ixgYTEDNUxJEAqgjyY7oo+uyaZLko5SgBwINpYEYEKe4wPHwYEY5J4HmVUEsiPC8DIBylcKcIkiTqJjFNkiSGTpMqiKXBtDNIpkpHpHiOE3ieo2TLQCKWJgvSubPGn9Ny2ZX7+v702z7YUt0ghImy6NFEl3/GDV9aWpiTmvv80UDg6lKfjzBGQDhesgRONdVPgcIiNgLKU4EfFol4YrPZic8nUYMxSohBJF6wWVQTO7rDQT0RSopeh0PkqMhZPCfaVN4iHA+IoFQUM7MhCY4MyylqlsZMQ1aoIbtjumlypmHIZk9PwABAi4u9tuhgwnHLtSVjisdWzop2tQdee2PP6rOiRs/5lfXVU2ZPunh88fr13REpqQuIZWVBNQyoGU6HKTspqB6lFDwACkmwkVQvjAy/J0mYpiVVS/S6Ta/I815ARSySCA4GkczKt1PeoJw3xeCyNU7oDoUjv/lra089YOz+B5SCAZwWPniw9ehAuGN+WVb5lddecsPaDL+zfdfOFv14Vwjtx4JQQ1Hw9igcRQT9h5RhgakB6ICllXoc0ImLMtMiAAgjFiKhOORkHD09UQBEdeXbYcrWSQlXZxCRVeRXKUtC88hQkipMpkNVEmI8EtSGusykwAh4G6U8L8q8QPhkMPzW4aOdtyysm3HWxedc+MIbyzc49BhlvI0mVN2Wf8U1k86aUT2/rWugq/VgWwOr8C00AAKOI2DicDvKU1UVGmBMchOLMgJGActkphqivKnLDgcv8zzHyaIlp3o45+WXz53nTM9JDZ443r5nb2dHRoYkJZMmT0F4QACByWf74GU0KqrUkixi6KpkaA6RSEEdYUICSiAAkpsLKuiKw+ZQPRdeNPMiuz/HvWf1ylf3Hkl0asZBdca8Y53ZJWOrr1s6bcptP93cIzqdnNcLo6EBuiTFTZti4z0a7AAlAA8LQCgBxRMNR4MGFEGAtLcJLBjo3p+BusoZixZe8UcCY+36Q7t3He7uP9GFWEIDlQUJxRk8G+yLG6dWFDoFFK6EsfbFYx+sWPiEfOWFd82oyCyvLbn8nq7BxaET/aHerq7+o+2NDXuOrnlvE9559QhSUyUMDekfGZnigwp0u/GRE4EC0DQGSzRG1B0KVTXBaSYDGA9gTnVJXdXvf1ZKwREdzDCtYWOFSRlp3NO0Yu0li38lFeTxqqaQYR4NiBRk++qt2yaW5RdNri6cvO9bd17U8NAvVsl2O2hhQd6iixdf7XfZ5BdfW7+WEsJMAuiEMZgmA6EjTW/x6d4D4BixGDMtwea23/rdm753CzidgSeECpQSnpftDo/b7/fHB9tib7z6ymN725RBv9dhM1TGwBECkyE9f0zlk3+691cWOAtMsxhjIIRaAPgjhxpfmn3J8l9nZIAH3FJcUe3XXJhZVVZTt1gdCic3fbB3gyQ6zYMt4f6m/Xs2TSsaf/WM+TPPK35m88ZQyIw1aMPkvbMTWmYmp4kyLEIoGxZieagq9IAGNRBAshTQYwB75k8fPH2bx12dUz2h+pwbrv/+7HP6w6GhoROB/t6W1sa2g2vWNmz5/Ws9Rzwe6AgPF3P5VH2KniSyx+gND977ztMPPnbrn97Y+uz+I12NEgGZUpE75vpz6s+79RtX/fimR371aMXDj12EoYQH/ir7J1RbHYyADNN7QgGRMNDIxxY3QhgMwggYsQAQjnCiINhEnpMkSmRRoLLEE5uN49ycLMhAgpysCWZRYn1khjtxvOvd97asMizGFiycsdQ2Y2G1opiOmisum1dXmTduV2N3a8PqDw7ykigNQ54AhFmA+neAoBSMEMIsYjILDJQQIgqiSxQFt03iPDaZS5Fl4qJMpXoiqPM2t1g3aerE0kwxlRDGCSI/YgVloBwESRY9NpvglWUhVZaFFFGWUiRZSBE42AAwWfYIHg/nYLrqOP+CWWe7sopT25sO7nxnU8cxnqccL0ts9bvbN8d7j4YzC8dMueGy+on9A0mp2PJ+lDBkZ4xwDJSxYSMvIYQBYPww0bBaAdWWAfWpl1qbv/+DP35z7YvPP9S+d/d209C09Jz86tq5iy6+5Gtf+ckDj9z+9Ornzvu6R4HX74d08vf5T5hHu5uiSBsjDr3xzIENf3u5fUNp9Wu2qsqCnJrqouIxRWU1FUUT5pZlladcueSeJxuPtof++IsdI8YSE4Qw6KbJhvcOFMPPsFwUCH4MHEXTTcCMA1hz4Nju9x7744uCwGuWEouCmTpnEUYY0bhYVw/8BRbheRNG2GTEMi0AFoMF6MmWd1bt3FxTOX7JtLKJM6+6ePFa3Xp37rzJiwIJXX1v1fq3EOgPUUq4EXs6g2VZ6rBwwv4OFJZiMd3BOMKIGh9M/OHhJ3++v03vskuU8jxHKQdik2GbOD636txLrriubs7iK64f6B/4+W/Wv87zlAcsBs5Eb+vBgw888OTveDnNNHRD1QxDsXQraYGq/UN8v8fj4TXN5MOKIp0105s9tnbiPD0eNloO7z04qS4jQxZ5HvBQQ41zXc27DpfPuXj6vIWTF8u/3v0BoJ00kDE7AxEYho06IGDW8HkR+j42//f1QRtf6kxu2Z3sWLvt7WfLc99+c8KYtJxxtTkl5VUFlSUV5RMzy8aVzz5v8Xd+9evk8atu++BkByOT/7tEnMGmJIqrBIg8Q29zPNlzrKd108rdrZZsWzdzbsnNP7ztB5OLM4sr5s06a8cfpUPISImir08Bz1vQkwYbuSnGQMF4Dkz/2CHFGIGhGCaBqQHgTT2K/TuOcnY5iXAoBsMyNUvVYSY1GEyFIJlK2CQwkhoMQ9cZgw5YiMUjYqQvumHFWy9PKbup8pwpVbOpOyW3ODs1Z9XaPe90/O2VTZzAcxyYNixSMwaLWVAJQ9+nJmyBKAAsAgbCACqyhCUkjvZhgOeYoqq6wVGeczvh3Nd8eMiXts6/+EvVXxlTVT3Fzr31lm56LMvQGGDAZDS5p0k/wTu4ZCyaVDRwGlMsLRBTNEniFIeDcA5qSoE+VbzqR7NnerKLcwmhOOuSpV896xKBfOzW0UCYRgEO+SXlM+/4elXVvY837EhNhSwIMHVR5kQhTkCGP08pDABm56dcGPtaY0puLsQ0l5RMMKH/gwPh4NoDoRZO379ubBHS7r33xm+Xzrh4dv2UMRcAH7xTUIBkeztM+gnzcPYYT8ZN98wA58pCfz8Pi3KCnWo2h8eSMtIFfcfWnlAw3ucC4HLYvYDIwTCGg1Jiogk9YQDEBADGcRzsFoXjlGtQaoEYFrNGzHmEmVDiKgTCYOMpeMpBlgRwdgEGFaEposwTESphjFHTZABjlgUlEqPJSCi4csX+97cdWpvjcbi/Oq1sfEfnUPfW55a/xGvhQTPQO0RHQEGsYTUDVLeAv6cUI7fGGHhCiESoIHECDxACxlHJoiaxTEIYz0mIRpQkLAuCLIlgMBXdNAkjwzMaEVd4nhG7XSAuEeB5i3O5RF7jTZEQw2YTeMfUKi5j3MQJFxCi4viB9R+2tx7d3NnWvKXzaOuWE63Nm463tK472tSydvDI9qOOjFz3onOmXubh4BIEh6xp4K1hvgHGLAKYYAQGACv3FECkpkK+87qqyposW1brCZWYCqhdEInX6bDSM9K4Qy2IdnX1HwEESJLdKwFCe/unLZoAV3zdjVMWfu2GpyLXLz245e333+7YsvWI3nMiqhsGD5GzZV//5cljCzPGhFQL/Se6WwBNQyA6LGwKURPQzBHDJjjGCHSRQTWtj6hQQjBhaoyCMQYgaZgc0gpSFJeHwG0xUIGAMQLKLFjQeSMWswInBqHKAiEmYYSBMljQlKSpJKMCaGLTn//68qQxBePHlWbmb9uye0X0/ZXNQqZXRXcXoZapEAAcA4Olm9B0A3B9wvnDcWCqSg1KOYuAgoGBGjFRIkM2QzMJM6DrAKwET6dPy86eMnvqXHAehAJDPYNDpkIElVmU6AAFD0vwueEUnUGbxZuKwRGTeAymazAphcVRu3XoRES5e+mUKRlFZWOH2ps6fnzP47/a12x26xZ004Rl6LB4gCZNiPd/p3rB1bfmLSurrV14w5X5y3/3YkcoL8VpWXKSxJLQCUwLlg7KOOMU3wUBwGWmeFO+dftZvxRku/u9Nzf89e13Dh5qOxoPDxhgPhdwyaKcsoraCTMBDoMDgaPqsB/k70BBBdHukHhOXDx97Nn1Y4vnHw8s7QhGEgOmrhtuu5ySl5te7vdIwns7mjc0PP2nVbBnKki0D7tjhD4LgEEFngoAOB4GwsEkNPZx0ZFwhwpIChF45gAwc/yYmWOXP13NE8Z4QihPCQc2LBYSnqetnT3NL992x4+AE1FGCOMECsYRDrql0GgwCpvdUte/uW/l63UPbC8qqd7zpz+9AEsf5MJJQw+3c4yDSgFwAgWUpAJV14GGT0Rad3bCApIGTIBQQmWX3/nN733zu99gJGlZzCKEmiOcW3C4PXkOf5473LVn8IN3Nq1IavZYIp4Az4sWICCjpGbccy/97BFCKGMMIMPyJxgBBIGj7a1H9t96+9OPzpg/YwnnsNPGfQdXrNplNhVkpqnhaDwhyNRwiIwwYkkOt831l9eaNiw4r3lv7vizJ1519eLFv3z6ye0xL2GCTgw9AhXEZKCAIHAWAJ07xSVeU+AURELtOVU1E64rKJ1wyVV97ZHQQKeqaklRFJ1pmbkVjsxi70DLpuOvvbLpuRHnmPlpUFjNv162bWhg8NtHLjrv/PKy/Dqf056R6XMXipRSwzDVwVC064Mte97b+OjvXjab9vQg6Qp9tOGdMAAYwWA0sq0rOKRGoj3QBkMjFzulx5iajEdjQx92hgYlAstt420AIRwBESg5CXXCU8rbRV7iFVUzDFNjSTW+93igJ9gf6RWYFlWHolGITIXdijTe9dXXG4G/AdkmPIKpaAECQDJjyeD2E4GBgVCsG4lwEGKv+g+irk0AqmnK8Uj/sV5DVRVBctl5ZjooYYQQjgOjxLQ0MxEJ9bQ3Nqx+663trz3yfNO+LK9stLWCJeNmJNRxeIByNlOQHA7CAMZACBgYI4QQQjmBCoLE2y84u6rMLnIFvQ17mt56e9/rqopAe+9gIhjEyVAAkpUF0Rbjks1tRmLvrubXnP7cvLRUufaaxaWe599tDee6wYJRRKNDga5gx8F+TbfCALT2jx195N09J4Zc9y7/7rXXHL+yvKZiutPtLUrPzsmjvEgtC7oSjw4d2vDmq88/v/6vDz51/FAuoHWOUPlPeklzYUMgNRWc5ML4aT7v2JocV1aWX+CoFI0EI4H9h4+a7/2lDU5nHLGK8EjbyVOKm3nd7qnnlxGXJ0Xo7uwY3Lyi4+/6Zfr9Ts+Es8u1lNQ8UMJD1U3ABHgOIDwDTIAxi+dkU1LjsejuHR1E1Zg9P8thZpWlC8lodLBh4zF0dp5M0iWnqNYnHV0CPPnO1DHVmWZ2fpaQiIYGD3zYgR4rCrT+fcnkXNgmp2ZkVpcKeRwsUdMMRikI5Sgvi5S3GIiSsIye3sHBdbuMQRVIZmU5jUQiZvhkh1g91peW7TEzVZNRE6ZJCBjHhtfWYiASTzlZ5uhQEko8bhp5mZKzL5AMrd/Y18ZiSPThH9bklLKynC6/S3dNqfFlEcFhNrfEjm7Y3RMuBWgYEM5eVJjjcJqu9uPJrtW7B4dOLQedmwtbZwhOxOCYVgnv9EmZmYXZqZmSZJOisaTa3NrX8fIbgWNhIJqbi9ipDXX/QZBNvQBfTIYalmGoMpglAOKwm89lKmAshkAg8U8SXvgRvz85Jbn3HwW02GC3O+FKs0EUKVSNQVUtcLyBJGFAkiEZ0ABo8PuHT7ZhcAgGCU6JGcB/X0pIHLknhoICDe3t6j+NHMvKktHTI/n9kEwTnM1mI6bJuJNVSyKcYoqmU7WrgqY5glpn5/D1q6rANTQMxzj4/XbBshKUMRBCwAgBYyPgSCZhOQmYwwEc6x82FJWWQmlt/btgmo9DneaAP3IEYk/PR25X7RS3P3cKpbf+QRtKUlUFQeuFHNMgRSzwlgUeyrARjHNAzZKgiJlQGho+uU/kvw9nK+VRCqC19dQWjzhNJX+4fxAiZo28/kchd+T/R80I+v8YDodTQ/JKS0F1HaRdABue/ieivf+r0D9SD2D3yY0Zjoxhu/8+RpSdwQQirgrg4gWgpgkid8Jq/Xgv/0+lL/x7/Hv8e3ymIf4HDhzI8Hq9VwJwaJrWF41GN0sOaUxlWeWbAFhLS8s8WZanWJZFBgfD62WZEwYGBgbkRKIrpbj4IlVVjfT09HzLshAKhbqj0WhXTk7eZMsyksFgcOX48eOPNTc3j3O5XEsA9KxZs+b5qVOnznM4HDWUUnNoaKgnHA635ebmTmeMcfF4fBtjzDIMIz5u3Lg9BxoaLu5qb9+bn180DjD3LV/+056lS39+SSAQ2JSa6p8eCgW2uVyuaWPHjn2tqalpuqIYzvHjq99tbGyZLstSelFR/oqTcz3S1na2ZZoZY8rK/goAh5uaLnK7XGMtw2CdnZ1ver3e7HA4fGzatGktW7duTc3NLVjKcXArihJ56623njrr3HPzUh2OpZZlDbS0tG/Kz89eJEgSTFMXBvv7P/D7/bU8z2cwxpq2bdu2IhgM0kWLFl0lSVJZKBR6t7Kycuvhw4fPpZQeraysbD5y5MilyWRyh91un9bZ2bnO5XLpWVlZ11uW5ejv739FUZRIUVHRlwDYu7u7X5g4ceLRM1Kw3efzldpstq8yxsIAIh6PpzozLfNrJ2UEp9O9VJblOgBBk7OUtLS0q9PS0s4qmTTpZx6PJ4sQMkAImWS325cYhhHJzMy8wuGwjxdF0Zudm/vbffv2TfH5fI8zxlRRFGctXrz414lEIsFxwkSbzXahaZpRv99/oSRJsyzLClmWlUzPzLzC7/fPBYD0tLSb/H5/RXqm/5u5ubl/KCo6z5/qS/1mRkZGUVZW+k0+n680JSXlph27d8/z+nz3pKQ4+5944gnB5/P8wO123L9mzZqMk3N1ORzlboez/uTrNJ/v6zyluRYQVBjTs7Iyb8zKSh83HPOckWuziTfruh4DEJo2bVphXnr6E4QQkTBW6vd7aghhMbtNupXjON7tdrtTUlLu0HU97nA4bpo+ffp1F1xwwfftdvtlhJChtDT/r5ubD8/OyMi6Jjc399kVK1Zk+/3+r6amppZ5vd5bXS5XSUFBwW95ka81GRMlu31mSUnJTwVBqALQZ1mW7YxV8aeUGjzPSzabbQLHcTZCiMYI+8iqxnFEJRyXLUnSWKaqcUJIPC8v77scx1VkZWX9qra2dk00Hn/XsIyd48aNe4NSqlqW2ZhMJtfxlLq8Xu/FJjN35uTkPPj666/fDmASpXSvpimrKKU7a2trV0iSFBcEIUO0ibXhRDgh8nzc4XBc19vb+xdJlKoNGJqhaX2GYeQvOHvBD5jFVEolk1BqANAkSfKOKSt9Jp6IvlxYWLhn0aJFk0zTVJPJ5AdVVVUXf+QlNGEyckqsAeU1SZJKRJ4v0U0zwQm8YTA2Mm/O4Hmet9vt4wVBkAsKCqZrmtaflZX1o5y8vO9UV1e/2N7e/ieY7FgkFPqjw+FoBogSCoXWA2jTNG0sgPmhUOjuzMzM/zAMfYXd7j5P1dWIYVm+yZMn/2zYvM0sjuMSgiAUE0LyH3/08dsK8/Pvra6s/LNlWa2EkBKO43wcxw2dSVDwqqYGBgYG/ppIJHYQQihhRHz++edTnnnmGZkRIiVisQ8TicRzwWBwkOd5O4BmQgjt7u6+FAAEjpM5wkkAQHneojy/JM2f9qSiKG9xorhb4IQx69atSzv77LMnEEKMRCJhUkplQog0sjCCruv7Ld36ixbXei3GbKqqborFYo+YlnmChywyxshQZOiHLoerzul0jtEs1QQhvGmaVBAEWVXUNW6H+5Jdu3Z5XC7X1YIgFHMCVyHL8uXLly8/ecoIBf2IzTLGhHg8vl5RlOU9bW1RWBAZY67ly5c7k8mkTdf1yMDAwAuKomxNJBK9hJCsrXv35jQ3Nxc3NjZmu1wukXDEpiiKAwB4gfcWFxU/RCmd3dLS8pggCEmHw1H3+uuvp3AcV0UI6RM4zhYJhe632WwZdrt9lqZpBiFEsCwrwvO8cPXVV9ft2LEjs7m5ubilpeWVrq6uH/A8PyknJ+eHZwwUoVAoznM88fl8N7vd7m+EQiGd4zjfeeed98z8+fO/bWhaj8fjHu92u28vLi29KB6P93d2dj4eCAR+SCm9ftWqVX5FUUK6rgcAQEkkQkkl/lAoEr3NsqzCV1566X3TNFsmTJjwvNPp/KGmab+aOnVqRNO0mKIoA8NNXLR+2W6vcDqdtxcVFS1RNW0gHo/vLi0t3a0p6mFd11VVV4dMy2wbGBi4XVXVQ8Q0dV1Vu03T1CORyIFvfvObtxmGcdjlct1tmmZKIBC4eWhw6JuqqnaPGzeuFgAEgRJKP8491XW10+12zna73XdOnTp1lmEYnVnpWTfOnTv3WVVVq3ieD6enp3/Nbrff+eGHHx7QNG3dmKKiP7tTUp4ghIxpa2szdF3vlCRJSyaTiMaj+9atX3ddMqmsz87OL0gmkz8TRfGGefPmvcBxHDl06NCfDcOI8jzffeLEidsVRdlhGIamqmq/oihtiqL8ISMj4xdl5eXPUkrn5+XlXZKRkfFdwzAEwzBWnzFBc926dbwoiqlOp1NUFMUIBAJBURRTMjIyRFVVk21tbUpJSYlbFEXOMIxoS0uLAcC84oorkitXrkxTFCUOANnZ2fzMmTOjy5cvd578/65du9LefPPNoXvvvdfatHNTcTBuRC6cN28QAJ544gl7RkYGt2TJkujKlSvt2aWlHsk0+VAoFOvp6dFlWbYuvPDCxPvvv+8JBoNJp9Mpp59IT078+kR9xYoVLk3TVF3XHRUVFbHm5mbnNddcE1y2bBldtGhR1tDQUOL8888PAsDy5cudfr8f8+bNi3V1dX2NMVaUm5t7DwCsWrXKnZGR4eR5nkaj0fDg4CDS09PdPM/T48ePB/1+v5yamiobhmE9+OCDfa+88oq5adOm/EQioSxatKifMUbefvvtlEQiEQEAu93uPv/884MPP/ywraKiQj7//PODq1atcqenp/snTpx4DID1/vvvezo7O9Ubb7xRefTRR53p6ema3++3A4jNmzfPWLNmTYbb7RYnT5584oknnhDq6uryTNOMT5s2re/futQojOXLl3veeuutzP9Lc+YPHjw4bnBwsHnevHnKrl27smRZFqqrqztaWlqm8Tyfqev62nXr1iXnzZs33W63uwKBQMu4ceOad+/eXZlIJHo5jlNkWS5SFCUsSZKtvr6+dYT30qampgkHDx48fMUVVyhNTU0TZVnOiEQirbW1tc1NTU01PT09DS6XK4VS6p0wYULL3r17cwRB8FRXVzcAwLJly+iSJUsq9+3bd7SsrExwOBz5dXV1h3ft2pVmt9szq6qqDgEgTU1NMziOS4tEIofS0tKKOI5jmqZxQ0NDmziOSxcEi9+yZVf35Bkzyle88sqByy+/nDcMY+z9999/4L777hsbi8W6J06cOAgATU1NabFkcsrEurpVAFhJSUn2gQMHjgHAjh07MkVRlOvq6o43NDRMtdlsWZ2dnesbGhpiCxcunMZxnCccDrfU1tY27d69u5JS2tPf36+npKQUjgh99pMq4rJly+iVV145vq+v78i8efNijY2N9S6XKysUCrWdnP+OHTsyAbinTJly5IknnhBmzZo10W63+6LRaLCmpmbL3r17UyRJKq6qqtpz6NAhpyzLUziOE48fP/4hAMXlcuVOnDixad++feXxeDxkt9v90Wi03+fzpY8dO/bw3r17cwAIdXV1x5ubmyfzPJ8fiUR28VlZWU9lZGQ8BeCp4uLix6LR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"><span>youtube.com/@STEM_Beats</span></a>
+  <header class="top">
+    <div>
+      <h1>Virtualni laboratorij 3: zaštita transformatora i prenaponi</h1>
+      <p class="sub">Transformatorska i rasklopna postrojenja · termička zaštita · Buchholz relej · odvodnik prenapona</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Dijelovi stranice">
+      <button class="tab" role="tab" id="tab-upute" aria-selected="true" data-tab="upute">Upute</button>
+      <button class="tab" role="tab" id="tab-tf" aria-selected="false" data-tab="tf">Transformator</button>
+      <button class="tab" role="tab" id="tab-pre" aria-selected="false" data-tab="pre">Prenapon</button>
+      <button class="tab" role="tab" id="tab-zap" aria-selected="false" data-tab="zap">Zapisnik</button>
+    </div>
+  </header>
+
+  <!-- UPUTE -->
+  <section id="sec-upute">
+    <div class="doc">
+      <div class="panel">
+        <h2>Kako radiš</h2>
+        <ol>
+          <li>Kartica <b>Transformator</b>: podesi termičku zaštitu (alarm i isklop) i pokreni pokuse s opterećenjem. Zatim pokreni pokuse s Buchholz relejem i uzmi uzorak plina.</li>
+          <li>Kartica <b>Prenapon</b>: odaberi odvodnik prenapona i njegovu udaljenost od transformatora, pa pokreni pokuse. Jedan pokus izvedi i bez odvodnika.</li>
+          <li>Kartica <b>Zapisnik</b>: upiši podešenja, očitanja i odgovore, pritisni <b>Provjeri zapisnik</b>, spremi ga i predaj na Loomenu.</li>
+        </ol>
+        <p class="hint" style="margin-top:8px">Kad promijeniš podešenje, pokuse ponovi. Zastarjeli rezultati ne računaju se.</p>
+      </div>
+      <div class="panel">
+        <h2>Transformator u pokusu</h2>
+        <dl class="kv">
+          <dt>Izvedba</dt><dd>uljni, s konzervatorom</dd>
+          <dt>Snaga</dt><dd>630 kVA, 10 / 0,4 kV</dd>
+          <dt>Nazivna struja (10 kV)</dt><dd>In = 36,4 A</dd>
+          <dt>Najviši napon opreme</dt><dd>Um = 12 kV</dd>
+          <dt>Podnosivi udarni napon</dt><dd>LI = 75 kV (munja 1,2/50 µs)</dd>
+          <dt>Granica temperature ulja</dt><dd>105 °C (u ovom modelu)</dd>
+          <dt>Temperatura ulja pri nazivnom opterećenju</dt><dd>75 °C (okolina 20 °C)</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <h2>Termička zaštita</h2>
+        <ul>
+          <li>Mjeri temperaturu <b>ulja</b> u gornjem sloju kotla. Što je opterećenje veće, ulje se više zagrijava, ali sporo: vremenska konstanta je oko 2 sata. U pokusu 1 sekunda znači 10 minuta.</li>
+          <li><b>Alarm</b> javlja da je temperatura previsoka, a transformator ostaje u pogonu (operater smanjuje opterećenje). <b>Isklop</b> isključuje transformator prije oštećenja izolacije.</li>
+          <li><b>Pravilo za alarm:</b> iznad temperature pri normalnom pogonu, uključujući topli dan (80 °C), a dovoljno nisko da uz preopterećenje 120 % proradi u 5 sati.</li>
+          <li><b>Pravilo za isklop:</b> iznad temperature koju ulje dostiže pri preopterećenju 120 % (to pokaže pokus), iznad alarma, a najviše 105 °C.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Buchholz relej</h2>
+        <ul>
+          <li>Ugrađen je u cijev između kotla i konzervatora i radi samo na uljnim transformatorima s konzervatorom.</li>
+          <li><b>1. stupanj (signal):</b> kvar stvara plin koji se skuplja u releju i spušta plovak, ili ulje curi pa mu nivo padne.</li>
+          <li><b>2. stupanj (isklop):</b> snažan kvar (luk) potisne ulje kroz cijev i otkloni zaklopku, pa relej isklapa transformator.</li>
+          <li>Plin se uzima u uzorak i provjerava. Boja i zapaljivost govore o uzroku.</li>
+        </ul>
+        <div class="tblwrap" style="margin-top:8px"><table class="cat">
+          <tr><th>Plin u releju</th><th>Zapaljiv</th><th>Što znači</th></tr>
+          <tr><td>bezbojan</td><td>ne</td><td>zrak, nije kvar</td></tr>
+          <tr><td>bijel</td><td>da</td><td>oštećena papirna izolacija</td></tr>
+          <tr><td>žut</td><td>ne</td><td>oštećeni drveni dijelovi</td></tr>
+          <tr><td>sivo-crn</td><td>da</td><td>raspad ulja (luk)</td></tr>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>Odvodnik prenapona</h2>
+        <ul>
+          <li>Veže fazni vodič na zemlju. Kad napon prijeđe zaštitnu razinu, odvodnik provede struju u zemlju i ograniči napon. Kad prenapon prođe, ponovno izolira.</li>
+          <li><b>Trajni napon Uc</b> mora biti najmanje jednak najvišem naponu mreže Um = 12 kV. Pri zemljospoju (mreža 10 kV s izoliranim zvjezdištem) zdrave faze dobiju linijski napon.</li>
+          <li><b>Zaštitna razina Up</b> plus pad napona na spojnom vodu (oko 1 kV po metru) mora biti najviše LI / 1,2 = 62,5 kV. Zato odvodnik ide <b>što bliže transformatoru</b>.</li>
+        </ul>
+        <div class="tblwrap" style="margin-top:8px"><table class="cat">
+          <tr><th>Odvodnik</th><th>Uc (kV)</th><th>Nazivni Ur (kV)</th><th>Up (kV)</th></tr>
+          <tr><td>A</td><td>8</td><td>10</td><td>27</td></tr>
+          <tr><td>B</td><td>12</td><td>15</td><td>40</td></tr>
+          <tr><td>C</td><td>24</td><td>30</td><td>80</td></tr>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2>Bodovanje</h2>
+        <p>Zapisnik nosi <b>40 bodova</b> u četiri dijela po 10. Svaka točna stavka nosi 1 bod.</p>
+        <div class="tblwrap" style="margin-top:8px"><table>
+          <tr><th>Bodovi</th><th>Ocjena</th></tr>
+          <tr><td>34 – 40</td><td>odličan (5)</td></tr>
+          <tr><td>27 – 33</td><td>vrlo dobar (4)</td></tr>
+          <tr><td>20 – 26</td><td>dobar (3)</td></tr>
+          <tr><td>1 – 19</td><td>dovoljan (2)</td></tr>
+        </table></div>
+        <p class="hint" style="margin-top:8px">Model je pojednostavljen. Stvarna podešenja zaštite i izbor odvodnika provodi osposobljeni projektant prema podacima proizvođača i normama.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRANSFORMATOR -->
+  <section id="sec-tf" hidden>
+    <div class="stack">
+      <div class="panel">
+        <h2>Uljni transformator 630 kVA</h2>
+        <div class="cellwrap"><svg id="tf" class="cellsvg" viewBox="0 0 900 370" role="img" aria-label="Uljni transformator s konzervatorom, Buchholz relejem i termometrom ulja" style="min-width:760px"></svg></div>
+        <div class="msg" id="tmsg" role="status" style="margin-top:10px">Podesi termičku zaštitu i pokreni pokus.</div>
+      </div>
+      <div class="lab">
+        <div class="stack">
+          <div class="panel">
+            <h2>Temperatura ulja u vremenu</h2>
+            <div class="cellwrap"><svg id="tchart" class="cellsvg" viewBox="0 0 900 280" role="img" aria-label="Dijagram temperature ulja u vremenu s razinama alarma i isklopa" style="min-width:560px"></svg></div>
+            <div class="legend">
+              <span><i style="background:var(--live)"></i>temperatura ulja</span>
+              <span><i style="background:#ffb02e"></i>alarm</span>
+              <span><i style="background:var(--bad)"></i>isklop</span>
+              <span><i style="background:var(--ink2)"></i>granica 105 °C</span>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Rezultati pokusa</h2>
+            <div class="tblwrap"><table class="mat" id="tres"></table></div>
+            <p class="hint" style="margin-top:8px" id="tres-note"></p>
+          </div>
+          <div class="panel">
+            <h2>Dnevnik događaja</h2>
+            <div class="log" id="tlog" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="side">
+          <div class="panel">
+            <h2>Pokusi: termička zaštita</h2>
+            <div class="row" id="th-btns"></div>
+            <label class="toggle" style="margin-top:10px"><input type="checkbox" id="t-fast"><span>Brzo (bez čekanja)</span></label>
+            <div class="grp-t">Podešenje</div>
+            <div class="kvg" id="th-set"></div>
+          </div>
+          <div class="panel">
+            <h2>Pokusi: Buchholz relej</h2>
+            <div class="row" id="bu-btns"></div>
+            <div class="row" style="margin-top:10px">
+              <button class="btn" type="button" id="b-sample" disabled>Uzmi uzorak plina</button>
+              <button class="btn" type="button" id="b-off">Isklopi transformator</button>
+              <button class="btn" type="button" id="b-reset">Vrati u pogon</button>
+            </div>
+            <div class="sample" id="b-sbox" style="margin-top:10px" hidden></div>
+          </div>
+          <div class="panel">
+            <h2>Instrumenti</h2>
+            <div class="inst">
+              <div class="lcd"><span class="val" id="i-th">75,0<span class="unit">°C</span></span><span class="sub"><span id="i-k">opterećenje 100 %</span><span id="i-clk">t = 0 min</span></span></div>
+              <div class="lamps"><span class="lamp"><i id="l-al"></i>ALARM</span><span class="lamp"><i id="l-tr"></i>ISKLOP</span><span class="lamp"><i id="l-q"></i>PREKIDAČ</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRENAPON -->
+  <section id="sec-pre" hidden>
+    <div class="stack">
+      <div class="panel">
+        <h2>Vod 10 kV, odvodnik i transformator</h2>
+        <div class="cellwrap"><svg id="pnet" class="cellsvg" viewBox="0 0 900 300" role="img" aria-label="Nadzemni vod, odvodnik prenapona na udaljenosti L od transformatora" style="min-width:760px"></svg></div>
+        <div class="msg" id="pmsg" role="status" style="margin-top:10px">Odaberi odvodnik i udaljenost, pa pokreni pokus.</div>
+      </div>
+      <div class="lab">
+        <div class="stack">
+          <div class="panel">
+            <h2>Napon na stezaljkama transformatora</h2>
+            <div class="cellwrap"><svg id="pchart" class="cellsvg" viewBox="0 0 900 280" role="img" aria-label="Valni oblik udarnog napona na transformatoru s granicama izolacije" style="min-width:560px"></svg></div>
+            <div class="legend">
+              <span><i style="background:var(--live)"></i>napon na transformatoru</span>
+              <span><i style="background:var(--ink2)"></i>podnosivi udarni napon LI = 75 kV</span>
+              <span><i style="background:#ffb02e"></i>dopuštena razina LI / 1,2 = 62,5 kV</span>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Rezultati pokusa</h2>
+            <div class="tblwrap"><table class="mat" id="pres"></table></div>
+            <p class="hint" style="margin-top:8px" id="pres-note"></p>
+          </div>
+          <div class="panel">
+            <h2>Dnevnik događaja</h2>
+            <div class="log" id="plog" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="side">
+          <div class="panel">
+            <h2>Pokusi</h2>
+            <div class="row" id="pr-btns"></div>
+            <div class="row" style="margin-top:10px">
+              <button class="btn primary" type="button" id="p-all">Pokreni sva tri pokusa</button>
+            </div>
+            <label class="toggle" style="margin-top:10px"><input type="checkbox" id="p-fast"><span>Brzo (bez animacije)</span></label>
+          </div>
+          <div class="panel">
+            <h2>Odvodnik</h2>
+            <div class="kvg" id="pr-set"></div>
+            <div class="grp-t">Napon na odvodniku</div>
+            <div class="arrbar" aria-hidden="true"><i id="p-bar"></i></div>
+            <p class="hint" id="p-barnote" style="margin-top:6px"></p>
+          </div>
+          <div class="panel">
+            <h2>Podaci</h2>
+            <dl class="kv">
+              <dt>Najviši napon Um</dt><dd>12 kV</dd>
+              <dt>Fazni napon u pogonu</dt><dd>6,9 kV</dd>
+              <dt>Udar munje u vod</dt><dd>100 kV</dd>
+              <dt>Pad na spojnom vodu</dt><dd>1 kV po metru</dd>
+              <dt>Podnosivi udarni napon</dt><dd>75 kV</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZAPISNIK -->
+  <section id="sec-zap" hidden>
+    <div class="panel">
+      <h2>Zapisnik: zaštita transformatora i prenaponi</h2>
+      <div class="zhead">
+        <label class="field">Ime i prezime<input type="text" id="z-name" autocomplete="off"></label>
+        <label class="field">Razred<input type="text" id="z-cls" autocomplete="off"></label>
+        <label class="field">Datum<input type="text" id="z-date" autocomplete="off" placeholder="dd.mm.gggg."></label>
+      </div>
+      <div class="sticky-actions">
+        <button class="btn primary" type="button" id="z-check">Provjeri zapisnik</button>
+        <button class="btn primary" type="button" id="z-save" hidden>Spremi zapisnik (.txt)</button>
+        <button class="btn" type="button" id="z-copy">Kopiraj zapisnik</button>
+        <button class="btn" type="button" id="z-reset">Obriši sve unose</button>
+      </div>
+      <div class="scorebox" id="z-box" style="margin-top:10px" hidden></div>
+      <p class="hint" id="z-note" style="margin-top:8px">Zapisnik se sprema u ovom pregledniku. Za predaju kopiraj tekst i zalijepi ga u dokument ili poruku nastavniku.</p>
+      <div id="z-parts" style="margin-top:12px"></div>
+    </div>
+  </section>
+<footer class="sig">Izradio: Branimir Perković · Srednja škola Valpovo</footer>
+</div>
+<script>
+(function(){
+"use strict";
+var STANDALONE = true;
+var EXAM = (location.hash==="#ispit");
+var KEY="virtualni-laboratorij-3-zastita-transformatora-v1";
+function $(s,r){return (r||document).querySelector(s);}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));}
+function fmt(v,d){return v.toFixed(d).replace(".",",");}
+function num(s){var n=parseFloat(String(s).replace(",",".").trim());return isNaN(n)?null:n;}
+var RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- model: termička zaštita ---------- */
+var TAU=120, WIN=300, TH_LIM=105, RISE=55, EXPN=1.6, COOL=180;
+function tss(K,amb){return amb+RISE*Math.pow(K,EXPN);}
+var TS={
+ norm:{n:"Normalni pogon 100 %, topli dan",K:1.0,amb:25,th0:80,d:"Puno opterećenje, okolina 25 °C. Ulje je na 80 °C."},
+ o120:{n:"Preopterećenje 120 %",K:1.2,amb:20,th0:75,d:"Opterećenje 120 % nazivnog, okolina 20 °C. Ulje kreće od 75 °C."},
+ o140:{n:"Preopterećenje 140 %",K:1.4,amb:20,th0:75,d:"Opterećenje 140 % nazivnog, okolina 20 °C. Ulje kreće od 75 °C."}
+};
+var TORD=["norm","o120","o140"];
+var SS120=tss(1.2,20), SS140=tss(1.4,20);
+var AL_MAX=Math.floor(75+(SS120-75)*(1-Math.exp(-WIN/TAU)));
+var AL_MIN=80;
+
+/* ---------- model: Buchholz ---------- */
+var BS_NAMES={air:"Zrak u kotlu (nakon dopune ulja)",slow:"Spori kvar: pregrijavanje papira",fast:"Brzi kvar: luk u kotlu",oil:"Curenje ulja"};
+var BORD=["air","slow","fast","oil"];
+var GAS_ALARM=250;
+
+/* ---------- model: prenapon ---------- */
+var ARR={A:{uc:8,ur:10,up:27},B:{uc:12,ur:15,up:40},C:{uc:24,ur:30,up:80}};
+var LI=75, UM=12, UPH=UM/Math.sqrt(3), PR=1.2, LIMX=LI/PR, KVM=1, U0=100;
+var PS={norm:{n:"Normalni pogon"},light:{n:"Udar munje u vod, 100 kV"},earth:{n:"Zemljospoj, 12 kV na zdravim fazama"}};
+var PORD=["norm","light","earth"];
+
+var DEF={set:{al:70,tr:90},p:{arr:"A",L:40}};
+var store={name:"",cls:"",date:"",ans:{},set:null,p:null,res:{},flags:{}};
+try{var raw=localStorage.getItem(KEY);if(raw){var pp=JSON.parse(raw);if(pp&&typeof pp==="object"){store.name=pp.name||"";store.cls=pp.cls||"";store.date=pp.date||"";store.ans=pp.ans||{};store.set=pp.set||null;store.p=pp.p||null;store.res=pp.res||{};store.flags=pp.flags||{};}}}catch(e){}
+if(!store.set)store.set=JSON.parse(JSON.stringify(DEF.set));
+if(!store.p)store.p=JSON.parse(JSON.stringify(DEF.p));
+function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+function sigT(){return store.set.al+"|"+store.set.tr;}
+function sigP(){return store.p.arr+"|"+store.p.L;}
+
+function cross(th,sc){
+  var s=tss(sc.K,sc.amb),t0=sc.th0;
+  if(th<t0)return 0;
+  if(th>=s)return Infinity;
+  var t=-TAU*Math.log(1-(th-t0)/(s-t0));
+  return t<=WIN?t:Infinity;
+}
+function evalT(id,s){
+  var sc=TS[id],tA=cross(s.al,sc),tT=cross(s.tr,sc);
+  var alarm=isFinite(tA),trip=isFinite(tT),ok=false,txt="";
+  if(id==="norm"){
+    ok=!alarm&&!trip;
+    txt=ok?"Alarm i isklop nisu proradili pri punom opterećenju u toplom danu. Ispravno.":(alarm?"Alarm je proradio pri normalnom pogonu (ulje 80 °C). Alarm je prenizak: mora biti najmanje "+AL_MIN+" °C.":"Isklop je proradio pri normalnom pogonu. Isklop je prenizak.");
+  }else if(id==="o120"){
+    ok=alarm&&!trip;
+    txt=ok?"Alarm je proradio nakon "+fmt(tA,0)+" min, a transformator je ostao u pogonu. Operater smanjuje opterećenje. Ispravno.":
+      (trip?"Transformator je isklopio pri preopterećenju 120 %, a ulje ostaje ispod "+fmt(SS120,1)+" °C. Isklop je prenizak.":"Alarm nije proradio unutar 5 sati preopterećenja. Alarm je previsok: najviše "+AL_MAX+" °C.");
+  }else{
+    ok=alarm&&trip&&tT>tA&&s.tr<=TH_LIM;
+    if(ok)txt="Alarm nakon "+fmt(tA,0)+" min, isklop nakon "+fmt(tT,0)+" min na "+s.tr+" °C. Isklop je prije granice od "+TH_LIM+" °C. Ispravno.";
+    else if(!trip)txt="Isklop nije proradio, a ulje se grije prema "+fmt(SS140,0)+" °C. Isklop je previsok.";
+    else if(s.tr>TH_LIM)txt="Isklop je prekasan: ulje prelazi granicu od "+TH_LIM+" °C.";
+    else if(!alarm||tT<=tA)txt="Isklop je proradio prije alarma ili alarma nema. Alarm mora biti niži od isklopa.";
+  }
+  var endMin=(id==="norm")?100:(id==="o120"?(alarm?tA+30:WIN):(trip?tT+60:WIN));
+  return {id:id,tA:alarm?tA:null,tT:trip?tT:null,alarm:alarm,trip:trip,ss:tss(sc.K,sc.amb),ok:ok,txt:txt,endMin:Math.min(endMin,WIN+60)};
+}
+function thAt(res,s,m){
+  var sc=TS[res.id],ss=tss(sc.K,sc.amb);
+  if(res.trip&&m>=res.tT){return sc.amb+(s.tr-sc.amb)*Math.exp(-(m-res.tT)/COOL);}
+  return ss-(ss-sc.th0)*Math.exp(-m/TAU);
+}
+function recordT(r){
+  store.res["t_"+r.id]={sig:sigT(),ok:r.ok,tA:r.tA,tT:r.tT,ss:r.ss,alarm:r.alarm,trip:r.trip,txt:r.txt};
+  save();
+}
+function evalP(id,p){
+  var none=(p.arr==="none"),a=none?null:ARR[p.arr],r={id:id,ok:false,txt:"",Ut:null,bd:false,U:null};
+  if(id==="norm"){
+    r.U=UPH;r.ok=true;
+    r.txt=none?"Pogon je uredan. Bez odvodnika nema zaštite od udara munje.":"Napon na odvodniku "+fmt(UPH,1)+" kV manji je od Uc = "+a.uc+" kV. Odvodnik miruje. Ispravno.";
+  }else if(id==="light"){
+    r.Ut=none?U0:a.up+KVM*p.L;
+    r.bd=r.Ut>LI;
+    if(none){r.txt="Bez odvodnika na transformator dolazi 100 kV, a njegova izolacija podnosi "+LI+" kV. Proboj izolacije i kvar transformatora.";}
+    else if(r.bd){r.txt=(a.up>LIMX?"Zaštitna razina odvodnika Up = "+a.up+" kV je previsoka. ":"")+"Na transformatoru je "+fmt(r.Ut,0)+" kV, više od "+LI+" kV. Proboj izolacije."+(a.up<=LIMX?" Odvodnik je predaleko: spojni vod od "+p.L+" m dodaje "+fmt(KVM*p.L,0)+" kV.":"");}
+    else if(r.Ut>LIMX){r.txt="Napon na transformatoru je "+fmt(r.Ut,0)+" kV. Izolacija nije probijena, ali razina zaštite LI / Ut = "+fmt(LI/r.Ut,2)+" manja je od 1,2. Približi odvodnik transformatoru.";}
+    else{r.ok=true;r.txt="Na transformatoru je "+fmt(r.Ut,0)+" kV (Up "+a.up+" kV + spojni vod "+fmt(KVM*p.L,0)+" kV). Razina zaštite LI / Ut = "+fmt(LI/r.Ut,2)+" ≥ 1,2. Ispravno.";}
+  }else{
+    r.U=UM;
+    if(none){r.ok=true;r.txt="Nema odvodnika, pa nema ni preopterećenja odvodnika. Ali transformator tada nije zaštićen od munje.";}
+    else if(a.uc>=UM){r.ok=true;r.txt="Uc = "+a.uc+" kV nije manji od 12 kV. Odvodnik izdrži zemljospoj. Ispravno.";}
+    else{r.txt="Trajni napon Uc = "+a.uc+" kV manji je od 12 kV koji zemljospoj stavlja na zdrave faze. Odvodnik se pregrijava i otkazuje (toplinski proboj).";}
+  }
+  return r;
+}
+function recordP(r){
+  store.res["p_"+r.id]={sig:sigP(),ok:r.ok,Ut:r.Ut,bd:r.bd,txt:r.txt};
+  if(r.id==="light"&&store.p.arr==="none"&&r.bd)store.flags.demo=true;
+  save();
+}
+
+/* ---------- tabovi ---------- */
+var TABS=["upute","tf","pre","zap"];
+function showTab(t){
+  TABS.forEach(function(n){$("#sec-"+n).hidden=(n!==t);$("#tab-"+n).setAttribute("aria-selected",n===t?"true":"false");});
+  if(t==="zap")renderZap();
+  if(t==="tf"){tfUpdate();drawTChart();}
+  if(t==="pre"){pnetUpdate();drawPChart(null,1);}
+}
+$$(".tab").forEach(function(b){b.addEventListener("click",function(){showTab(b.getAttribute("data-tab"));});});
+var RUN=null;
+function logTo(id,t,kind,ts){
+  var el=$("#"+id),d=document.createElement("div");d.className=kind||"";
+  d.innerHTML='<span class="t">'+(ts==null?"":fmt(ts,2)+" s")+'</span>'+t;el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function sayT(t,k){var m=$("#tmsg");m.textContent=t;m.className="msg"+(k?" "+k:"");}
+function sayP(t,k){var m=$("#pmsg");m.textContent=t;m.className="msg"+(k?" "+k:"");}
+function setBtns(dis){$$("#th-btns .btn, #bu-btns .btn, #b-reset, #b-off, #pr-btns .btn, #p-all").forEach(function(b){b.disabled=dis;});updSample();}
+
+/* =====================================================================
+   TRANSFORMATOR: crtež
+   ===================================================================== */
+var OIL="#D9A441";
+var TDEFS='<defs>'+
+ '<linearGradient id="tSt" x1="0" x2="1"><stop offset="0" style="stop-color:var(--steel1)"/><stop offset="1" style="stop-color:var(--steel2)"/></linearGradient>'+
+ '<linearGradient id="tEp" x1="0" x2="1"><stop offset="0" style="stop-color:var(--ep1)"/><stop offset=".55" style="stop-color:var(--ep2)"/><stop offset="1" style="stop-color:var(--ep1)"/></linearGradient>'+
+ '<linearGradient id="tCu" x1="0" x2="1"><stop offset="0" style="stop-color:var(--cu1)"/><stop offset=".5" style="stop-color:var(--cu2)"/><stop offset="1" style="stop-color:var(--cu1)"/></linearGradient>'+
+ '<radialGradient id="tFl"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".35" stop-color="#FFD27A" stop-opacity=".9"/><stop offset="1" stop-color="#FF7A00" stop-opacity="0"/></radialGradient>'+
+ '<clipPath id="tWin"><rect x="553" y="124" width="44" height="32" rx="3"/></clipPath>'+
+ '</defs>';
+function ang(th){return -120+(Math.max(20,Math.min(140,th))-20)/120*240;}
+function gaugeTick(id,th,col){
+  var a=ang(th)*Math.PI/180,cx=305,cy=232,r1=24,r2=33;
+  return '<line id="'+id+'" class="gtick" x1="'+(cx+Math.sin(a)*r1)+'" y1="'+(cy-Math.cos(a)*r1)+'" x2="'+(cx+Math.sin(a)*r2)+'" y2="'+(cy-Math.cos(a)*r2)+'" stroke="'+col+'"/>';
+}
+function buildTF(){
+  var s=TDEFS+'<rect x="0" y="0" width="900" height="370" fill="var(--cav)"/>';
+  /* mreža i prekidač */
+  s+='<text x="40" y="96" class="t13">mreža 10 kV</text>';
+  s+='<polyline id="t-hv1" class="hvl pL" points="40,118 170,118"/>';
+  s+='<g><rect x="170" y="90" width="40" height="56" rx="8" fill="url(#tEp)" stroke="var(--ink2)" stroke-width="1.5"/><rect x="176" y="98" width="28" height="40" rx="4" class="glass"/>'+
+     '<g id="t-qbl"><rect x="187" y="100" width="6" height="36" rx="2" fill="url(#tCu)" stroke="var(--ink2)"/></g><text x="190" y="80" text-anchor="middle" class="t13">Q</text></g>';
+  s+='<polyline id="t-hv2" class="hvl pL" points="210,118 430,118"/>';
+  [360,395,430].forEach(function(x){
+    s+='<polyline id="t-st'+x+'" class="hvl pL" points="'+x+',118 '+x+',134"/>';
+    s+='<rect x="'+(x-7)+'" y="132" width="14" height="40" rx="3" fill="url(#tEp)" stroke="var(--ink2)"/><rect x="'+(x-10)+'" y="146" width="20" height="4" rx="2" fill="url(#tEp)" stroke="var(--ink2)"/><rect x="'+(x-10)+'" y="156" width="20" height="4" rx="2" fill="url(#tEp)" stroke="var(--ink2)"/>';
+  });
+  /* kotao */
+  s+='<rect x="330" y="170" width="230" height="150" rx="8" class="tf-body"/>';
+  s+='<rect x="358" y="206" width="170" height="86" rx="4" fill="none" stroke="var(--ink2)" stroke-width="2" stroke-dasharray="6 4" opacity=".7"/>';
+  s+='<ellipse cx="400" cy="249" rx="20" ry="34" fill="none" stroke="var(--cu2)" stroke-width="7"/><ellipse cx="488" cy="249" rx="20" ry="34" fill="none" stroke="var(--cu2)" stroke-width="7"/>';
+  s+='<text x="445" y="310" text-anchor="middle" class="t12">630 kVA · 10 / 0,4 kV</text>';
+  for(var i=0;i<4;i++)s+='<rect x="'+(566+i*13)+'" y="186" width="8" height="112" rx="3" class="steel"/>';
+  /* NN izvod */
+  s+='<polyline id="t-nn" class="hvl pL" points="560,330 860,330" style="stroke-width:3"/><text x="710" y="350" text-anchor="middle" class="t12">NN 0,4 kV prema potrošačima</text>';
+  s+='<polyline points="545,320 545,330" class="hvl pD" style="stroke-width:3"/>';
+  /* cijev i konzervator */
+  s+='<path class="pipe" d="M535,170 L535,152 L575,142 L640,132 L640,98"/><path class="pipe-in" d="M535,170 L535,152 L575,142 L640,132 L640,98"/>';
+  s+='<polyline id="t-flow" class="flow" points="535,168 535,152 575,142 640,132 640,100" visibility="hidden" style="stroke-width:4"/>';
+  s+='<rect x="570" y="58" width="190" height="40" rx="20" class="tf-body"/>';
+  s+='<clipPath id="tCons"><rect x="572" y="60" width="186" height="36" rx="18"/></clipPath>';
+  s+='<rect id="t-coil" x="572" y="70" width="186" height="26" fill="'+OIL+'" opacity=".6" clip-path="url(#tCons)"/>';
+  s+='<text x="665" y="50" text-anchor="middle" class="t12">konzervator</text>';
+  /* Buchholz */
+  s+='<g><rect x="545" y="117" width="60" height="50" rx="7" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>'+
+     '<rect x="553" y="124" width="44" height="32" rx="3" class="glass"/>'+
+     '<g clip-path="url(#tWin)"><rect id="t-boil" x="553" y="124" width="44" height="32" fill="'+OIL+'" opacity=".7"/>'+
+     '<g id="t-flap" style="transform-origin:575px 130px"><rect x="573" y="128" width="4" height="22" fill="var(--steel2)" stroke="var(--ink)" stroke-width="1"/></g>'+
+     '<g id="t-bub" visibility="hidden"><circle cx="562" cy="132" r="2.5" fill="#fff"/><circle cx="582" cy="138" r="3" fill="#fff"/><circle cx="590" cy="130" r="2" fill="#fff"/></g></g>'+
+     '<circle id="t-f1" cx="558" cy="162" r="3.5" fill="#5a6870" stroke="#000"/><circle id="t-f2" cx="592" cy="162" r="3.5" fill="#5a6870" stroke="#000"/></g>';
+  s+='<text x="575" y="110" text-anchor="middle" class="t13">Buchholz relej</text>';
+  s+='<text x="550" y="178" class="t11">1. · 2. stupanj</text>';
+  /* termometar */
+  s+='<circle cx="305" cy="232" r="38" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>';
+  for(var k=20;k<=140;k+=20){var a=ang(k)*Math.PI/180;s+='<line x1="'+(305+Math.sin(a)*30)+'" y1="'+(232-Math.cos(a)*30)+'" x2="'+(305+Math.sin(a)*34)+'" y2="'+(232-Math.cos(a)*34)+'" stroke="var(--ink2)" stroke-width="2"/>';}
+  s+='<g id="t-gt"></g>';
+  s+='<line id="t-needle" x1="305" y1="232" x2="305" y2="208" stroke="var(--live)" stroke-width="3" stroke-linecap="round" style="transform-origin:305px 232px"/><circle cx="305" cy="232" r="4" fill="var(--ink)"/>';
+  s+='<text x="305" y="256" text-anchor="middle" class="t11">θ ulja</text><text id="t-gval" x="305" y="288" text-anchor="middle" class="t13">75 °C</text>';
+  s+='<line x1="343" y1="232" x2="330" y2="232" stroke="var(--dead)" stroke-width="2" stroke-dasharray="4 3"/>';
+  s+='<text x="150" y="190" class="t12">––– kapilara termometra</text>';
+  /* luk u kotlu */
+  s+='<g id="t-arc" visibility="hidden"><circle cx="445" cy="249" r="46" fill="url(#tFl)"/><polygon points="450,222 434,252 444,252 438,278 458,246 447,246" fill="#FFE04A" stroke="#7a4b00" stroke-width="1.5"/></g>';
+  $("#tf").innerHTML=s;
+}
+var TF={th:75,K:1,qc:1,al:0,tr:0,gas:0,lvl:100,arc:0,surge:0,clk:"t = 0 min",kl:"opterećenje 100 %"};
+function tfUpdate(){
+  var live=TF.qc?"pL":"pD";
+  ["t-hv2","t-st360","t-st395","t-st430","t-nn"].forEach(function(id){var e=$("#"+id);e.setAttribute("class","hvl "+live);});
+  $("#t-qbl").setAttribute("transform","rotate("+(TF.qc?0:-32)+" 190 136)");
+  $("#t-needle").style.transform="rotate("+ang(TF.th)+"deg)";
+  $("#t-gval").textContent=fmt(TF.th,0)+" °C";
+  $("#t-gt").innerHTML=gaugeTick("t-gal",store.set.al,"#ffb02e")+gaugeTick("t-gtr",store.set.tr,"var(--bad)");
+  /* Buchholz okno */
+  var gasH=Math.min(32,TF.gas/300*20+(100-TF.lvl)/100*32);
+  var boil=$("#t-boil");boil.setAttribute("y",124+gasH);boil.setAttribute("height",Math.max(0,32-gasH));
+  $("#t-bub").setAttribute("visibility",(TF.gas>0&&TF.gas<400)||TF.surge?"visible":"hidden");
+  $("#t-flap").style.transform="rotate("+(TF.surge?-55:0)+"deg)";
+  var coilH=12+TF.lvl/100*14;var co=$("#t-coil");co.setAttribute("y",96-coilH);co.setAttribute("height",coilH);
+  $("#t-f1").setAttribute("fill",TF.f1?"#ffb02e":"#5a6870");$("#t-f2").setAttribute("fill",TF.f2?"#ff4a3a":"#5a6870");
+  $("#t-f1").setAttribute("cy",TF.f1?150:162);$("#t-f2").setAttribute("cy",TF.f2?150:162);
+  $("#t-arc").setAttribute("visibility",TF.arc&&(RM||Math.sin(performance.now()/45)>-0.2)?"visible":"hidden");
+  $("#t-flow").setAttribute("visibility",TF.surge?"visible":"hidden");
+  /* instrumenti */
+  $("#i-th").innerHTML=fmt(TF.th,1)+'<span class="unit">°C</span>';
+  $("#i-k").textContent=TF.qc?TF.kl:"transformator isklopljen";$("#i-clk").textContent=TF.clk;
+  $("#l-al").className=(TF.al||TF.f1)?"a":"";$("#l-tr").className=(TF.tr||TF.f2)?"r":"";$("#l-q").className=TF.qc?"g":"";
+}
+function idleT(){
+  TF.th=75;TF.K=1;TF.qc=1;TF.al=0;TF.tr=0;TF.gas=0;TF.lvl=100;TF.arc=0;TF.surge=0;TF.f1=0;TF.f2=0;TF.clk="t = 0 min";TF.kl="opterećenje 100 %";
+  BS={id:null,alarmed:0,sampled:0};tTrace=[];curT=null;
+  $("#b-sbox").hidden=true;
+  tfUpdate();drawTChart();updSample();
+}
+
+/* ---------- dijagram temperature ---------- */
+var CT={l:64,r:880,t:16,b:236,m1:WIN+60,y0:60,y1:125};
+function tx(m){return CT.l+Math.max(0,Math.min(CT.m1,m))/CT.m1*(CT.r-CT.l);}
+function ty(th){return CT.b-(Math.max(CT.y0,Math.min(CT.y1,th))-CT.y0)/(CT.y1-CT.y0)*(CT.b-CT.t);}
+function drawTChart(){
+  var h='<rect x="0" y="0" width="900" height="280" fill="var(--panel)"/>';
+  [0,60,120,180,240,300,360].forEach(function(m){h+='<line x1="'+tx(m)+'" y1="'+CT.t+'" x2="'+tx(m)+'" y2="'+CT.b+'" stroke="var(--line)"/><text x="'+tx(m)+'" y="'+(CT.b+18)+'" text-anchor="middle" class="c11">'+m+'</text>';});
+  [60,70,80,90,100,110,120].forEach(function(v){h+='<line x1="'+CT.l+'" y1="'+ty(v)+'" x2="'+CT.r+'" y2="'+ty(v)+'" stroke="var(--line)"/><text x="'+(CT.l-6)+'" y="'+(ty(v)+4)+'" text-anchor="end" class="c11">'+v+'</text>';});
+  h+='<rect x="'+CT.l+'" y="'+CT.t+'" width="'+(CT.r-CT.l)+'" height="'+(CT.b-CT.t)+'" fill="none" stroke="var(--ink2)"/>';
+  h+='<line x1="'+CT.l+'" y1="'+ty(TH_LIM)+'" x2="'+CT.r+'" y2="'+ty(TH_LIM)+'" stroke="var(--ink2)" stroke-width="2" stroke-dasharray="3 5"/>';
+  h+='<line x1="'+CT.l+'" y1="'+ty(store.set.al)+'" x2="'+CT.r+'" y2="'+ty(store.set.al)+'" stroke="#ffb02e" stroke-width="3"/>';
+  h+='<line x1="'+CT.l+'" y1="'+ty(store.set.tr)+'" x2="'+CT.r+'" y2="'+ty(store.set.tr)+'" stroke="var(--bad)" stroke-width="3"/>';
+  if(tTrace.length>1){
+    var d="M"+tx(tTrace[0][0])+","+ty(tTrace[0][1]);
+    for(var i=1;i<tTrace.length;i++)d+=" L"+tx(tTrace[i][0])+","+ty(tTrace[i][1]);
+    h+='<path d="'+d+'" fill="none" stroke="var(--live)" stroke-width="4" stroke-linejoin="round"/>';
+  }
+  h+='<text x="'+((CT.l+CT.r)/2)+'" y="272" text-anchor="middle" class="c12">vrijeme (min)</text>';
+  h+='<text x="14" y="130" transform="rotate(-90 14 130)" text-anchor="middle" class="c12">temperatura ulja (°C)</text>';
+  $("#tchart").innerHTML=h;
+}
+
+/* ---------- pokusi: termička zaštita ---------- */
+var BS={id:null,alarmed:0,sampled:0},tTrace=[],curT=null;
+function buildTBtns(){
+  var h="";TORD.forEach(function(id){h+='<button class="btn sm" type="button" data-t="'+id+'">'+TS[id].n+'</button>';});
+  $("#th-btns").innerHTML=h;
+  $$("#th-btns [data-t]").forEach(function(b){b.addEventListener("click",function(){runT(b.getAttribute("data-t"));});});
+  h="";BORD.forEach(function(id){h+='<button class="btn sm" type="button" data-b="'+id+'">'+BS_NAMES[id]+'</button>';});
+  $("#bu-btns").innerHTML=h;
+  $$("#bu-btns [data-b]").forEach(function(b){b.addEventListener("click",function(){runB(b.getAttribute("data-b"));});});
+}
+var SETROWS=[["al","Alarm: temperatura ulja","°C",[60,120,1]],["tr","Isklop: temperatura ulja","°C",[60,130,1]]];
+function buildTSet(){
+  var h="";
+  SETROWS.forEach(function(x){h+='<div class="srow"><label for="s-'+x[0]+'">'+x[1]+'</label><div class="sin"><input type="text" id="s-'+x[0]+'" inputmode="decimal" value="'+store.set[x[0]]+'"><span>'+x[2]+'</span></div></div>';});
+  $("#th-set").innerHTML=h;
+  SETROWS.forEach(function(x){
+    $("#s-"+x[0]).addEventListener("change",function(e){
+      var v=num(e.target.value),g=x[3];if(v===null)v=store.set[x[0]];
+      v=Math.max(g[0],Math.min(g[1],Math.round(v)));store.set[x[0]]=v;e.target.value=v;save();
+      tfUpdate();drawTChart();renderTRes();
+      if(store.set.tr<=store.set.al)sayT("Pažnja: isklop mora biti na višoj temperaturi od alarma.","warn");
+    });
+  });
+}
+function runT(id){
+  if(RUN)return;
+  idleT();curT=id;$("#tlog").innerHTML="";
+  var sc=TS[id],res=evalT(id,store.set);
+  TF.th=sc.th0;TF.K=sc.K;TF.kl="opterećenje "+Math.round(sc.K*100)+" %";
+  if($("#t-fast").checked){finishT(res,true);return;}
+  RUN={kind:"t",id:id,res:res,t0:performance.now(),ev:{},end:res.endMin/10};
+  logTo("tlog",sc.d,"",0);sayT("Pokus: "+sc.n+"… (1 s = 10 min)");setBtns(true);tfUpdate();loopT();
+}
+function finishT(res,quick){
+  var sc=TS[res.id];
+  if(quick){
+    tTrace=[];var end=res.endMin;
+    for(var m=0;m<=end;m+=end/120)tTrace.push([m,thAt(res,store.set,m)]);
+    TF.th=thAt(res,store.set,end);TF.al=res.alarm?1:0;TF.tr=res.trip?1:0;TF.qc=res.trip?0:1;TF.clk="t = "+fmt(end,0)+" min";
+    logTo("tlog",res.txt,res.ok?"verify":"event");
+  }
+  recordT(res);sayT(res.txt,res.ok?"good":"bad");
+  RUN=null;setBtns(false);tfUpdate();drawTChart();renderTRes();
+}
+function loopT(){
+  requestAnimationFrame(function f(now){
+    if(!RUN||RUN.kind!=="t")return;
+    var t=(now-RUN.t0)/1000,m=Math.min(t*10,RUN.res.endMin),r=RUN.res,ev=RUN.ev;
+    TF.th=thAt(r,store.set,m);TF.clk="t = "+fmt(m,0)+" min";
+    if(!RUN.last||m-RUN.last>=2||m>=RUN.res.endMin){tTrace.push([m,TF.th]);RUN.last=m;}
+    if(r.alarm&&m>=r.tA){TF.al=1;if(!ev.a){ev.a=1;logTo("tlog","Alarm: temperatura ulja prešla je "+store.set.al+" °C. Transformator ostaje u pogonu.","event",m/10);}}
+    if(r.trip&&m>=r.tT){TF.tr=1;TF.qc=0;if(!ev.t){ev.t=1;logTo("tlog","Isklop: temperatura ulja prešla je "+store.set.tr+" °C. Prekidač Q isklapa transformator.","event",m/10);}}
+    tfUpdate();drawTChart();
+    if(m>=r.endMin){logTo("tlog",r.txt,r.ok?"verify":"event");finishT(r,false);return;}
+    requestAnimationFrame(f);
+  });
+}
+
+/* ---------- pokusi: Buchholz ---------- */
+var BSAMPLE={air:{col:"bezbojan",burn:"ne gori",smell:"bez mirisa",note:"Zrak iz dopune ulja. Nije kvar."},slow:{col:"bijel",burn:"gori",smell:"jak, miris po zagorenom papiru",note:"Pregrijavanje ošteđuje papirnu izolaciju namota."}};
+function runB(id){
+  if(RUN)return;
+  idleT();$("#tlog").innerHTML="";BS={id:id,alarmed:0,sampled:0};
+  RUN={kind:"b",id:id,t0:performance.now(),ev:{}};
+  var d={air:"Nakon dopune ulja u kotlu je ostao zrak. Plin se polako skuplja u releju.",slow:"Lokalno pregrijavanje oštećuje papirnu izolaciju. Plin se polako skuplja u releju.",fast:"Transformator radi normalno. Za trenutak nastaje luk u kotlu.",oil:"Na kotlu je počelo curenje ulja. Razina ulja polako pada."}[id];
+  logTo("tlog",d,"",0);sayT("Pokus: "+BS_NAMES[id]+"…");setBtns(true);
+  if($("#t-fast").checked){finishB(true);return;}
+  loopB();
+}
+function bRec(id,extra){
+  var r={sig:"-",ok:true,done:1};for(var k in extra)r[k]=extra[k];store.res["b_"+id]=r;save();
+}
+function finishB(quick){
+  var id=RUN.id;
+  if(quick){
+    var tt={air:6.3,slow:4.2,fast:0.78,oil:13.8}[id];
+    if(id==="air"||id==="slow"){TF.gas=300;TF.f1=1;TF.al=1;BS.alarmed=1;logTo("tlog","Buchholz: 1. stupanj, signal. Plin u releju: 250 cm³.","event",tt);}
+    if(id==="fast"){TF.f2=1;TF.tr=1;TF.qc=0;logTo("tlog","Buchholz: 2. stupanj, isklop. Q isklopljen 0,18 s nakon kvara.","event",0.18);}
+    if(id==="oil"){TF.lvl=40;TF.f1=1;TF.f2=1;TF.al=1;TF.tr=1;TF.qc=0;logTo("tlog","Buchholz: 1. stupanj (razina ulja pala), zatim 2. stupanj (isklop).","event",tt);}
+  }
+  if(id==="fast")bRec("fast",{t:0.18,stage:2});else if(id==="oil")bRec("oil",{first:1,stage:2});else bRec(id,{alarm:1});
+  var txt={air:"Relej je dao signal (1. stupanj). Uzmi uzorak plina i utvrdi je li kvar.",slow:"Relej je dao signal (1. stupanj). Uzmi uzorak plina i utvrdi što je kvar.",fast:"Brzi kvar isklopio je transformator u 0,18 s (2. stupanj Buchholz releja).",oil:"Prvo je proradio signal zbog pada razine, pa isklop kad je ulje palo još niže."}[id];
+  sayT(txt,(id==="fast"||id==="oil")?"warn":"");
+  RUN=null;setBtns(false);tfUpdate();renderTRes();
+}
+function loopB(){
+  requestAnimationFrame(function f(now){
+    if(!RUN||RUN.kind!=="b")return;
+    var t=(now-RUN.t0)/1000,id=RUN.id,ev=RUN.ev,end;
+    TF.clk="t = "+fmt(t,1)+" s";
+    if(id==="air"||id==="slow"){
+      var rate=(id==="air")?40:60;TF.gas=Math.min(300,rate*t);TF.kl="opterećenje 100 %";
+      if(TF.gas>=GAS_ALARM&&!ev.a){ev.a=1;ev.at=t;TF.f1=1;TF.al=1;BS.alarmed=1;logTo("tlog","Buchholz: 1. stupanj, signal. U releju je "+GAS_ALARM+" cm³ plina.","event",t);updSample();}
+      end=ev.a?ev.at+4:99;
+    }else if(id==="oil"){
+      TF.lvl=Math.max(0,100-4*t);
+      if(TF.lvl<=75&&!ev.a){ev.a=1;TF.f1=1;TF.al=1;BS.alarmed=1;logTo("tlog","Buchholz: 1. stupanj, signal. Razina ulja je pala.","event",t);}
+      if(TF.lvl<=45&&!ev.t){ev.t=1;ev.tt=t;TF.f2=1;TF.tr=1;TF.qc=0;logTo("tlog","Buchholz: 2. stupanj, isklop. Ulje je palo ispod donjeg plovka.","event",t);}
+      end=ev.t?ev.tt+1.5:99;
+    }else{
+      var k=t-0.6;TF.clk=k<0?"t = 0,00 s":"t = "+fmt(k,2)+" s od kvara";
+      if(k>=0&&!ev.k){ev.k=1;TF.arc=1;TF.surge=1;logTo("tlog","Nastao je luk u kotlu. Ulje se naglo potisne prema konzervatoru.","event",0);}
+      if(k>=0.10&&!ev.s){ev.s=1;TF.f2=1;TF.tr=1;logTo("tlog","Buchholz: 2. stupanj, nalog za isklop","event",0.10);}
+      if(k>=0.18&&!ev.q){ev.q=1;TF.qc=0;TF.arc=0;TF.surge=0;logTo("tlog","Prekidač Q isklopljen","",0.18);}
+      end=ev.q?0.6+0.18+2:99;
+    }
+    tfUpdate();
+    if(t>=end){finishB(false);return;}
+    requestAnimationFrame(f);
+  });
+}
+function updSample(){$("#b-sample").disabled=!!(!(BS.alarmed&&(BS.id==="air"||BS.id==="slow"))||(RUN&&RUN.kind==="b"));}
+$("#b-sample").addEventListener("click",function(){
+  if(!(BS.alarmed&&(BS.id==="air"||BS.id==="slow")))return;
+  var s=BSAMPLE[BS.id];BS.sampled=1;store.flags[BS.id+"_s"]=true;save();
+  var b=$("#b-sbox");b.hidden=false;
+  b.innerHTML='<b>Uzorak plina</b><dl><dt>Boja</dt><dd>'+s.col+'</dd><dt>Proba plamenom</dt><dd>'+s.burn+'</dd><dt>Miris</dt><dd>'+s.smell+'</dd></dl><p class="hint" style="margin-top:6px">Uzorak u stvarnosti uzima osposobljena osoba, uz pravila rada u postrojenju.</p>';
+  logTo("tlog","Uzet je uzorak plina: "+s.col+", "+s.burn+".","verify");
+  sayT("Uzorak je uzet. Prema boji i zapaljivosti zaključi uzrok i upiši ga u zapisnik.");
+});
+$("#b-off").addEventListener("click",function(){
+  if(RUN)return;
+  if(!TF.qc){sayT("Transformator je već isklopljen.");return;}
+  TF.qc=0;tfUpdate();logTo("tlog","Operater je ručno isklopio transformator radi pregleda.","");sayT("Transformator je isklopljen.");
+});
+$("#b-reset").addEventListener("click",function(){if(RUN)return;idleT();$("#tlog").innerHTML="";sayT("Transformator je u normalnom pogonu.");});
+
+function renderTRes(){
+  var h='<tr><th>Pokus</th><th>Alarm</th><th>Isklop</th><th>Ocjena</th></tr>',cs=sigT(),anyStale=false;
+  TORD.forEach(function(id){
+    var r=store.res["t_"+id];
+    if(!r){h+='<tr><td>'+TS[id].n+'</td><td class="u">–</td><td class="u">–</td><td class="u">nije pokrenut</td></tr>';return;}
+    var stale=r.sig!==cs;if(stale)anyStale=true;
+    h+='<tr><td>'+TS[id].n+'<br><span class="sub2">ustaljeno '+fmt(r.ss,1)+' °C</span></td><td>'+(r.alarm?"nakon "+fmt(r.tA,0)+" min":"ne")+'</td><td>'+(r.trip?"nakon "+fmt(r.tT,0)+" min":"ne")+'</td><td class="'+(stale?"u":r.ok?"y":"n")+'">'+(stale?"zastarjelo":r.ok?"ispravno":"neispravno")+'</td></tr>';
+  });
+  h+='<tr><th colspan="4">Buchholz relej</th></tr>';
+  BORD.forEach(function(id){
+    var r=store.res["b_"+id];
+    var a="–",t="–",s="nije pokrenut";
+    if(r){
+      if(id==="fast"){a="ne";t="nakon 0,18 s (2. stupanj)";s="izveden";}
+      else if(id==="oil"){a="1. stupanj";t="2. stupanj";s="izveden";}
+      else{a="1. stupanj";t="ne";s=store.flags[id+"_s"]?"uzorak uzet":"izveden";}
+    }
+    h+='<tr><td>'+BS_NAMES[id]+'</td><td>'+a+'</td><td>'+t+'</td><td class="'+(r?"y":"u")+'">'+s+'</td></tr>';
+  });
+  $("#tres").innerHTML=h;
+  $("#tres-note").textContent=anyStale?"Rezultati označeni kao zastarjeli odnose se na ranije podešenje. Ponovi pokuse.":"";
+}
+function resOkT(id){var r=store.res["t_"+id];return !!(r&&r.sig===sigT()&&r.ok);}
+
+/* =====================================================================
+   PRENAPON
+   ===================================================================== */
+var PDEFS='<defs><linearGradient id="pSt" x1="0" x2="1"><stop offset="0" style="stop-color:var(--steel1)"/><stop offset="1" style="stop-color:var(--steel2)"/></linearGradient>'+
+ '<linearGradient id="pEp" x1="0" x2="1"><stop offset="0" style="stop-color:var(--ep1)"/><stop offset=".55" style="stop-color:var(--ep2)"/><stop offset="1" style="stop-color:var(--ep1)"/></linearGradient>'+
+ '<radialGradient id="pFl"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".35" stop-color="#FFD27A" stop-opacity=".9"/><stop offset="1" stop-color="#FF7A00" stop-opacity="0"/></radialGradient></defs>';
+var XT=720;
+function xArr(L){return XT-L*5.5;}
+function buildPNet(){
+  var s=PDEFS+'<rect x="0" y="0" width="900" height="300" fill="var(--cav)"/>';
+  s+='<line x1="0" y1="272" x2="900" y2="272" stroke="var(--earth)" stroke-width="3"/><text x="14" y="292" class="t11">zemlja</text>';
+  [90,270].forEach(function(x){s+='<line x1="'+x+'" y1="118" x2="'+x+'" y2="272" stroke="var(--dead)" stroke-width="6"/><line x1="'+(x-26)+'" y1="130" x2="'+(x+26)+'" y2="130" stroke="var(--dead)" stroke-width="5"/>';});
+  s+='<polyline id="p-line" class="hvl pL" points="20,118 '+XT+',118"/>';
+  [90,270].forEach(function(x){s+='<rect x="'+(x-5)+'" y="112" width="10" height="14" rx="3" fill="url(#pEp)" stroke="var(--ink2)"/>';});
+  s+='<text x="170" y="150" text-anchor="middle" class="t12">nadzemni vod 10 kV</text>';
+  /* oblak i munja */
+  s+='<g id="p-cloud"><ellipse cx="150" cy="38" rx="46" ry="16" fill="var(--steel2)"/><ellipse cx="120" cy="46" rx="30" ry="12" fill="var(--steel2)"/><ellipse cx="184" cy="46" rx="30" ry="12" fill="var(--steel2)"/></g>';
+  s+='<g id="p-bolt" visibility="hidden"><polygon points="154,52 134,88 148,88 138,116 166,76 150,76 162,52" fill="#FFE04A" stroke="#7a4b00" stroke-width="1.5"/></g>';
+  /* transformator */
+  s+='<rect x="'+(XT-40)+'" y="170" width="140" height="102" rx="8" fill="url(#pSt)" stroke="var(--ink2)" stroke-width="2"/>';
+  s+='<rect x="'+(XT-7)+'" y="118" width="14" height="52" rx="3" fill="url(#pEp)" stroke="var(--ink2)"/>';
+  s+='<text x="'+(XT+30)+'" y="224" text-anchor="middle" class="t13">630 kVA</text><text x="'+(XT+30)+'" y="244" text-anchor="middle" class="t11">LI = 75 kV</text>';
+  s+='<g id="p-bd" visibility="hidden"><circle cx="'+XT+'" cy="118" r="34" fill="url(#pFl)"/><polygon points="'+(XT+4)+',98 '+(XT-10)+',122 '+(XT-1)+',122 '+(XT-6)+',142 '+(XT+12)+',116 '+(XT+2)+',116" fill="#FFE04A" stroke="#7a4b00" stroke-width="1.5"/></g>';
+  /* odvodnik */
+  s+='<g id="p-arr"><line id="p-al" x1="500" y1="118" x2="500" y2="152" stroke="var(--dead)" stroke-width="4"/><rect id="p-ab" x="490" y="152" width="20" height="56" rx="4" fill="url(#pSt)" stroke="var(--ink2)" stroke-width="2"/>'+
+     '<polyline id="p-az" points="500,158 494,166 506,174 494,182 506,190 500,198" fill="none" stroke="var(--ink)" stroke-width="2"/>'+
+     '<line id="p-ag" x1="500" y1="208" x2="500" y2="272" stroke="var(--earth)" stroke-width="4"/><text id="p-at" x="500" y="236" text-anchor="start" class="t13">A</text>'+
+     '<circle id="p-hot" cx="500" cy="180" r="30" fill="url(#pFl)" visibility="hidden"/></g>';
+  s+='<g id="p-dim"><line id="p-d1" x1="500" y1="96" x2="'+XT+'" y2="96" stroke="var(--ink2)" stroke-width="2"/><line id="p-d2" x1="500" y1="90" x2="500" y2="102" stroke="var(--ink2)" stroke-width="2"/><line x1="'+XT+'" y1="90" x2="'+XT+'" y2="102" stroke="var(--ink2)" stroke-width="2"/><text id="p-dt" x="610" y="86" text-anchor="middle" class="t13">L = 40 m</text></g>';
+  s+='<text id="p-none" x="480" y="200" text-anchor="middle" class="t13" visibility="hidden">bez odvodnika</text>';
+  $("#pnet").innerHTML=s;
+}
+var PV={bd:0,hot:0,bolt:0,bar:0,barcol:"good"};
+function pnetUpdate(){
+  var p=store.p,none=(p.arr==="none"),x=xArr(p.L);
+  $("#p-arr").setAttribute("visibility",none?"hidden":"visible");$("#p-none").setAttribute("visibility",none?"visible":"hidden");$("#p-dim").setAttribute("visibility",none?"hidden":"visible");
+  if(!none){
+    $("#p-al").setAttribute("x1",x);$("#p-al").setAttribute("x2",x);$("#p-ab").setAttribute("x",x-10);
+    $("#p-az").setAttribute("transform","translate("+(x-500)+" 0)");$("#p-ag").setAttribute("x1",x);$("#p-ag").setAttribute("x2",x);
+    $("#p-at").setAttribute("x",x+16);$("#p-at").textContent=p.arr;$("#p-hot").setAttribute("cx",x);
+    $("#p-d1").setAttribute("x1",x);$("#p-d2").setAttribute("x1",x);$("#p-d2").setAttribute("x2",x);
+    $("#p-dt").setAttribute("x",(x+XT)/2);$("#p-dt").textContent="L = "+p.L+" m";
+  }
+  $("#p-bolt").setAttribute("visibility",PV.bolt?"visible":"hidden");
+  $("#p-bd").setAttribute("visibility",PV.bd&&(RM||Math.sin(performance.now()/45)>-0.2)?"visible":"hidden");
+  $("#p-hot").setAttribute("visibility",PV.hot?"visible":"hidden");
+  var bar=$("#p-bar");bar.style.width=PV.bar+"%";bar.style.background=PV.barcol==="bad"?"var(--bad)":"var(--good)";
+}
+/* valni oblik 1,2/50 µs */
+function wave(t){return 1.037*(Math.exp(-0.0146*t)-Math.exp(-2.468*t));}
+var PC={l:64,r:880,t:16,b:236,tm:60,um:110};
+function px(t){return PC.l+t/PC.tm*(PC.r-PC.l);}
+function py(u){return PC.b-Math.max(0,Math.min(PC.um,u))/PC.um*(PC.b-PC.t);}
+function drawPChart(res,prog){
+  var h='<rect x="0" y="0" width="900" height="280" fill="var(--panel)"/>';
+  [0,10,20,30,40,50,60].forEach(function(t){h+='<line x1="'+px(t)+'" y1="'+PC.t+'" x2="'+px(t)+'" y2="'+PC.b+'" stroke="var(--line)"/><text x="'+px(t)+'" y="'+(PC.b+18)+'" text-anchor="middle" class="c11">'+t+'</text>';});
+  [0,20,40,60,80,100].forEach(function(u){h+='<line x1="'+PC.l+'" y1="'+py(u)+'" x2="'+PC.r+'" y2="'+py(u)+'" stroke="var(--line)"/><text x="'+(PC.l-6)+'" y="'+(py(u)+4)+'" text-anchor="end" class="c11">'+u+'</text>';});
+  h+='<rect x="'+PC.l+'" y="'+PC.t+'" width="'+(PC.r-PC.l)+'" height="'+(PC.b-PC.t)+'" fill="none" stroke="var(--ink2)"/>';
+  h+='<line x1="'+PC.l+'" y1="'+py(LI)+'" x2="'+PC.r+'" y2="'+py(LI)+'" stroke="var(--ink2)" stroke-width="3" stroke-dasharray="6 5"/>';
+  h+='<line x1="'+PC.l+'" y1="'+py(LIMX)+'" x2="'+PC.r+'" y2="'+py(LIMX)+'" stroke="#ffb02e" stroke-width="3" stroke-dasharray="3 5"/>';
+  if(res&&res.id==="light"){
+    var d="",ut=res.Ut,first=true,tend=PC.tm*(prog==null?1:prog);
+    for(var t=0;t<=tend+1e-9;t+=0.5){var u=Math.min(U0*wave(t),ut);d+=(first?"M":" L")+px(t)+","+py(u);first=false;}
+    h+='<path d="'+d+'" fill="none" stroke="var(--live)" stroke-width="4" stroke-linejoin="round"/>';
+    h+='<text x="'+(PC.r-8)+'" y="'+(py(ut)-8)+'" text-anchor="end" class="c12" style="fill:var(--live)!important">najveći napon na transformatoru: '+fmt(ut,0)+' kV</text>';
+  }else{
+    h+='<text x="'+((PC.l+PC.r)/2)+'" y="130" text-anchor="middle" class="c12">Pokreni „Udar munje u vod” za valni oblik napona.</text>';
+  }
+  h+='<text x="'+((PC.l+PC.r)/2)+'" y="272" text-anchor="middle" class="c12">vrijeme (µs)</text>';
+  h+='<text x="14" y="130" transform="rotate(-90 14 130)" text-anchor="middle" class="c12">napon (kV)</text>';
+  $("#pchart").innerHTML=h;
+}
+var PSET=[["arr","Odvodnik"],["L","Udaljenost od transformatora"]];
+function buildPSet(){
+  var p=store.p,h='<div class="srow"><label for="s-arr">Odvodnik</label><div class="sin"><select id="s-arr"><option value="none">bez odvodnika</option><option value="A">A (Uc 8 kV)</option><option value="B">B (Uc 12 kV)</option><option value="C">C (Uc 24 kV)</option></select></div></div>';
+  h+='<div class="srow"><label for="s-L">Udaljenost od transformatora L</label><div class="sin"><input type="text" id="s-L" inputmode="decimal" value="'+p.L+'"><span>m</span></div></div>';
+  $("#pr-set").innerHTML=h;$("#s-arr").value=p.arr;
+  $("#s-arr").addEventListener("change",function(e){store.p.arr=e.target.value;save();onPChange();});
+  $("#s-L").addEventListener("change",function(e){
+    var v=num(e.target.value);if(v===null)v=store.p.L;v=Math.max(1,Math.min(60,Math.round(v)));store.p.L=v;e.target.value=v;save();onPChange();
+  });
+}
+function onPChange(){PV.bd=0;PV.hot=0;PV.bolt=0;PV.bar=0;pnetUpdate();drawPChart(null,1);renderPRes();$("#p-barnote").textContent="";}
+function buildPBtns(){
+  var h="";PORD.forEach(function(id){h+='<button class="btn sm" type="button" data-p="'+id+'">'+PS[id].n+'</button>';});
+  $("#pr-btns").innerHTML=h;
+  $$("#pr-btns [data-p]").forEach(function(b){b.addEventListener("click",function(){runP(b.getAttribute("data-p"));});});
+}
+function barFor(r){
+  var a=store.p.arr==="none"?null:ARR[store.p.arr];
+  if(!a){$("#p-barnote").textContent="Nema odvodnika.";return 0;}
+  var u=(r.id==="earth")?UM:UPH;
+  $("#p-barnote").textContent="Napon na odvodniku "+fmt(u,1)+" kV, Uc = "+a.uc+" kV ("+Math.round(u/a.uc*100)+" %).";
+  PV.barcol=u>a.uc?"bad":"good";
+  return Math.min(100,u/a.uc*100/1.5);
+}
+function runP(id){
+  if(RUN)return;
+  PV.bd=0;PV.hot=0;PV.bolt=0;PV.bar=0;$("#plog").innerHTML="";
+  var r=evalP(id,store.p);
+  var finalBar=(id==="light")?0:barFor(r);
+  if($("#p-fast").checked){
+    recordP(r);if(id==="light"){PV.bd=r.bd?1:0;drawPChart(r,1);}else{drawPChart(null,1);}
+    PV.bar=finalBar;if(id==="earth"&&!r.ok&&store.p.arr!=="none")PV.hot=1;
+    pnetUpdate();logTo("plog",r.txt,r.ok?"verify":"event");sayP(r.txt,r.ok?"good":"bad");renderPRes();return;
+  }
+  RUN={kind:"p",id:id,res:r,t0:performance.now(),ev:{},fb:finalBar,end:id==="light"?2.2:(id==="earth"?3.2:1.4)};
+  setBtns(true);sayP("Pokus: "+PS[id].n+"…");
+  logTo("plog",{norm:"Vod je pod pogonskim naponom, fazni napon 6,9 kV.",light:"Munja udara u vod. Val 100 kV putuje prema transformatoru.",earth:"Nastao je zemljospoj. Zdrave faze dobivaju napon 12 kV prema zemlji."}[id],"",0);
+  loopP();
+}
+function loopP(){
+  requestAnimationFrame(function f(now){
+    if(!RUN||RUN.kind!=="p")return;
+    var t=(now-RUN.t0)/1000,r=RUN.res,id=RUN.id,ev=RUN.ev,a=store.p.arr==="none"?null:ARR[store.p.arr];
+    if(id==="light"){
+      PV.bolt=(t<0.5)?1:0;
+      var prog=Math.max(0,Math.min(1,(t-0.4)/1.2));
+      drawPChart(r,prog);
+      if(prog>0&&!ev.w){ev.w=1;logTo("plog","Val stiže do odvodnika"+(a?" (Up = "+a.up+" kV)":"")+".","",0.4);}
+      var tcross=0;if(r.bd){for(var q=0;q<=60;q+=0.25){if(Math.min(U0*wave(q),r.Ut)>LI){tcross=q;break;}}}
+      if(r.bd&&prog>=tcross/60&&prog>0){PV.bd=1;if(!ev.b){ev.b=1;logTo("plog","Napon na transformatoru prešao je 75 kV. Proboj izolacije.","event",t);}}
+    }else{
+      var k=Math.min(1,t/1.0);PV.bar=RUN.fb*k;
+      if(id==="earth"&&a&&!r.ok&&t>=2.2){PV.hot=1;if(!ev.h){ev.h=1;logTo("plog","Odvodnik se pregrijao i otkazao (toplinski proboj).","event",t);}}
+    }
+    pnetUpdate();
+    if(t>=RUN.end){
+      if(id==="light"){PV.bolt=0;drawPChart(r,1);}
+      recordP(r);logTo("plog",r.txt,r.ok?"verify":"event");sayP(r.txt,r.ok?"good":"bad");RUN=null;setBtns(false);pnetUpdate();renderPRes();return;
+    }
+    requestAnimationFrame(f);
+  });
+}
+$("#p-all").addEventListener("click",function(){
+  if(RUN)return;var okAll=true;
+  PORD.forEach(function(id){var r=evalP(id,store.p);recordP(r);if(!r.ok||store.p.arr==="none")okAll=false;});
+  PV.bd=0;PV.hot=0;PV.bar=0;pnetUpdate();drawPChart(null,1);renderPRes();
+  sayP(okAll?"Sva tri pokusa prolaze s ovim odvodnikom i udaljenošću.":"Neki pokusi ne prolaze. Pogledaj tablicu rezultata i promijeni odvodnik ili udaljenost.",okAll?"good":"warn");
+  logTo("plog","Pokrenuta su sva tri pokusa: odvodnik "+(store.p.arr==="none"?"nema":store.p.arr)+", L = "+store.p.L+" m.","");
+});
+function renderPRes(){
+  var h='<tr><th>Pokus</th><th>Napon</th><th>Ocjena</th></tr>',cs=sigP(),anyStale=false;
+  PORD.forEach(function(id){
+    var r=store.res["p_"+id];
+    if(!r){h+='<tr><td>'+PS[id].n+'</td><td class="u">–</td><td class="u">nije pokrenut</td></tr>';return;}
+    var stale=r.sig!==cs;if(stale)anyStale=true;
+    var v=(id==="light")?fmt(r.Ut,0)+" kV na transformatoru":(id==="earth"?"12 kV na odvodniku":"6,9 kV");
+    h+='<tr><td>'+PS[id].n+'</td><td>'+v+'</td><td class="'+(stale?"u":r.ok?"y":"n")+'">'+(stale?"zastarjelo":r.ok?"ispravno":"neispravno")+'</td></tr>';
+  });
+  $("#pres").innerHTML=h;
+  $("#pres-note").textContent=anyStale?"Rezultati označeni kao zastarjeli odnose se na raniji odvodnik ili udaljenost. Ponovi pokuse.":"";
+}
+function resOkP(id){var r=store.res["p_"+id];return !!(r&&r.sig===sigP()&&r.ok);}
+
+/* =====================================================================
+   ZAPISNIK
+   ===================================================================== */
+var DN=[["","— odaberi —"],["DA","DA"],["NE","NE"]];
+function O(arr){return [["","— odaberi —"]].concat(arr);}
+var PARTS=[
+ {n:"Dio 1: Osnove i pitanja",max:10,note:"Izračunaj iz podataka u karticama Upute i Transformator. In = S / (√3 · U)."},
+ {n:"Dio 2: Termička zaštita",max:10,note:"Upiši konačno podešenje koje si ostavio u kartici Transformator. Stavke s pokusima ocjenjuju se prema rezultatima tvoga podešenja."},
+ {n:"Dio 3: Buchholz relej",max:10,note:"Stavke se otključavaju kad pokreneš pokus i, gdje treba, uzmeš uzorak plina."},
+ {n:"Dio 4: Zaštita od prenapona",max:10,note:"Upiši konačni odvodnik i udaljenost iz kartice Prenapon. Jedan pokus izvedi i bez odvodnika."}
+];
+var ITEMS=[];
+function add(o){o.id=o.id||("i"+ITEMS.length);ITEMS.push(o);}
+function hasRes(k){return !!store.res[k];}
+function resFresh(k,sg){var r=store.res[k];return (r&&r.sig===sg)?r:null;}
+var COLS=[["a","bezbojan"],["b","bijel"],["c","žut"],["d","sivo-crn"]];
+
+/* Dio 1 */
+add({part:0,g:"Proračun",id:"p_in",l:"Nazivna struja transformatora 630 kVA na 10 kV (A)",type:"num",c:36.4,tol:0.5,h:"In = 630 000 / (1,732 · 10 000) = 36,4 A."});
+add({part:0,g:"Proračun",id:"p_inn",l:"Nazivna struja na strani 0,4 kV (A)",type:"num",c:909,tol:10,h:"I = 630 000 / (1,732 · 400) = 909 A."});
+add({part:0,g:"Proračun",id:"p_k",l:"Omjer transformacije 10 kV : 0,4 kV",type:"num",c:25,tol:0.1,h:"10 000 V / 400 V = 25."});
+add({part:0,g:"Pitanja",id:"q_bu",l:"Što je Buchholz relej?",type:"sel",opts:O([["a","Naponski relej na sabirnicama"],["b","Plinsko-strujni relej u cijevi između kotla i konzervatora"],["c","Mjerni transformator"],["d","Termometar ulja"]]),c:"b",h:"Skuplja plin iz kotla i reagira na strujanje ulja."});
+add({part:0,g:"Pitanja",id:"q_wh",l:"Na kojem transformatoru se ugrađuje Buchholz relej?",type:"sel",opts:O([["a","Na suhom transformatoru"],["b","Samo na uljnom transformatoru s konzervatorom"],["c","Na svakom transformatoru"],["d","Na mjernom transformatoru"]]),c:"b",h:"Treba mu ulje i cijev prema konzervatoru."});
+add({part:0,g:"Pitanja",id:"q_th",l:"Što mjeri termička zaštita transformatora?",type:"sel",opts:O([["a","Struju kratkog spoja"],["b","Temperaturu ulja"],["c","Razinu plina"],["d","Napon namota"]]),c:"b",h:"Mjeri temperaturu ulja (i namota) i javlja alarm ili isklapa."});
+add({part:0,g:"Pitanja",id:"q_cons",l:"Čemu služi konzervator?",type:"sel",opts:O([["a","Hladi namote ventilatorom"],["b","Prima ulje koje se širi pri zagrijavanju i drži kotao punim"],["c","Mjeri struju"],["d","Odvodi prenapon"]]),c:"b",h:"Ulje se grijanjem širi, pa mu treba spremnik."});
+add({part:0,g:"Pitanja",id:"q_gas",l:"Zašto kvar u kotlu stvara plin?",type:"sel",opts:O([["a","Pregrijavanje ili luk razlažu ulje i izolaciju"],["b","Ulje isparava jer je hladno"],["c","Plin dolazi iz konzervatora"],["d","Plin je uvijek zrak"]]),c:"a",h:"Razgradnja ulja i papira stvara zapaljive plinove."});
+add({part:0,g:"Pitanja",id:"q_arr",l:"Čemu služi odvodnik prenapona?",type:"sel",opts:O([["a","Povećava napon"],["b","Ograničava prenapon odvodeći struju u zemlju"],["c","Mjeri struju"],["d","Isklapa transformator pri kvaru"]]),c:"b",h:"Pri prenaponu provede struju u zemlju, a poslije ponovno izolira."});
+add({part:0,g:"Pitanja",id:"q_conn",l:"Kamo se spaja odvodnik?",type:"sel",opts:O([["a","Između dva transformatora"],["b","Između faznog vodiča i zemlje"],["c","U seriju s transformatorom"],["d","Na sekundar strujnog transformatora"]]),c:"b",h:"Spaja se paralelno: fazni vodič, odvodnik, zemlja."});
+
+/* Dio 2 */
+add({part:1,g:"Konačno podešenje",id:"s_al",l:"Alarm: temperatura ulja",type:"set",dict:"set",key:"al",unit:"°C",crit:function(v){return v>=AL_MIN&&v<=AL_MAX;},h:"Alarm mora biti najmanje "+AL_MIN+" °C (topli dan, puno opterećenje), a najviše "+AL_MAX+" °C da proradi uz preopterećenje 120 %."});
+add({part:1,g:"Konačno podešenje",id:"s_tr",l:"Isklop: temperatura ulja",type:"set",dict:"set",key:"tr",unit:"°C",crit:function(v){return v>SS120&&v<=TH_LIM&&v>store.set.al;},h:"Isklop mora biti iznad temperature pri 120 % ("+fmt(SS120,1)+" °C), iznad alarma i najviše "+TH_LIM+" °C."});
+function simT(id,l,h){add({part:1,g:"Pokusi s konačnim podešenjem",id:"x_"+id,l:l,type:"sim",f:function(){return resOkT(id);},h:h});}
+simT("norm","Normalni pogon 100 % (topli dan): bez alarma i isklopa","Alarm mora biti najmanje "+AL_MIN+" °C.");
+simT("o120","Preopterećenje 120 %: alarm bez isklopa","Alarm do "+AL_MAX+" °C, a isklop iznad "+fmt(SS120,1)+" °C.");
+simT("o140","Preopterećenje 140 %: alarm, pa isklop prije 105 °C","Isklop mora biti niži od 105 °C i viši od alarma.");
+add({part:1,g:"Pokusi s konačnim podešenjem",id:"x_all",l:"Sva tri pokusa prolaze s istim podešenjem",type:"sim",f:function(){return TORD.every(resOkT);},h:"Podešenje mora vrijediti u svim pokusima odjednom."});
+add({part:1,g:"Očitanja",id:"r_s120",l:"Ustaljena temperatura ulja pri preopterećenju 120 % (°C)",type:"num",tol:0.5,gate:function(){return hasRes("t_o120")?null:"Prvo pokreni pokus preopterećenja 120 %.";},exp:function(){var r=store.res.t_o120;return r?r.ss:null;},h:"Očitaj u tablici rezultata: 20 + 55 · 1,2^1,6 = 93,6 °C."});
+add({part:1,g:"Očitanja",id:"r_s140",l:"Ustaljena temperatura ulja pri preopterećenju 140 % (°C)",type:"num",tol:0.5,gate:function(){return hasRes("t_o140")?null:"Prvo pokreni pokus preopterećenja 140 %.";},exp:function(){var r=store.res.t_o140;return r?r.ss:null;},h:"Očitaj u tablici rezultata: 20 + 55 · 1,4^1,6 = 114,2 °C."});
+add({part:1,g:"Očitanja",id:"r_tt",l:"Preopterećenje 140 %: vrijeme do isklopa (min)",type:"num",tol:5,gate:function(){return resFresh("t_o140",sigT())?null:"Prvo pokreni pokus 140 % s konačnim podešenjem.";},exp:function(){var r=resFresh("t_o140",sigT());return (r&&r.trip)?r.tT:null;},h:"Vrijeme do isklopa piše u tablici rezultata."});
+add({part:1,g:"Analiza",id:"r_q1",l:"Zašto je alarm postavljen niže od isklopa?",type:"sel",opts:O([["a","Da operater dobije upozorenje i smanji opterećenje prije isklopa"],["b","Da se transformator brže isklopi"],["c","Alarm i isklop su isto"],["d","Zbog buke"]]),c:"a",h:"Alarm daje vremena za smanjenje opterećenja, a isklop je krajnja mjera."});
+
+/* Dio 3 */
+function gB(flag,txt){return function(){return store.flags[flag]?null:txt;};}
+var gAir=gB("air_s","Pokreni pokus „Zrak u kotlu”, pričekaj signal i pritisni „Uzmi uzorak plina”.");
+var gSlow=gB("slow_s","Pokreni pokus „Spori kvar”, pričekaj signal i pritisni „Uzmi uzorak plina”.");
+add({part:2,g:"Zrak u kotlu",id:"b_airc",l:"Boja plina u releju",type:"sel",opts:O(COLS),c:"a",gate:gAir,h:"Zrak je bezbojan."});
+add({part:2,g:"Zrak u kotlu",id:"b_airf",l:"Je li plin zapaljiv?",type:"sel",opts:DN,c:"NE",gate:gAir,h:"Zrak ne gori."});
+add({part:2,g:"Zrak u kotlu",id:"b_aira",l:"Što učiniti?",type:"sel",opts:O([["a","Nije kvar: ispustiti zrak i pratiti rad, isklop nije potreban"],["b","Odmah zamijeniti transformator"],["c","Povećati opterećenje"],["d","Ništa, i ne pratiti"]]),c:"a",gate:gAir,h:"Bezbojan nezapaljiv plin je zrak iz dopune ulja."});
+add({part:2,g:"Spori kvar",id:"b_slc",l:"Boja plina u releju",type:"sel",opts:O(COLS),c:"b",gate:gSlow,h:"Oštećena papirna izolacija daje bijeli plin."});
+add({part:2,g:"Spori kvar",id:"b_slf",l:"Je li plin zapaljiv?",type:"sel",opts:DN,c:"DA",gate:gSlow,h:"Plin iz razgrađenog papira gori."});
+add({part:2,g:"Spori kvar",id:"b_sla",l:"Što učiniti?",type:"sel",opts:O([["a","Ništa, plin je neopasan"],["b","Isklopiti transformator radi pregleda i analize plina prije ponovnog uklopa"],["c","Vratiti u pogon bez analize"],["d","Povećati opterećenje"]]),c:"b",gate:gSlow,h:"Zapaljiv plin znači pravi kvar. Transformator se pregledava prije ponovnog uklopa."});
+add({part:2,g:"Brzi kvar i curenje ulja",id:"b_fs",l:"Brzi kvar: koji stupanj Buchholz releja proradi?",type:"sel",opts:O([["a","1. stupanj (signal)"],["b","2. stupanj (isklop)"],["c","nijedan"]]),c:"b",gate:function(){return hasRes("b_fast")?null:"Prvo pokreni pokus „Brzi kvar”.";},h:"Snažan kvar potisne ulje i proradi isklop."});
+add({part:2,g:"Brzi kvar i curenje ulja",id:"b_ft",l:"Brzi kvar: vrijeme od kvara do isklopa prekidača (s)",type:"num",c:0.18,tol:0.02,gate:function(){return hasRes("b_fast")?null:"Prvo pokreni pokus „Brzi kvar”.";},h:"Pročitaj u dnevniku: Buchholz 0,10 s, prekidač 0,18 s."});
+add({part:2,g:"Brzi kvar i curenje ulja",id:"b_os",l:"Curenje ulja: koji stupanj prvi proradi?",type:"sel",opts:O([["a","1. stupanj (signal)"],["b","2. stupanj (isklop)"],["c","nijedan"]]),c:"a",gate:function(){return hasRes("b_oil")?null:"Prvo pokreni pokus „Curenje ulja”.";},h:"Prvo pada gornji plovak (signal), a tek pri znatno nižoj razini isklop."});
+add({part:2,g:"Brzi kvar i curenje ulja",id:"b_oq",l:"Zašto je curenje ulja opasno?",type:"sel",opts:O([["a","Aktivni dijelovi ostaju bez ulja: gubi se izolacija i hlađenje"],["b","Ulje je skupo"],["c","Plin se tada ne skuplja"],["d","Nije opasno"]]),c:"a",gate:function(){return hasRes("b_oil")?null:"Prvo pokreni pokus „Curenje ulja”.";},h:"Ulje izolira i hladi, pa bez njega nastaje kvar i pregrijavanje."});
+
+/* Dio 4 */
+add({part:3,g:"Konačni odabir",id:"s_arr",l:"Odabrani odvodnik",type:"sset",opts:O([["A","A (Uc 8 kV)"],["B","B (Uc 12 kV)"],["C","C (Uc 24 kV)"]]),crit:function(v){return v==="B";},h:"Uc mora biti najmanje 12 kV (A je prenizak), a Up najviše 62,5 kV (C je previsok). Odgovara samo B."});
+add({part:3,g:"Konačni odabir",id:"s_L",l:"Udaljenost odvodnika od transformatora (m)",type:"set",dict:"p",key:"L",unit:"m",crit:function(v){return store.p.arr!=="none"&&ARR[store.p.arr]&&ARR[store.p.arr].up+KVM*v<=LIMX;},h:"Up + L · 1 kV/m mora biti najviše 62,5 kV. Za odvodnik B to je L do 22 m."});
+function simP(id,l,h){add({part:3,g:"Pokusi s konačnim odabirom",id:"y_"+id,l:l,type:"sim",f:function(){return resOkP(id);},h:h});}
+simP("norm","Normalni pogon: odvodnik miruje","Uc mora biti iznad faznog napona 6,9 kV.");
+simP("light","Udar munje 100 kV: razina zaštite najmanje 1,2","Up + pad na spojnom vodu mora biti najviše 62,5 kV.");
+simP("earth","Zemljospoj: odvodnik izdrži 12 kV","Uc mora biti najmanje 12 kV.");
+add({part:3,g:"Pokusi s konačnim odabirom",id:"y_all",l:"Sva tri pokusa prolaze s istim odabirom",type:"sim",f:function(){return PORD.every(resOkP)&&store.p.arr!=="none";},h:"Odabir mora vrijediti u svim pokusima odjednom."});
+add({part:3,g:"Pokazni pokus",id:"n_demo",l:"Izveden je udar munje bez odvodnika (proboj izolacije)",type:"sim",f:function(){return !!store.flags.demo;},h:"Odaberi „bez odvodnika” i pokreni udar munje."});
+add({part:3,g:"Očitanja",id:"r_up",l:"Zaštitna razina Up odabranog odvodnika (kV)",type:"num",tol:0.5,gate:function(){return (store.p.arr==="none")?"Odaberi odvodnik u kartici Prenapon.":null;},exp:function(){var a=ARR[store.p.arr];return a?a.up:null;},h:"Up piše u tablici odvodnika u karticama Upute: A 27 kV, B 40 kV, C 80 kV."});
+add({part:3,g:"Očitanja",id:"r_ut",l:"Udar munje: najveći napon na transformatoru (kV)",type:"num",tol:1,gate:function(){return resFresh("p_light",sigP())?null:"Prvo pokreni udar munje s konačnim odabirom.";},exp:function(){var r=resFresh("p_light",sigP());return r?r.Ut:null;},h:"Piše u tablici rezultata: Up + L · 1 kV/m."});
+add({part:3,g:"Analiza",id:"r_q2",l:"Zašto odvodnik ide što bliže transformatoru?",type:"sel",opts:O([["a","Zbog izgleda"],["b","Spojni vod dodaje pad napona, pa napon na transformatoru raste"],["c","Da se odvodnik hladi"],["d","Svejedno je gdje je"]]),c:"b",h:"Što je spojni vod dulji, to je napon na transformatoru viši od Up."});
+
+function setVal(it){return it.dict==="p"?store.p[it.key]:store.set[it.key];}
+function itemOk(it){
+  var v=store.ans[it.id];
+  if(it.type==="sim")return {ok:!!it.f(),hint:it.h};
+  if(it.gate){var g=it.gate();if(g)return {ok:false,hint:g};}
+  if(it.type==="sset"){
+    if(v!==store.p.arr)return {ok:false,hint:"Odabir mora biti isti kao u kartici Prenapon."};
+    return {ok:!!it.crit(v),hint:it.h};
+  }
+  if(it.type==="set"){
+    var n=num(v);if(n===null)return {ok:false,hint:it.h};
+    if(Math.abs(n-setVal(it))>1e-6)return {ok:false,hint:"Upisana vrijednost mora biti ista kao u kartici s podešenjem."};
+    return {ok:!!it.crit(n),hint:it.h};
+  }
+  if(it.type==="num"){
+    var m=num(v);if(m===null)return {ok:false,hint:it.h};
+    var c=it.exp?it.exp():it.c;
+    if(c===null||c===undefined)return {ok:false,hint:"U tom pokusu nema vrijednosti za očitanje."};
+    return {ok:Math.abs(m-c)<=it.tol,hint:it.h};
+  }
+  return {ok:v===it.c,hint:it.h};
+}
+function grade(p){if(p>=34)return[5,"odličan"];if(p>=27)return[4,"vrlo dobar"];if(p>=20)return[3,"dobar"];if(p>=1)return[2,"dovoljan"];return[1,"nedovoljan"];}
+var checked=false;
+function renderZap(){
+  $("#z-name").value=store.name;$("#z-cls").value=store.cls;$("#z-date").value=store.date;
+  var host=$("#z-parts");host.innerHTML="";
+  PARTS.forEach(function(pt,pi){
+    var card=document.createElement("div");card.className="taskcard";card.style.marginBottom="12px";
+    var h='<h3>'+pt.n+' <span class="badge">'+pt.max+' b</span></h3>'+(pt.note?'<p class="sub2">'+pt.note+'</p>':'');
+    var grp="";
+    ITEMS.forEach(function(it){
+      if(it.part!==pi)return;
+      if(it.g&&it.g!==grp){grp=it.g;h+='<div class="gh">'+grp+'</div>';}
+      h+='<div class="arow" data-id="'+it.id+'"><label for="f-'+it.id+'">'+it.l+'</label>';
+      if(it.type==="sim"){
+        var ok=!!it.f();h+='<div class="simv" id="f-'+it.id+'">'+(ok?"da":"ne")+' <span class="sub2">(iz simulacije)</span></div>';
+      }else if(it.type==="num"||it.type==="set"){
+        h+='<input type="text" inputmode="decimal" id="f-'+it.id+'" value="'+(store.ans[it.id]||"")+'" placeholder="'+(it.unit?"upiši ("+it.unit+")":"upiši broj")+'">';
+      }else{
+        h+='<select id="f-'+it.id+'">';
+        it.opts.forEach(function(o){h+='<option value="'+o[0]+'"'+(store.ans[it.id]===o[0]?" selected":"")+'>'+o[1]+'</option>';});
+        h+='</select>';
+      }
+      h+='<span class="rs" id="rs-'+it.id+'"></span></div>';
+    });
+    card.innerHTML=h;host.appendChild(card);
+  });
+  $$("#z-parts select,#z-parts input").forEach(function(el){
+    var fn=function(){var id=el.id.replace(/^f-/,"");store.ans[id]=el.value;save();if(checked)runCheck();updFill();};
+    el.addEventListener("input",fn);el.addEventListener("change",fn);
+  });
+  updFill();if(checked&&!EXAM)runCheck();
+}
+function filled(){return ITEMS.filter(function(it){return it.type==="sim"?!!it.f():!!(store.ans[it.id]&&String(store.ans[it.id]).trim());}).length;}
+function updFill(){
+  if(EXAM){var b=$("#z-box");b.hidden=false;b.innerHTML='<span>Ispunjeno: <b>'+filled()+'</b> od '+ITEMS.length+' stavki</span><span class="sub2">Ocjenjivanje obavlja nastavnik.</span>';}
+}
+function runCheck(){
+  checked=true;var pts=0,per=[0,0,0,0];
+  ITEMS.forEach(function(it){
+    var r=itemOk(it),el=$("#rs-"+it.id),row=$('.arow[data-id="'+it.id+'"]');
+    if(!el)return;
+    if(r.ok){pts++;per[it.part]++;el.className="rs ok";el.textContent="✓";el.title="";}
+    else{el.className="rs no";el.textContent="✗";el.title=r.hint||"";}
+    var old=row.querySelector(".hh");if(old)old.remove();
+    if(!r.ok&&r.hint){var d=document.createElement("div");d.className="hint hh";d.style.gridColumn="1 / -1";d.textContent=r.hint;row.appendChild(d);}
+  });
+  var g=grade(pts),b=$("#z-box");b.hidden=false;
+  b.innerHTML='<span>Bodovi: <b>'+pts+' / '+ITEMS.length+'</b></span><span>Ocjena: <b>'+g[0]+'</b> ('+g[1]+')</span><span class="sub2">dio 1: '+per[0]+'/10 · dio 2: '+per[1]+'/10 · dio 3: '+per[2]+'/10 · dio 4: '+per[3]+'/10</span>';
+  return pts;
+}
+["name","cls","date"].forEach(function(k){$("#z-"+k).addEventListener("input",function(e){store[k]=e.target.value;save();});});
+if(EXAM){$("#z-check").hidden=true;$("#z-note").textContent="Način provjere znanja: ocjenjivanje obavlja nastavnik. Na kraju sata spremi zapisnik i predaj ga na Loomenu.";}
+$("#z-check").addEventListener("click",function(){runCheck();});
+function optText(it,v){for(var i=0;i<it.opts.length;i++)if(it.opts[i][0]===v)return it.opts[i][1];return "";}
+function zText(){
+  var s=store.set,p=store.p,t=["ZAPISNIK: ZAŠTITA TRANSFORMATORA I PRENAPONI (laboratorij 3)","Ime i prezime: "+store.name,"Razred: "+store.cls,"Datum: "+store.date,""];
+  PARTS.forEach(function(pt,pi){
+    t.push(pt.n.toUpperCase());var grp="";
+    ITEMS.forEach(function(it){
+      if(it.part!==pi)return;
+      if(it.g&&it.g!==grp){grp=it.g;t.push("  ["+grp+"]");}
+      var v=store.ans[it.id];
+      if(it.type==="sim")t.push("  "+it.l+": "+(it.f()?"DA":"NE")+" (iz simulacije)");
+      else if(it.type==="num"||it.type==="set")t.push("  "+it.l+": "+(v?v+(it.unit?" "+it.unit:""):"-"));
+      else t.push("  "+it.l+": "+(v?optText(it,v):"-"));
+    });
+    t.push("");
+  });
+  t.push("PODACI IZ SIMULACIJE");
+  t.push("  Podešenje termičke zaštite: alarm "+s.al+" °C, isklop "+s.tr+" °C");
+  TORD.forEach(function(id){
+    var r=store.res["t_"+id];
+    if(!r){t.push("  "+TS[id].n+": nije pokrenut");return;}
+    t.push("  "+TS[id].n+": alarm "+(r.alarm?"nakon "+fmt(r.tA,0)+" min":"ne")+", isklop "+(r.trip?"nakon "+fmt(r.tT,0)+" min":"ne")+", "+(r.ok?"ispravno":"neispravno")+(r.sig!==sigT()?" (ranije podešenje)":""));
+  });
+  BORD.forEach(function(id){t.push("  Buchholz, "+BS_NAMES[id]+": "+(store.res["b_"+id]?"izveden"+((id==="air"||id==="slow")?(store.flags[id+"_s"]?", uzorak plina uzet":", uzorak plina nije uzet"):""):"nije pokrenut"));});
+  t.push("  Odvodnik: "+(p.arr==="none"?"bez odvodnika":p.arr)+", udaljenost L = "+p.L+" m");
+  PORD.forEach(function(id){
+    var r=store.res["p_"+id];
+    if(!r){t.push("  "+PS[id].n+": nije pokrenut");return;}
+    t.push("  "+PS[id].n+": "+(id==="light"?fmt(r.Ut,0)+" kV na transformatoru, ":"")+(r.ok?"ispravno":"neispravno")+(r.sig!==sigP()?" (raniji odabir)":""));
+  });
+  t.push("  Izveden udar munje bez odvodnika: "+(store.flags.demo?"DA":"NE"));
+  return t.join("\n");
+}
+function zsay(t){$("#z-note").textContent=t;}
+$("#z-copy").addEventListener("click",function(){
+  var txt=zText(),done=function(ok){if(ok)zsay("Zapisnik je kopiran. Zalijepi ga u dokument.");else fallbackCopy(txt);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){done(true);},function(){fallbackCopy(txt);});}else fallbackCopy(txt);
+});
+function fallbackCopy(txt){
+  var ta=$("#z-fallback");
+  if(!ta){ta=document.createElement("textarea");ta.id="z-fallback";ta.rows=12;ta.style.cssText="width:100%;margin-top:12px;font-family:var(--f-lcd);background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:6px;padding:8px";$("#z-parts").parentNode.appendChild(ta);}
+  ta.value=txt;ta.focus();ta.select();zsay("Označi tekst u polju ispod i kopiraj ga (Ctrl+C).");
+}
+if(STANDALONE){
+  $("#z-save").hidden=false;
+  zsay("Na kraju sata pritisni Spremi zapisnik. Datoteka se preuzme na računalo, a zatim je predaj na Loomenu. Unosi se čuvaju i u ovom pregledniku.");
+}
+function saveName(){
+  var n=(store.name||"ucenik").replace(/đ/g,"d").replace(/Đ/g,"D").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+  var dt=(store.date||"").replace(/[^0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  return "Zapisnik_L3_"+(n||"ucenik")+(dt?"_"+dt:"")+".txt";
+}
+$("#z-save").addEventListener("click",function(){
+  if(!store.name.trim()){zsay("Prvo upiši ime i prezime na vrhu zapisnika.");$("#z-name").focus();return;}
+  try{
+    var blob=new Blob(["﻿"+zText().replace(/\n/g,"\r\n")],{type:"text/plain;charset=utf-8"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=saveName();
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+    zsay("Zapisnik je spremljen kao "+saveName()+" (mapa Preuzimanja). Predaj ga na Loomenu.");
+  }catch(e){fallbackCopy(zText());}
+});
+var armed=false,armT=null;
+$("#z-reset").addEventListener("click",function(){
+  var b=$("#z-reset");
+  if(!armed){armed=true;b.textContent="Potvrdi brisanje";b.classList.add("danger");armT=setTimeout(function(){armed=false;b.textContent="Obriši sve unose";b.classList.remove("danger");},4000);return;}
+  clearTimeout(armT);armed=false;b.textContent="Obriši sve unose";b.classList.remove("danger");
+  store.ans={};store.res={};store.flags={};store.set=JSON.parse(JSON.stringify(DEF.set));store.p=JSON.parse(JSON.stringify(DEF.p));save();checked=false;$("#z-box").hidden=true;
+  buildTSet();buildPSet();idleT();renderTRes();renderPRes();onPChange();$("#tlog").innerHTML="";$("#plog").innerHTML="";sayT("Podešenja i svi unosi vraćeni su na početno.");sayP("Odaberi odvodnik i udaljenost, pa pokreni pokus.");
+  renderZap();zsay("Svi unosi i rezultati pokusa su obrisani.");
+});
+
+/* ---------- start ---------- */
+buildTF();buildTBtns();buildTSet();buildPNet();buildPBtns();buildPSet();
+idleT();renderTRes();renderPRes();pnetUpdate();drawPChart(null,1);
+showTab("upute");
+window.__lab={ITEMS:ITEMS,store:store,evalT:evalT,evalP:evalP,grade:grade,runCheck:runCheck,itemOk:itemOk,sigT:sigT,sigP:sigP,AL_MAX:AL_MAX,SS120:SS120,SS140:SS140,recordT:recordT,recordP:recordP,runB:runB,TORD:TORD,PORD:PORD,renderZap:renderZap,idleT:idleT};
+})();
+</script>
+<script>(function(){var d=document.createElement('div');d.className='nb';d.innerHTML='<a href="index.html">\u2190 Popis vje\u017ebi</a><a href="../index.html">\u2302 Po\u010detna</a>';var w=document.querySelector('.wrap');w.insertBefore(d,w.firstChild);})();</script>
+</body>
+</html>
